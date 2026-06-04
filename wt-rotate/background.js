@@ -67,7 +67,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ── Timer ─────────────────────────────────────────────────────────────────
 
 async function startTimer(interval) {
-  // Offscreen (Edge 116+) : timer précis à la seconde près
   if (typeof chrome.offscreen !== 'undefined') {
     try {
       const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
@@ -77,14 +76,17 @@ async function startTimer(interval) {
           reasons: ['BLOBS'],
           justification: 'Interval timer for URL rotation'
         });
+        // Laisser le temps au document de charger son JS et enregistrer ses listeners
+        await new Promise(r => setTimeout(r, 300));
       }
+      // Le doc offscreen se démarre aussi tout seul depuis le storage (double filet)
       chrome.runtime.sendMessage({ target: 'offscreen', action: 'start-timer', interval }).catch(() => {});
       return;
     } catch (e) {
       console.warn('[wt-rotate] offscreen indisponible, fallback alarms');
     }
   }
-  // Fallback alarms (minimum ~30s pour extensions packagées, ~1 min en mode dev)
+  // Fallback alarms (min ~30s packagée, ~1 min en mode dev)
   chrome.alarms.clear('wt-rotate');
   chrome.alarms.create('wt-rotate', { periodInMinutes: Math.max(interval / 60, 0.5) });
 }
@@ -109,8 +111,10 @@ async function rotateToNext() {
   if (!config.active || !config.tabIds?.length) return;
 
   const next = (config.currentIndex + 1) % config.tabIds.length;
+  const tabId = config.tabIds[next];
   try {
-    await chrome.tabs.update(config.tabIds[next], { active: true });
+    await chrome.tabs.update(tabId, { active: true });
+    await chrome.tabs.reload(tabId);   // Rafraîchit la page dès qu'elle devient active
     config.currentIndex = next;
     await chrome.storage.local.set({ config });
   } catch {

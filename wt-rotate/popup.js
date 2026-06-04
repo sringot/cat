@@ -1,3 +1,7 @@
+const DEFAULT_CONFIG = {
+  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null
+};
+
 let config = null;
 let countdownSec = 0;
 let countdownTimer = null;
@@ -24,18 +28,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   startLocalCountdown();
 });
 
-const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null
-};
-
+// Read directly from storage — no message passing
 async function refresh() {
   try {
-    const res = await msg({ action: 'getConfig' });
-    config = res?.config || DEFAULT_CONFIG;
+    const data = await chrome.storage.local.get('config');
+    config = data?.config || { ...DEFAULT_CONFIG };
   } catch {
-    config = config || DEFAULT_CONFIG;
+    config = config || { ...DEFAULT_CONFIG };
   }
   renderAll();
+}
+
+// Write directly to storage — reliable, no service worker needed
+function saveConfig() {
+  return chrome.storage.local.set({ config });
 }
 
 function renderAll() {
@@ -45,78 +51,61 @@ function renderAll() {
   updateStatusUI();
 }
 
-// ── URL list rendering ────────────────────────────────────────────────────
+// ── URL list ──────────────────────────────────────────────────────────────
 
 function renderUrls() {
   urlList.innerHTML = '';
 
-  if (config.urls.length === 0) {
+  if (!config.urls.length) {
     urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
     return;
   }
 
-  const activeUrls = config.urls.filter(u => u?.trim());
-  const activeIdx  = config.active ? config.currentIndex % Math.max(activeUrls.length, 1) : -1;
-
   config.urls.forEach((url, i) => {
     const row = document.createElement('div');
-    row.className = 'url-row' + (config.active && i === activeIdx ? ' active-url' : '');
+    row.className = 'url-row' + (config.active && i === config.currentIndex ? ' active-url' : '');
     row.draggable = true;
-    row.dataset.i = i;
 
     row.innerHTML = `
-      <span class="drag-handle" title="Glisser pour réordonner">⠿</span>
+      <span class="drag-handle">⠿</span>
       <span class="url-num">${i + 1}</span>
       <input class="url-input" type="text" value="${esc(url)}" placeholder="https://exemple.com" spellcheck="false">
-      <button class="btn-del" data-i="${i}" title="Supprimer">✕</button>
+      <button class="btn-del" title="Supprimer">✕</button>
     `;
 
     const input = row.querySelector('.url-input');
-    // Save on every keystroke so nothing is lost if the popup closes without blur
+
+    // Save on every keystroke — nothing lost if popup closes
     input.addEventListener('input', () => {
       config.urls[i] = input.value;
       saveConfig();
     });
-    // On blur/Enter, trim whitespace and do a final save
+    // Trim final value on blur / Enter
     input.addEventListener('blur', () => {
-      const trimmed = input.value.trim();
-      input.value = trimmed;
-      config.urls[i] = trimmed;
+      input.value = input.value.trim();
+      config.urls[i] = input.value;
       saveConfig();
     });
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') input.blur();
-    });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 
     row.querySelector('.btn-del').addEventListener('click', () => {
       config.urls.splice(i, 1);
-      if (config.currentIndex >= config.urls.filter(u => u?.trim()).length) {
-        config.currentIndex = 0;
-      }
+      if (config.currentIndex >= config.urls.filter(u => u?.trim()).length) config.currentIndex = 0;
       saveConfig();
       renderUrls();
     });
 
-    // Drag & drop reordering
-    row.addEventListener('dragstart', e => {
-      dragSrcIndex = i;
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    row.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      row.classList.add('drag-over');
-    });
+    // Drag-to-reorder
+    row.addEventListener('dragstart', e => { dragSrcIndex = i; e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
     row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
     row.addEventListener('drop', e => {
-      e.preventDefault();
-      row.classList.remove('drag-over');
+      e.preventDefault(); row.classList.remove('drag-over');
       if (dragSrcIndex === null || dragSrcIndex === i) return;
       const moved = config.urls.splice(dragSrcIndex, 1)[0];
       config.urls.splice(i, 0, moved);
       dragSrcIndex = null;
-      saveConfig();
-      renderUrls();
+      saveConfig(); renderUrls();
     });
     row.addEventListener('dragend', () => {
       dragSrcIndex = null;
@@ -127,33 +116,28 @@ function renderUrls() {
   });
 }
 
-// ── Status UI ─────────────────────────────────────────────────────────────
+// ── Status ────────────────────────────────────────────────────────────────
 
 function updateStatusUI() {
   const on = config.active;
-
   badge.className   = 'badge ' + (on ? 'badge-active' : 'badge-stopped');
   badge.textContent = on ? 'Actif' : 'Arrêté';
-
   btnStart.classList.toggle('hidden', on);
   btnStop.classList.toggle('hidden', !on);
   btnNext.classList.toggle('hidden', !on);
   statusBar.classList.toggle('visible', on);
-
   if (on) {
-    const activeUrls = config.urls.filter(u => u?.trim());
-    const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)] || '';
-    statusCur.textContent = '▶ ' + cur;
+    const urls = config.urls.filter(u => u?.trim());
+    statusCur.textContent = '▶ ' + (urls[config.currentIndex % Math.max(urls.length, 1)] || '');
     statusCnt.textContent = `⏱ Prochain dans ${countdownSec}s`;
   }
 }
 
-// ── Local countdown (visual only) ────────────────────────────────────────
+// ── Countdown (visual only) ───────────────────────────────────────────────
 
 function startLocalCountdown() {
   if (countdownTimer) clearInterval(countdownTimer);
   countdownSec = config?.interval || 30;
-
   countdownTimer = setInterval(async () => {
     if (!config?.active) return;
     countdownSec = Math.max(0, countdownSec - 1);
@@ -161,8 +145,8 @@ function startLocalCountdown() {
     if (countdownSec === 0) {
       countdownSec = config.interval;
       try {
-        const res = await msg({ action: 'getConfig' });
-        if (res?.config) config = res.config;
+        const data = await chrome.storage.local.get('config');
+        if (data?.config) config = data.config;
       } catch {}
       renderUrls();
       updateStatusUI();
@@ -170,10 +154,10 @@ function startLocalCountdown() {
   }, 1000);
 }
 
-// ── Event handlers ────────────────────────────────────────────────────────
+// ── Button handlers ───────────────────────────────────────────────────────
 
 btnAdd.addEventListener('click', () => {
-  if (!config) config = DEFAULT_CONFIG;
+  if (!config) config = { ...DEFAULT_CONFIG };
   config.urls.push('');
   saveConfig();
   renderUrls();
@@ -182,26 +166,24 @@ btnAdd.addEventListener('click', () => {
 });
 
 slider.addEventListener('input', () => {
-  const v = parseInt(slider.value);
-  intervalN.value = v;
-  config.interval = v;
-  countdownSec = v;
+  config.interval = parseInt(slider.value);
+  intervalN.value = config.interval;
+  countdownSec = config.interval;
   saveConfig();
 });
 
 intervalN.addEventListener('change', () => {
-  const v = Math.max(5, Math.min(86400, parseInt(intervalN.value) || 30));
-  intervalN.value = v;
-  slider.value    = Math.min(v, 300);
-  config.interval = v;
-  countdownSec    = v;
+  config.interval = Math.max(5, Math.min(86400, parseInt(intervalN.value) || 30));
+  intervalN.value = config.interval;
+  slider.value    = Math.min(config.interval, 300);
+  countdownSec    = config.interval;
   saveConfig();
 });
 
 btnStart.addEventListener('click', async () => {
   flushInputs();
-  await saveConfig();
-  const res = await msg({ action: 'start', fullscreen: false });
+  await saveConfig();   // wait for write before background reads it
+  const res = await chrome.runtime.sendMessage({ action: 'start', fullscreen: false });
   if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
   await refresh();
   countdownSec = config.interval;
@@ -209,14 +191,14 @@ btnStart.addEventListener('click', async () => {
 });
 
 btnStop.addEventListener('click', async () => {
-  await msg({ action: 'stop' });
+  await chrome.runtime.sendMessage({ action: 'stop' });
   await refresh();
 });
 
 btnFs.addEventListener('click', async () => {
   flushInputs();
-  await saveConfig();
-  const res = await msg({ action: 'start', fullscreen: true });
+  await saveConfig();   // wait for write before background reads it
+  const res = await chrome.runtime.sendMessage({ action: 'start', fullscreen: true });
   if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
   await refresh();
   countdownSec = config.interval;
@@ -224,22 +206,14 @@ btnFs.addEventListener('click', async () => {
 });
 
 btnNext.addEventListener('click', async () => {
-  const res = await msg({ action: 'next' });
-  if (res.config) config = res.config;
+  const res = await chrome.runtime.sendMessage({ action: 'next' });
+  if (res?.config) config = res.config;
   countdownSec = config.interval;
   renderUrls();
   updateStatusUI();
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-
-function msg(payload) {
-  return chrome.runtime.sendMessage(payload);
-}
-
-function saveConfig() {
-  return msg({ action: 'setConfig', config });
-}
 
 function flushInputs() {
   urlList.querySelectorAll('.url-input').forEach((inp, i) => {
@@ -248,9 +222,5 @@ function flushInputs() {
 }
 
 function esc(s) {
-  return (s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

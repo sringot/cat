@@ -203,16 +203,6 @@ async function handleMessage(message) {
     case 'getConfig':
       return { config };
 
-    case 'setConfig': {
-      const prevInterval = config.interval;
-      config = { ...config, ...message.config };
-      await chrome.storage.local.set({ config });
-      if (config.active && message.config.interval && message.config.interval !== prevInterval) {
-        await startTimer(config.interval);
-      }
-      return { success: true };
-    }
-
     default:
       return { success: false, error: 'Action inconnue' };
   }

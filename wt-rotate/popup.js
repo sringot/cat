@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   startLocalCountdown();
 });
 
-// Read directly from storage — no message passing
 async function refresh() {
   try {
     const data = await chrome.storage.local.get('config');
@@ -39,7 +38,6 @@ async function refresh() {
   renderAll();
 }
 
-// Write directly to storage — reliable, no service worker needed
 function saveConfig() {
   return chrome.storage.local.set({ config });
 }
@@ -74,18 +72,8 @@ function renderUrls() {
     `;
 
     const input = row.querySelector('.url-input');
-
-    // Save on every keystroke — nothing lost if popup closes
-    input.addEventListener('input', () => {
-      config.urls[i] = input.value;
-      saveConfig();
-    });
-    // Trim final value on blur / Enter
-    input.addEventListener('blur', () => {
-      input.value = input.value.trim();
-      config.urls[i] = input.value;
-      saveConfig();
-    });
+    input.addEventListener('input', () => { config.urls[i] = input.value; saveConfig(); });
+    input.addEventListener('blur',  () => { input.value = input.value.trim(); config.urls[i] = input.value; saveConfig(); });
     input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 
     row.querySelector('.btn-del').addEventListener('click', () => {
@@ -95,7 +83,6 @@ function renderUrls() {
       renderUrls();
     });
 
-    // Drag-to-reorder
     row.addEventListener('dragstart', e => { dragSrcIndex = i; e.dataTransfer.effectAllowed = 'move'; });
     row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
     row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
@@ -133,7 +120,7 @@ function updateStatusUI() {
   }
 }
 
-// ── Countdown (visual only) ───────────────────────────────────────────────
+// ── Countdown ─────────────────────────────────────────────────────────────
 
 function startLocalCountdown() {
   if (countdownTimer) clearInterval(countdownTimer);
@@ -144,17 +131,94 @@ function startLocalCountdown() {
     statusCnt.textContent = `⏱ Prochain dans ${countdownSec}s`;
     if (countdownSec === 0) {
       countdownSec = config.interval;
-      try {
-        const data = await chrome.storage.local.get('config');
-        if (data?.config) config = data.config;
-      } catch {}
-      renderUrls();
-      updateStatusUI();
+      try { const d = await chrome.storage.local.get('config'); if (d?.config) config = d.config; } catch {}
+      renderUrls(); updateStatusUI();
     }
   }, 1000);
 }
 
-// ── Button handlers ───────────────────────────────────────────────────────
+// ── Start / Stop — popup gère directement les fenêtres et onglets ─────────
+
+async function startRotation(fullscreen) {
+  try {
+    flushInputs();
+    await saveConfig();
+
+    const activeUrls = config.urls.filter(u => u?.trim());
+    if (!activeUrls.length) {
+      alert('Ajoutez au moins une URL avant de démarrer.');
+      return;
+    }
+
+    // Vérifier si la fenêtre de rotation existe encore
+    let winExists = false;
+    if (config.windowId) {
+      try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
+    }
+
+    if (!winExists) {
+      // Ouvrir la première URL dans une nouvelle fenêtre
+      const win = await chrome.windows.create({
+        url: activeUrls[0],
+        state: fullscreen ? 'fullscreen' : 'maximized'
+      });
+
+      if (!win?.tabs?.[0]?.id) {
+        alert('Impossible d\'ouvrir la fenêtre de rotation.');
+        return;
+      }
+
+      const tabIds = [win.tabs[0].id];
+
+      // Ouvrir les URLs suivantes comme onglets dans la même fenêtre
+      for (let i = 1; i < activeUrls.length; i++) {
+        const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i], active: false });
+        tabIds.push(tab.id);
+      }
+
+      config.tabIds   = tabIds;
+      config.windowId = win.id;
+    } else {
+      // Réutiliser les onglets existants
+      if (fullscreen) await chrome.windows.update(config.windowId, { state: 'fullscreen' });
+      if (config.tabIds?.[0]) try { await chrome.tabs.update(config.tabIds[0], { active: true }); } catch {}
+    }
+
+    config.currentIndex = 0;
+    config.active = true;
+    await saveConfig();
+
+    // Dire au background de démarrer le timer (fire-and-forget)
+    chrome.runtime.sendMessage({ action: 'startTimer', interval: config.interval }).catch(() => {});
+
+    await refresh();
+    countdownSec = config.interval;
+    startLocalCountdown();
+
+  } catch (err) {
+    alert('Erreur : ' + (err?.message || String(err)));
+  }
+}
+
+btnStart.addEventListener('click', () => startRotation(false));
+btnFs.addEventListener('click',    () => startRotation(true));
+
+btnStop.addEventListener('click', async () => {
+  config.active = false;
+  await saveConfig();
+  chrome.runtime.sendMessage({ action: 'stopTimer' }).catch(() => {});
+  await refresh();
+});
+
+btnNext.addEventListener('click', async () => {
+  if (!config.tabIds?.length) return;
+  const next = (config.currentIndex + 1) % config.tabIds.length;
+  try { await chrome.tabs.update(config.tabIds[next], { active: true }); } catch {}
+  config.currentIndex = next;
+  await saveConfig();
+  countdownSec = config.interval;
+  renderUrls(); updateStatusUI();
+});
 
 btnAdd.addEventListener('click', () => {
   if (!config) config = { ...DEFAULT_CONFIG };
@@ -168,7 +232,7 @@ btnAdd.addEventListener('click', () => {
 slider.addEventListener('input', () => {
   config.interval = parseInt(slider.value);
   intervalN.value = config.interval;
-  countdownSec = config.interval;
+  countdownSec    = config.interval;
   saveConfig();
 });
 
@@ -178,39 +242,6 @@ intervalN.addEventListener('change', () => {
   slider.value    = Math.min(config.interval, 300);
   countdownSec    = config.interval;
   saveConfig();
-});
-
-btnStart.addEventListener('click', async () => {
-  flushInputs();
-  await saveConfig();   // wait for write before background reads it
-  const res = await chrome.runtime.sendMessage({ action: 'start', fullscreen: false });
-  if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
-  await refresh();
-  countdownSec = config.interval;
-  startLocalCountdown();
-});
-
-btnStop.addEventListener('click', async () => {
-  await chrome.runtime.sendMessage({ action: 'stop' });
-  await refresh();
-});
-
-btnFs.addEventListener('click', async () => {
-  flushInputs();
-  await saveConfig();   // wait for write before background reads it
-  const res = await chrome.runtime.sendMessage({ action: 'start', fullscreen: true });
-  if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
-  await refresh();
-  countdownSec = config.interval;
-  startLocalCountdown();
-});
-
-btnNext.addEventListener('click', async () => {
-  const res = await chrome.runtime.sendMessage({ action: 'next' });
-  if (res?.config) config = res.config;
-  countdownSec = config.interval;
-  renderUrls();
-  updateStatusUI();
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────

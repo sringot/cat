@@ -24,9 +24,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   startLocalCountdown();
 });
 
+const DEFAULT_CONFIG = {
+  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
+};
+
 async function refresh() {
-  const res = await msg({ action: 'getConfig' });
-  config = res.config;
+  try {
+    const res = await msg({ action: 'getConfig' });
+    config = res?.config || DEFAULT_CONFIG;
+  } catch {
+    config = config || DEFAULT_CONFIG;
+  }
   renderAll();
 }
 
@@ -64,8 +72,16 @@ function renderUrls() {
     `;
 
     const input = row.querySelector('.url-input');
+    // Save on every keystroke so nothing is lost if the popup closes without blur
+    input.addEventListener('input', () => {
+      config.urls[i] = input.value;
+      saveConfig();
+    });
+    // On blur/Enter, trim whitespace and do a final save
     input.addEventListener('blur', () => {
-      config.urls[i] = input.value.trim();
+      const trimmed = input.value.trim();
+      input.value = trimmed;
+      config.urls[i] = trimmed;
       saveConfig();
     });
     input.addEventListener('keydown', e => {
@@ -144,9 +160,10 @@ function startLocalCountdown() {
     statusCnt.textContent = `⏱ Prochain dans ${countdownSec}s`;
     if (countdownSec === 0) {
       countdownSec = config.interval;
-      // Resync currentIndex from storage
-      const res = await msg({ action: 'getConfig' });
-      config = res.config;
+      try {
+        const res = await msg({ action: 'getConfig' });
+        if (res?.config) config = res.config;
+      } catch {}
       renderUrls();
       updateStatusUI();
     }
@@ -156,6 +173,7 @@ function startLocalCountdown() {
 // ── Event handlers ────────────────────────────────────────────────────────
 
 btnAdd.addEventListener('click', () => {
+  if (!config) config = DEFAULT_CONFIG;
   config.urls.push('');
   saveConfig();
   renderUrls();
@@ -184,7 +202,7 @@ btnStart.addEventListener('click', async () => {
   flushInputs();
   await saveConfig();
   const res = await msg({ action: 'start', fullscreen: false });
-  if (!res.success) { alert(res.error || 'Erreur'); return; }
+  if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
   await refresh();
   countdownSec = config.interval;
   startLocalCountdown();
@@ -199,7 +217,7 @@ btnFs.addEventListener('click', async () => {
   flushInputs();
   await saveConfig();
   const res = await msg({ action: 'start', fullscreen: true });
-  if (!res.success) { alert(res.error || 'Erreur'); return; }
+  if (!res?.success) { alert(res?.error || 'Erreur de démarrage'); return; }
   await refresh();
   countdownSec = config.interval;
   startLocalCountdown();

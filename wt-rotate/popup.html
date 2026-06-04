@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>wt-rotate</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 370px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #f0f2f5;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+    .logo .accent { color: #e94560; }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .badge-active  { background: #00c851; color: #fff; }
+    .badge-stopped { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+
+    /* ── Status bar ── */
+    #status-bar {
+      display: none;
+      padding: 8px 16px;
+      background: #e8f5e9;
+      border-bottom: 1px solid #c8e6c9;
+    }
+    #status-bar.visible { display: block; }
+    #status-current {
+      font-size: 11px;
+      font-weight: 600;
+      color: #2e7d32;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #status-countdown { font-size: 11px; color: #4caf50; margin-top: 2px; }
+
+    /* ── Sections ── */
+    .section {
+      background: #fff;
+      margin: 10px 10px 0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    }
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8a9bb0;
+      margin-bottom: 10px;
+    }
+
+    /* ── URL list ── */
+    #url-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 4px 8px;
+      transition: border-color .15s;
+    }
+    .url-row:focus-within { border-color: #0f3460; background: #fff; }
+    .url-row.active-url { border-color: #00c851; background: #f0fff4; }
+
+    .drag-handle {
+      color: #c0cbd8;
+      cursor: grab;
+      font-size: 13px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .url-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8a9bb0;
+      min-width: 16px;
+      flex-shrink: 0;
+    }
+
+    .url-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 12px;
+      font-family: 'Consolas', 'Fira Mono', monospace;
+      background: transparent;
+      color: #1a1a2e;
+      min-width: 0;
+    }
+    .url-input::placeholder { color: #b0bec5; }
+
+    .btn-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #c0cbd8;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1;
+      transition: color .15s, background .15s;
+      flex-shrink: 0;
+    }
+    .btn-del:hover { color: #e94560; background: #fff5f5; }
+
+    .btn-add {
+      width: 100%;
+      padding: 7px;
+      background: none;
+      border: 1.5px dashed #c0cbd8;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #8a9bb0;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all .15s;
+    }
+    .btn-add:hover { border-color: #0f3460; color: #0f3460; background: #f0f4ff; }
+
+    /* ── Interval ── */
+    .interval-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: #0f3460;
+      cursor: pointer;
+    }
+    .interval-val {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .interval-num {
+      width: 52px;
+      padding: 4px 6px;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .interval-num:focus { border-color: #0f3460; }
+    .interval-unit { font-size: 11px; color: #8a9bb0; }
+
+    /* ── Actions ── */
+    .actions {
+      display: flex;
+      gap: 7px;
+      padding: 10px 10px 12px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #0f3460; color: #fff; flex: 1; }
+    .btn-primary:hover { background: #0d2a50; }
+    .btn-danger  { background: #e94560; color: #fff; flex: 1; }
+    .btn-danger:hover  { background: #d63954; }
+    .btn-secondary {
+      background: #fff;
+      color: #0f3460;
+      border: 1.5px solid #dee2e6;
+    }
+    .btn-secondary:hover { background: #f0f4ff; border-color: #0f3460; }
+    .btn-icon-only { padding: 8px 12px; }
+
+    .hidden { display: none !important; }
+
+    .empty-hint {
+      text-align: center;
+      color: #b0bec5;
+      font-size: 12px;
+      padding: 6px;
+    }
+
+    /* ── Drag-over visual ── */
+    .url-row.drag-over { border-color: #e94560; background: #fff5f5; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">↻ wt<span class="accent">-rotate</span></div>
+    <div id="badge" class="badge badge-stopped">Arrêté</div>
+  </div>
+
+  <div id="status-bar">
+    <div id="status-current"></div>
+    <div id="status-countdown"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">URLs à afficher</div>
+    <div id="url-list"></div>
+    <button id="btn-add" class="btn-add">+ Ajouter une URL</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Intervalle de rotation</div>
+    <div class="interval-row">
+      <input type="range" id="slider" min="5" max="300" step="5" value="30">
+      <div class="interval-val">
+        <input type="number" id="interval" class="interval-num" min="5" max="86400" value="30">
+        <span class="interval-unit">sec</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btn-start" class="btn btn-primary">▶ Démarrer</button>
+    <button id="btn-stop"  class="btn btn-danger hidden">■ Arrêter</button>
+    <button id="btn-fs"    class="btn btn-secondary" title="Ouvrir en plein écran (kiosk)">⛶ Kiosk</button>
+    <button id="btn-next"  class="btn btn-secondary btn-icon-only hidden" title="URL suivante">⏭</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

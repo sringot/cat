@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
+  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null
 };
 
 async function refresh() {

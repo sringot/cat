@@ -3,7 +3,7 @@ const DEFAULT_CONFIG = {
   interval: 30,
   currentIndex: 0,
   active: false,
-  tabId: null,
+  tabIds: [],
   windowId: null
 };
 
@@ -12,46 +12,45 @@ chrome.runtime.onInstalled.addListener(onInstalled);
 chrome.runtime.onStartup.addListener(onStartup);
 chrome.tabs.onRemoved.addListener(onTabRemoved);
 chrome.runtime.onMessage.addListener(onMessage);
+chrome.alarms.onAlarm.addListener(onAlarm);
 
 async function onInstalled() {
   const data = await chrome.storage.local.get('config');
   if (!data.config) {
     await chrome.storage.local.set({ config: DEFAULT_CONFIG });
   }
-  // Watchdog: recreate offscreen timer if service worker was killed
   chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
 }
 
 async function onStartup() {
   chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
   const data = await chrome.storage.local.get('config');
-  if (data.config?.active) {
-    await ensureOffscreenTimer(data.config.interval);
-  }
+  if (data.config?.active) await startTimer(data.config.interval);
 }
 
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== 'wt-watchdog') return;
-  const data = await chrome.storage.local.get('config');
-  if (data.config?.active) {
-    await ensureOffscreenTimer(data.config.interval);
+async function onAlarm(alarm) {
+  if (alarm.name === 'wt-watchdog') {
+    const data = await chrome.storage.local.get('config');
+    if (data.config?.active) await startTimer(data.config.interval);
+  } else if (alarm.name === 'wt-rotate') {
+    // Alarm fallback for Edge versions that don't support offscreen API
+    await rotateToNext();
   }
-});
+}
 
 async function onTabRemoved(tabId) {
   const data = await chrome.storage.local.get('config');
   const config = data.config;
-  if (config?.tabId === tabId) {
+  if (config?.tabIds?.includes(tabId)) {
     config.active = false;
-    config.tabId = null;
+    config.tabIds = [];
     config.windowId = null;
-    await closeOffscreenTimer();
+    await stopTimer();
     await chrome.storage.local.set({ config });
   }
 }
 
 function onMessage(message, sender, sendResponse) {
-  // Rotation tick from offscreen document
   if (message.action === 'rotate' && message.source === 'offscreen') {
     rotateToNext();
     return false;
@@ -62,66 +61,71 @@ function onMessage(message, sender, sendResponse) {
   return true;
 }
 
-// ── Offscreen document management ──────────────────────────────────────────
+// ── Timer — offscreen preferred, alarm API as fallback ──────────────────────
 
-async function ensureOffscreenTimer(interval) {
-  try {
-    const contexts = await chrome.runtime.getContexts({
-      contextTypes: ['OFFSCREEN_DOCUMENT']
-    });
-    if (contexts.length === 0) {
-      await chrome.offscreen.createDocument({
-        url: 'offscreen.html',
-        reasons: ['BLOBS'],
-        justification: 'Interval timer for URL rotation'
+async function startTimer(interval) {
+  if (typeof chrome.offscreen !== 'undefined') {
+    try {
+      const contexts = await chrome.runtime.getContexts({
+        contextTypes: ['OFFSCREEN_DOCUMENT']
       });
+      if (contexts.length === 0) {
+        await chrome.offscreen.createDocument({
+          url: 'offscreen.html',
+          reasons: ['BLOBS'],
+          justification: 'Interval timer for URL rotation'
+        });
+      }
+      chrome.runtime.sendMessage({
+        target: 'offscreen',
+        action: 'start-timer',
+        interval
+      }).catch(() => {});
+      return;
+    } catch (e) {
+      console.warn('[wt-rotate] offscreen unavailable, using alarms:', e);
     }
-    chrome.runtime.sendMessage({
-      target: 'offscreen',
-      action: 'start-timer',
-      interval
-    }).catch(() => {});
-  } catch (e) {
-    console.error('[wt-rotate] offscreen error:', e);
   }
+  // Alarm fallback (30s minimum for packed extensions, ~1 min for unpacked)
+  chrome.alarms.clear('wt-rotate');
+  chrome.alarms.create('wt-rotate', {
+    periodInMinutes: Math.max(interval / 60, 0.5)
+  });
 }
 
-async function closeOffscreenTimer() {
+async function stopTimer() {
+  chrome.alarms.clear('wt-rotate');
+  if (typeof chrome.offscreen === 'undefined') return;
   try {
     const contexts = await chrome.runtime.getContexts({
       contextTypes: ['OFFSCREEN_DOCUMENT']
     });
     if (contexts.length > 0) {
-      chrome.runtime.sendMessage({
-        target: 'offscreen',
-        action: 'stop-timer'
-      }).catch(() => {});
+      chrome.runtime.sendMessage({ target: 'offscreen', action: 'stop-timer' }).catch(() => {});
       await chrome.offscreen.closeDocument();
     }
   } catch (e) {}
 }
 
-// ── Rotation logic ──────────────────────────────────────────────────────────
+// ── Rotation — switches active tab, does NOT navigate ──────────────────────
 
 async function rotateToNext() {
   const data = await chrome.storage.local.get('config');
   const config = data.config || DEFAULT_CONFIG;
-  if (!config.active) return;
+  if (!config.active || !config.tabIds?.length) return;
 
-  const activeUrls = config.urls.filter(u => u?.trim());
-  if (activeUrls.length === 0) return;
-
-  const nextIndex = (config.currentIndex + 1) % activeUrls.length;
+  const nextIndex = (config.currentIndex + 1) % config.tabIds.length;
 
   try {
-    await chrome.tabs.update(config.tabId, { url: activeUrls[nextIndex] });
+    await chrome.tabs.update(config.tabIds[nextIndex], { active: true });
     config.currentIndex = nextIndex;
     await chrome.storage.local.set({ config });
   } catch {
+    // A rotation tab was closed externally
     config.active = false;
-    config.tabId = null;
+    config.tabIds = [];
     config.windowId = null;
-    await closeOffscreenTimer();
+    await stopTimer();
     await chrome.storage.local.set({ config });
   }
 }
@@ -140,21 +144,38 @@ async function handleMessage(message) {
         return { success: false, error: 'Aucune URL configurée' };
       }
 
-      let tabExists = false;
-      if (config.tabId) {
-        try { await chrome.tabs.get(config.tabId); tabExists = true; } catch {}
+      // Check if the rotation window still exists
+      let winExists = false;
+      if (config.windowId) {
+        try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
       }
 
-      if (!tabExists) {
+      if (!winExists) {
+        // Open first URL in a new window
         const win = await chrome.windows.create({
           url: activeUrls[0],
           state: message.fullscreen ? 'fullscreen' : 'maximized'
         });
-        config.tabId = win.tabs[0].id;
+        const tabIds = [win.tabs[0].id];
+
+        // Open remaining URLs as additional tabs in the same window
+        for (let i = 1; i < activeUrls.length; i++) {
+          const tab = await chrome.tabs.create({
+            windowId: win.id,
+            url: activeUrls[i],
+            active: false   // don't steal focus while opening
+          });
+          tabIds.push(tab.id);
+        }
+
+        config.tabIds = tabIds;
         config.windowId = win.id;
       } else {
-        await chrome.tabs.update(config.tabId, { url: activeUrls[0], active: true });
-        if (message.fullscreen && config.windowId) {
+        // Window already open — reuse existing tabs
+        if (config.tabIds?.length > 0) {
+          try { await chrome.tabs.update(config.tabIds[0], { active: true }); } catch {}
+        }
+        if (message.fullscreen) {
           await chrome.windows.update(config.windowId, { state: 'fullscreen' });
         }
       }
@@ -162,14 +183,14 @@ async function handleMessage(message) {
       config.currentIndex = 0;
       config.active = true;
       await chrome.storage.local.set({ config });
-      await ensureOffscreenTimer(config.interval);
+      await startTimer(config.interval);
       return { success: true };
     }
 
     case 'stop': {
       config.active = false;
       await chrome.storage.local.set({ config });
-      await closeOffscreenTimer();
+      await stopTimer();
       return { success: true };
     }
 
@@ -187,7 +208,7 @@ async function handleMessage(message) {
       config = { ...config, ...message.config };
       await chrome.storage.local.set({ config });
       if (config.active && message.config.interval && message.config.interval !== prevInterval) {
-        await ensureOffscreenTimer(config.interval);
+        await startTimer(config.interval);
       }
       return { success: true };
     }

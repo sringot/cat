@@ -1,4 +1,43 @@
 /* ============================
+   INTRO — 3D scroll animation
+   ============================ */
+(function () {
+  const container  = document.getElementById('introContainer');
+  const cardWrap   = document.getElementById('introCardWrap');
+  const header     = document.getElementById('introHeader');
+  if (!container || !cardWrap) return;
+
+  const isMobile = () => window.innerWidth <= 768;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function onScroll() {
+    const rect            = container.getBoundingClientRect();
+    const containerH      = container.offsetHeight;
+    const viewportH       = window.innerHeight;
+    const scrollable      = containerH - viewportH;
+    const rawProgress     = clamp(-rect.top / scrollable, 0, 1);
+
+    const scaleStart  = isMobile() ? 0.75 : 1.08;
+    const scaleEnd    = 1;
+    const rotateStart = isMobile() ? 15  : 20;
+    const rotateEnd   = 0;
+
+    const rotate  = lerp(rotateStart, rotateEnd, rawProgress);
+    const scale   = lerp(scaleStart,  scaleEnd,  rawProgress);
+    const transY  = lerp(0, -80, rawProgress);
+
+    cardWrap.style.transform = `rotateX(${rotate}deg) scale(${scale})`;
+    header.style.transform   = `translateY(${transY * 0.35}px)`;
+    header.style.opacity     = clamp(lerp(1, 0.4, rawProgress * 1.8), 0.4, 1);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* ============================
    NAV — scroll behaviour
    ============================ */
 const nav    = document.getElementById('nav');

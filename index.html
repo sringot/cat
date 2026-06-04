@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAISON — Architecture d'Intérieur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav class="nav" id="nav">
+    <div class="nav__logo">MAISON</div>
+    <ul class="nav__links">
+      <li><a href="#about">Studio</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#projects">Projets</a></li>
+      <li><a href="#process">Processus</a></li>
+      <li><a href="#contact" class="nav__cta">Contact</a></li>
+    </ul>
+    <button class="nav__burger" id="burger" aria-label="Menu">
+      <span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu">
+    <ul>
+      <li><a href="#about" class="mobile-link">Studio</a></li>
+      <li><a href="#services" class="mobile-link">Services</a></li>
+      <li><a href="#projects" class="mobile-link">Projets</a></li>
+      <li><a href="#process" class="mobile-link">Processus</a></li>
+      <li><a href="#contact" class="mobile-link">Contact</a></li>
+    </ul>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero__bg">
+      <div class="hero__overlay"></div>
+      <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1800&q=80" alt="Interior" class="hero__img" />
+    </div>
+    <div class="hero__content">
+      <p class="hero__eyebrow">Architecture d'Intérieur · Paris</p>
+      <h1 class="hero__title">
+        L'espace comme<br />
+        <em>œuvre vivante</em>
+      </h1>
+      <p class="hero__sub">Nous concevons des intérieurs qui racontent une histoire — la vôtre.</p>
+      <div class="hero__actions">
+        <a href="#projects" class="btn btn--light">Voir les projets</a>
+        <a href="#contact" class="btn btn--ghost">Prendre contact</a>
+      </div>
+    </div>
+    <div class="hero__scroll">
+      <span>Scroll</span>
+      <div class="hero__scroll-line"></div>
+    </div>
+    <div class="hero__stats">
+      <div class="stat">
+        <span class="stat__num">140+</span>
+        <span class="stat__label">Projets livrés</span>
+      </div>
+      <div class="stat__divider"></div>
+      <div class="stat">
+        <span class="stat__num">12</span>
+        <span class="stat__label">Années d'expertise</span>
+      </div>
+      <div class="stat__divider"></div>
+      <div class="stat">
+        <span class="stat__num">8</span>
+        <span class="stat__label">Prix internationaux</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about section" id="about">
+    <div class="container">
+      <div class="about__grid">
+        <div class="about__images">
+          <div class="about__img-main">
+            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=900&q=80" alt="Studio" />
+          </div>
+          <div class="about__img-accent">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=600&q=80" alt="Detail" />
+            <div class="about__tag">Fondé en 2012</div>
+          </div>
+        </div>
+        <div class="about__text">
+          <p class="section__eyebrow">Notre studio</p>
+          <h2 class="section__title">Créer des espaces qui<br /><em>transcendent</em> l'ordinaire</h2>
+          <p class="about__body">
+            MAISON est un studio d'architecture d'intérieur parisien fondé sur une conviction simple : chaque espace a le potentiel de devenir exceptionnel. Nous travaillons à la confluence du design contemporain et de l'artisanat intemporel.
+          </p>
+          <p class="about__body">
+            Notre approche est profondément humaine — nous écoutons, observons, puis traduisons vos aspirations en une architecture sensible, fonctionnelle et singulière.
+          </p>
+          <a href="#process" class="link-arrow">Notre processus <span>→</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="services section" id="services">
+    <div class="container">
+      <div class="services__header">
+        <p class="section__eyebrow">Ce que nous faisons</p>
+        <h2 class="section__title">Une expertise<br /><em>complète</em></h2>
+      </div>
+      <div class="services__grid">
+
+        <div class="service-card">
+          <div class="service-card__num">01</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="24" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 14h32" stroke="currentColor" stroke-width="1.5"/><path d="M14 14v18" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <h3 class="service-card__title">Architecture Résidentielle</h3>
+          <p class="service-card__desc">Appartements, maisons, villas — nous réinventons l'habitat privé avec une attention absolue au détail et à la qualité de vie.</p>
+          <a href="#contact" class="service-card__link">En savoir plus →</a>
+        </div>
+
+        <div class="service-card service-card--accent">
+          <div class="service-card__num">02</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 40 40" fill="none"><path d="M8 32V16l12-8 12 8v16H8z" stroke="currentColor" stroke-width="1.5"/><rect x="15" y="22" width="10" height="10" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <h3 class="service-card__title">Design Commercial</h3>
+          <p class="service-card__desc">Hôtels, restaurants, boutiques — des espaces qui convertissent l'expérience client en avantage compétitif durable.</p>
+          <a href="#contact" class="service-card__link">En savoir plus →</a>
+        </div>
+
+        <div class="service-card">
+          <div class="service-card__num">03</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.5"/><path d="M20 6v28M6 20h28" stroke="currentColor" stroke-width="1.5"/><path d="M10.2 10.2l19.6 19.6M29.8 10.2L10.2 29.8" stroke="currentColor" stroke-width="1"/></svg>
+          </div>
+          <h3 class="service-card__title">Direction Artistique</h3>
+          <p class="service-card__desc">Mobilier sur mesure, sélection de matériaux, curation artistique — nous orchestrons chaque élément pour une cohérence totale.</p>
+          <a href="#contact" class="service-card__link">En savoir plus →</a>
+        </div>
+
+        <div class="service-card">
+          <div class="service-card__num">04</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 40 40" fill="none"><path d="M8 8h24v24H8z" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l14 14M27 13L13 27" stroke="currentColor" stroke-width="1"/><rect x="16" y="16" width="8" height="8" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <h3 class="service-card__title">Rénovation & Réhabilitation</h3>
+          <p class="service-card__desc">Redonner vie à l'existant en respectant l'âme des lieux tout en les projetant dans une modernité élégante.</p>
+          <a href="#contact" class="service-card__link">En savoir plus →</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section class="projects section" id="projects">
+    <div class="container">
+      <div class="projects__header">
+        <div>
+          <p class="section__eyebrow">Portfolio sélectif</p>
+          <h2 class="section__title">Projets<br /><em>récents</em></h2>
+        </div>
+        <a href="#contact" class="btn btn--outline">Voir tout</a>
+      </div>
+    </div>
+
+    <div class="projects__grid">
+
+      <div class="project-card project-card--large">
+        <div class="project-card__img-wrap">
+          <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80" alt="Appartement Haussmannien" />
+        </div>
+        <div class="project-card__info">
+          <span class="project-card__cat">Résidentiel · Paris 7e</span>
+          <h3 class="project-card__title">Appartement Haussmannien</h3>
+          <p class="project-card__year">2024</p>
+        </div>
+        <a href="#" class="project-card__overlay">
+          <span>Voir le projet</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-card__img-wrap">
+          <img src="https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&q=80" alt="Villa Méditerranéenne" />
+        </div>
+        <div class="project-card__info">
+          <span class="project-card__cat">Résidentiel · Côte d'Azur</span>
+          <h3 class="project-card__title">Villa Méditerranéenne</h3>
+          <p class="project-card__year">2024</p>
+        </div>
+        <a href="#" class="project-card__overlay">
+          <span>Voir le projet</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-card__img-wrap">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80" alt="Boutique Hotel" />
+        </div>
+        <div class="project-card__info">
+          <span class="project-card__cat">Hôtellerie · Lyon</span>
+          <h3 class="project-card__title">Boutique Hôtel Confluence</h3>
+          <p class="project-card__year">2023</p>
+        </div>
+        <a href="#" class="project-card__overlay">
+          <span>Voir le projet</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </a>
+      </div>
+
+      <div class="project-card project-card--wide">
+        <div class="project-card__img-wrap">
+          <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1400&q=80" alt="Penthouse" />
+        </div>
+        <div class="project-card__info">
+          <span class="project-card__cat">Résidentiel · Paris 16e</span>
+          <h3 class="project-card__title">Penthouse Arc de Triomphe</h3>
+          <p class="project-card__year">2023</p>
+        </div>
+        <a href="#" class="project-card__overlay">
+          <span>Voir le projet</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="process section" id="process">
+    <div class="container">
+      <div class="process__header">
+        <p class="section__eyebrow">Notre méthode</p>
+        <h2 class="section__title">Un processus<br /><em>rigoureux</em></h2>
+      </div>
+      <div class="process__steps">
+
+        <div class="process-step">
+          <div class="process-step__num">01</div>
+          <div class="process-step__content">
+            <h3>Écoute & Immersion</h3>
+            <p>Nous commençons par vous comprendre — votre mode de vie, vos aspirations, vos contraintes. Cette phase fondatrice conditionne toute la suite.</p>
+          </div>
+        </div>
+
+        <div class="process-step">
+          <div class="process-step__num">02</div>
+          <div class="process-step__content">
+            <h3>Concept & Vision</h3>
+            <p>Nos designers traduisent vos besoins en une vision cohérente : planches d'ambiance, plans conceptuels, palette de matériaux.</p>
+          </div>
+        </div>
+
+        <div class="process-step">
+          <div class="process-step__num">03</div>
+          <div class="process-step__content">
+            <h3>Design & Développement</h3>
+            <p>Chaque détail est pensé, chaque espace optimisé. Plans techniques, rendu 3D photoréaliste, spécifications complètes.</p>
+          </div>
+        </div>
+
+        <div class="process-step">
+          <div class="process-step__num">04</div>
+          <div class="process-step__content">
+            <h3>Réalisation & Suivi</h3>
+            <p>Nous coordonnons l'ensemble des intervenants et supervisons chaque étape du chantier jusqu'à la livraison finale.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials section" id="testimonials">
+    <div class="container">
+      <p class="section__eyebrow" style="text-align:center">Ce qu'ils disent</p>
+      <h2 class="section__title" style="text-align:center">La confiance de<br /><em>nos clients</em></h2>
+      <div class="testimonials__grid">
+
+        <div class="testimonial">
+          <div class="testimonial__quote">"</div>
+          <p class="testimonial__text">MAISON a transformé notre appartement en un lieu qui nous ressemble vraiment. Leur capacité à capturer notre essence tout en apportant leur propre sensibilité est remarquable.</p>
+          <div class="testimonial__author">
+            <div class="testimonial__avatar">SL</div>
+            <div>
+              <strong>Sophie & Laurent M.</strong>
+              <span>Appartement, Paris 8e</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial testimonial--accent">
+          <div class="testimonial__quote">"</div>
+          <p class="testimonial__text">Le résultat dépasse toutes nos espérances. L'équipe a su allier esthétique contemporaine et fonctionnalité pour créer un hôtel qui se distingue vraiment.</p>
+          <div class="testimonial__author">
+            <div class="testimonial__avatar">AR</div>
+            <div>
+              <strong>Antoine Renaud</strong>
+              <span>Boutique Hôtel, Lyon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial">
+          <div class="testimonial__quote">"</div>
+          <p class="testimonial__text">Un suivi impeccable du début à la fin. MAISON est le partenaire idéal pour quiconque aspire à un intérieur d'exception, sans compromis sur la qualité.</p>
+          <div class="testimonial__author">
+            <div class="testimonial__avatar">CM</div>
+            <div>
+              <strong>Céline Martin</strong>
+              <span>Villa, Côte d'Azur</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <div class="cta-banner__bg">
+      <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1800&q=80" alt="Interior" />
+      <div class="cta-banner__overlay"></div>
+    </div>
+    <div class="cta-banner__content">
+      <p class="section__eyebrow" style="color: var(--accent)">Commençons ensemble</p>
+      <h2>Votre projet mérite<br /><em>une attention unique</em></h2>
+      <a href="#contact" class="btn btn--light btn--lg">Démarrer votre projet</a>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact section" id="contact">
+    <div class="container">
+      <div class="contact__grid">
+        <div class="contact__info">
+          <p class="section__eyebrow">Nous écrire</p>
+          <h2 class="section__title">Parlons de<br /><em>votre projet</em></h2>
+          <p class="contact__body">Chaque grande réalisation commence par une conversation. Dites-nous où vous en êtes — nous vous répondons sous 24h.</p>
+          <div class="contact__details">
+            <div class="contact__detail">
+              <span class="contact__detail-label">Email</span>
+              <a href="mailto:bonjour@maison-studio.fr">bonjour@maison-studio.fr</a>
+            </div>
+            <div class="contact__detail">
+              <span class="contact__detail-label">Téléphone</span>
+              <a href="tel:+33140001234">+33 1 40 00 12 34</a>
+            </div>
+            <div class="contact__detail">
+              <span class="contact__detail-label">Studio</span>
+              <span>24 rue du Faubourg Saint-Antoine<br />75012 Paris</span>
+            </div>
+          </div>
+        </div>
+        <form class="contact__form" id="contactForm">
+          <div class="form__row">
+            <div class="form__group">
+              <label for="name">Nom complet</label>
+              <input type="text" id="name" placeholder="Jean Dupont" />
+            </div>
+            <div class="form__group">
+              <label for="email">Email</label>
+              <input type="email" id="email" placeholder="jean@exemple.fr" />
+            </div>
+          </div>
+          <div class="form__group">
+            <label for="project">Type de projet</label>
+            <select id="project">
+              <option value="" disabled selected>Sélectionner…</option>
+              <option>Résidentiel — Appartement</option>
+              <option>Résidentiel — Maison / Villa</option>
+              <option>Commercial — Hôtel / Restaurant</option>
+              <option>Commercial — Boutique / Bureau</option>
+              <option>Autre</option>
+            </select>
+          </div>
+          <div class="form__group">
+            <label for="message">Votre message</label>
+            <textarea id="message" rows="5" placeholder="Décrivez votre projet, vos envies, votre budget indicatif…"></textarea>
+          </div>
+          <button type="submit" class="btn btn--dark btn--full">Envoyer le message</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <div class="footer__logo">MAISON</div>
+          <p>Architecture d'intérieur · Paris<br />Concevoir l'exceptionnel, livrer le sublime.</p>
+        </div>
+        <div class="footer__nav">
+          <div class="footer__col">
+            <h4>Studio</h4>
+            <ul>
+              <li><a href="#about">Notre histoire</a></li>
+              <li><a href="#process">Notre méthode</a></li>
+              <li><a href="#projects">Portfolio</a></li>
+            </ul>
+          </div>
+          <div class="footer__col">
+            <h4>Services</h4>
+            <ul>
+              <li><a href="#services">Architecture résidentielle</a></li>
+              <li><a href="#services">Design commercial</a></li>
+              <li><a href="#services">Direction artistique</a></li>
+            </ul>
+          </div>
+          <div class="footer__col">
+            <h4>Contact</h4>
+            <ul>
+              <li><a href="mailto:bonjour@maison-studio.fr">Email</a></li>
+              <li><a href="tel:+33140001234">Téléphone</a></li>
+              <li><a href="#contact">Formulaire</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© 2026 MAISON Studio. Tous droits réservés.</p>
+        <div class="footer__socials">
+          <a href="#" aria-label="Instagram">Instagram</a>
+          <a href="#" aria-label="Pinterest">Pinterest</a>
+          <a href="#" aria-label="LinkedIn">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

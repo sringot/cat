@@ -222,6 +222,50 @@
 
     /* ── Drag-over visual ── */
     .url-row.drag-over { border-color: #e94560; background: #fff5f5; }
+
+    /* ── Debug panel ── */
+    #debug-section { margin: 10px 10px 12px; }
+    #debug-toggle {
+      width: 100%;
+      background: none;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #8a9bb0;
+      cursor: pointer;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    #debug-toggle:hover { border-color: #0f3460; color: #0f3460; }
+    #debug-box {
+      display: none;
+      margin-top: 6px;
+      background: #1a1a2e;
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    #debug-box.open { display: block; }
+    #debug-log {
+      font-family: 'Consolas', 'Fira Mono', monospace;
+      font-size: 10px;
+      color: #a8d8a8;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    #debug-clear {
+      margin-top: 4px;
+      font-size: 10px;
+      background: none;
+      border: none;
+      color: #e94560;
+      cursor: pointer;
+      padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -257,6 +301,14 @@
     <button id="btn-stop"  class="btn btn-danger hidden">■ Arrêter</button>
     <button id="btn-fs"    class="btn btn-secondary" title="Ouvrir en plein écran (kiosk)">⛶ Kiosk</button>
     <button id="btn-next"  class="btn btn-secondary btn-icon-only hidden" title="URL suivante">⏭</button>
+  </div>
+
+  <div id="debug-section">
+    <button id="debug-toggle">⚙ Debug logs</button>
+    <div id="debug-box">
+      <div id="debug-log">(aucun log)</div>
+      <button id="debug-clear">Effacer</button>
+    </div>
   </div>
 
   <script src="popup.js"></script>

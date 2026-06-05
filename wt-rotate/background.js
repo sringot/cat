@@ -1,125 +1,121 @@
-// Background — gère uniquement le timer et la navigation entre URLs.
-// 1 seul onglet qui charge chaque URL à tour de rôle.
-
 const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
 };
 
+const MAX_LOGS = 60;
+
+// ── Listeners (tous synchrones au top-level) ──────────────────────────────
+
 chrome.runtime.onInstalled.addListener(async () => {
   const data = await chrome.storage.local.get('config');
   if (!data.config) await chrome.storage.local.set({ config: DEFAULT_CONFIG });
-  chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
+  await log('onInstalled — extension initialisée');
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
+  await log('onStartup');
   const data = await chrome.storage.local.get('config');
-  if (data.config?.active) await startTimer(data.config.interval);
-});
-
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === 'wt-watchdog') {
-    const data = await chrome.storage.local.get('config');
-    if (data.config?.active) await startTimer(data.config.interval);
-  } else if (alarm.name === 'wt-rotate') {
-    await rotateToNext();
+  if (data.config?.active) {
+    await log('onStartup — rotation active, relance alarme');
+    setAlarm(data.config.interval);
   }
 });
 
-// Si l'onglet de rotation est fermé → on arrête
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  await log('alarm fired: ' + alarm.name);
+  if (alarm.name === 'wt-rotate') await rotateToNext();
+});
+
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const data = await chrome.storage.local.get('config');
   const config = data.config;
   if (config?.tabId === tabId) {
+    await log('onglet de rotation fermé — arrêt');
     config.active = false;
     config.tabId = null;
     config.windowId = null;
-    await stopTimer();
+    chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'rotate' && message.source === 'offscreen') {
-    rotateToNext();
+chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  if (msg.action === 'startTimer') {
+    log('startTimer reçu, interval=' + msg.interval);
+    setAlarm(msg.interval);
+    reply({ success: true });
     return false;
   }
-  if (message.action === 'startTimer') {
-    startTimer(message.interval)
-      .then(() => sendResponse({ success: true }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+  if (msg.action === 'stopTimer') {
+    log('stopTimer reçu');
+    chrome.alarms.clear('wt-rotate');
+    reply({ success: true });
+    return false;
+  }
+  if (msg.action === 'getLogs') {
+    chrome.storage.local.get('debugLogs').then(d => {
+      reply({ logs: d.debugLogs || [] });
+    });
     return true;
   }
-  if (message.action === 'stopTimer') {
-    stopTimer()
-      .then(() => sendResponse({ success: true }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
-    return true;
-  }
-  sendResponse({ success: false, error: 'Action inconnue' });
+  reply({ success: false, error: 'action inconnue' });
   return false;
 });
 
-// ── Timer ─────────────────────────────────────────────────────────────────
+// ── Alarme ────────────────────────────────────────────────────────────────
 
-async function startTimer(interval) {
-  if (typeof chrome.offscreen !== 'undefined') {
-    try {
-      const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
-      if (contexts.length === 0) {
-        await chrome.offscreen.createDocument({
-          url: 'offscreen.html',
-          reasons: ['BLOBS'],
-          justification: 'Interval timer for URL rotation'
-        });
-        await new Promise(r => setTimeout(r, 300));
-      }
-      chrome.runtime.sendMessage({ target: 'offscreen', action: 'start-timer', interval }).catch(() => {});
-      return;
-    } catch (e) {
-      console.warn('[wt-rotate] offscreen indisponible, fallback alarms');
-    }
-  }
-  chrome.alarms.clear('wt-rotate');
-  chrome.alarms.create('wt-rotate', { periodInMinutes: Math.max(interval / 60, 0.5) });
+function setAlarm(interval) {
+  const mins = Math.max(interval / 60, 0.1667); // min ~10s
+  chrome.alarms.clear('wt-rotate', () => {
+    chrome.alarms.create('wt-rotate', { delayInMinutes: mins, periodInMinutes: mins });
+    log('alarme créée: délai=' + mins.toFixed(2) + 'min');
+  });
 }
 
-async function stopTimer() {
-  chrome.alarms.clear('wt-rotate');
-  if (typeof chrome.offscreen === 'undefined') return;
-  try {
-    const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
-    if (contexts.length > 0) {
-      chrome.runtime.sendMessage({ target: 'offscreen', action: 'stop-timer' }).catch(() => {});
-      await chrome.offscreen.closeDocument();
-    }
-  } catch {}
-}
-
-// ── Rotation — 1 onglet, navigation par URL ───────────────────────────────
+// ── Rotation ──────────────────────────────────────────────────────────────
 
 async function rotateToNext() {
   const data = await chrome.storage.local.get('config');
   const config = data.config || DEFAULT_CONFIG;
 
-  if (!config.active || !config.tabId) return;
+  if (!config.active) { await log('rotateToNext — inactif, abandon'); return; }
+  if (!config.tabId)  { await log('rotateToNext — tabId null, abandon'); return; }
 
   const activeUrls = config.urls.filter(u => u?.trim());
-  if (activeUrls.length < 2) return;
+  if (activeUrls.length < 2) {
+    await log('rotateToNext — moins de 2 URLs (' + activeUrls.length + '), abandon');
+    return;
+  }
 
   const next = (config.currentIndex + 1) % activeUrls.length;
+  const url  = activeUrls[next];
+  await log(`rotateToNext — ${config.currentIndex} → ${next} : ${url}`);
 
   try {
-    // Naviguer vers la prochaine URL dans le même onglet (reload automatique)
-    await chrome.tabs.update(config.tabId, { url: activeUrls[next] });
+    await chrome.tabs.update(config.tabId, { url });
     config.currentIndex = next;
     await chrome.storage.local.set({ config });
-  } catch {
-    // L'onglet a été fermé
+    await log('rotation OK');
+  } catch (err) {
+    await log('chrome.tabs.update ERREUR: ' + err.message);
     config.active = false;
     config.tabId = null;
     config.windowId = null;
-    await stopTimer();
+    chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });
   }
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────
+
+async function log(msg) {
+  try {
+    const now = new Date().toLocaleTimeString('fr-FR');
+    const entry = `[${now}] ${msg}`;
+    const data = await chrome.storage.local.get('debugLogs');
+    const logs = data.debugLogs || [];
+    logs.push(entry);
+    if (logs.length > MAX_LOGS) logs.splice(0, logs.length - MAX_LOGS);
+    await chrome.storage.local.set({ debugLogs: logs });
+  } catch {}
 }

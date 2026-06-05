@@ -234,3 +234,31 @@ function flushInputs() {
 function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+// ── Debug panel ───────────────────────────────────────────────────────────
+
+const debugToggle = $('debug-toggle');
+const debugBox    = $('debug-box');
+const debugLog    = $('debug-log');
+const debugClear  = $('debug-clear');
+
+debugToggle.addEventListener('click', async () => {
+  const open = debugBox.classList.toggle('open');
+  if (open) await refreshDebugLogs();
+});
+
+debugClear.addEventListener('click', async () => {
+  await chrome.storage.local.set({ debugLogs: [] });
+  debugLog.textContent = '(logs effacés)';
+});
+
+async function refreshDebugLogs() {
+  try {
+    const data = await chrome.storage.local.get('debugLogs');
+    const logs = data.debugLogs || [];
+    debugLog.textContent = logs.length ? logs.join('\n') : '(aucun log)';
+    debugBox.scrollTop = debugBox.scrollHeight;
+  } catch {
+    debugLog.textContent = '(erreur lecture logs)';
+  }
+}

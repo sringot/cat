@@ -65,17 +65,9 @@
     .badge-stopped { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
 
     /* ── Progress bar ── */
-    #progress-wrap {
-      height: 3px;
-      background: var(--border);
-      overflow: hidden;
-    }
+    #progress-wrap { height: 3px; background: var(--border); overflow: hidden; }
     #progress-wrap.hidden { display: none; }
-    #progress-bar {
-      height: 100%;
-      background: var(--blue);
-      width: 100%;
-    }
+    #progress-bar  { height: 100%; background: var(--blue); width: 100%; }
 
     /* ── Tabs ── */
     .tabs {
@@ -86,13 +78,10 @@
     }
     .tab-btn {
       padding: 9px 14px;
-      background: none;
-      border: none;
+      background: none; border: none;
       border-bottom: 2px solid transparent;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
+      font-size: 12px; font-weight: 600;
+      color: var(--muted); cursor: pointer;
       margin-bottom: -1px;
       transition: color .15s, border-color .15s;
     }
@@ -117,16 +106,13 @@
       padding: 8px 10px;
       transition: border-color .15s;
     }
-    .url-row:focus-within  { border-color: var(--blue); }
-    .url-row.active-url    { border-color: var(--green-bd); background: var(--green-bg); }
-    .url-row.drag-over     { border-color: var(--blue); background: #1a2840; }
+    .url-row:focus-within { border-color: var(--blue); }
+    .url-row.active-url   { border-color: var(--green-bd); background: var(--green-bg); }
+    .url-row.drag-over    { border-color: var(--blue); background: #1a2840; }
 
     .drag-handle {
-      color: #3D4559;
-      cursor: grab;
-      font-size: 14px;
-      user-select: none;
-      align-self: center;
+      color: #3D4559; cursor: grab; font-size: 14px;
+      user-select: none; align-self: center;
     }
     .drag-handle:active { cursor: grabbing; }
 
@@ -134,26 +120,20 @@
 
     .name-input {
       border: none; outline: none; background: transparent;
-      font-size: 12px; font-weight: 600; color: var(--text);
-      width: 100%;
+      font-size: 12px; font-weight: 600; color: var(--text); width: 100%;
     }
     .name-input::placeholder { color: #3D4559; font-weight: 400; }
 
     .url-input {
       border: none; outline: none; background: transparent;
-      font-size: 11px;
-      font-family: 'Consolas', 'Fira Mono', monospace;
-      color: var(--muted);
-      width: 100%;
+      font-size: 11px; font-family: 'Consolas', 'Fira Mono', monospace;
+      color: var(--muted); width: 100%;
     }
     .url-input::placeholder { color: #3D4559; }
 
     .url-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 4px; flex-shrink: 0;
     }
 
     .btn-del {
@@ -164,22 +144,12 @@
     }
     .btn-del:hover { color: var(--red); }
 
-    .url-interval-wrap {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-    }
+    .url-interval-wrap { display: flex; align-items: center; gap: 2px; }
     .url-interval {
-      width: 38px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 10px;
-      text-align: center;
-      color: var(--muted);
-      outline: none;
-      background: var(--surface);
-      transition: border-color .15s;
+      width: 38px; border: 1px solid var(--border); border-radius: 4px;
+      padding: 2px 4px; font-size: 10px; text-align: center;
+      color: var(--muted); outline: none;
+      background: var(--surface); transition: border-color .15s;
     }
     .url-interval:focus { border-color: var(--blue); }
     .url-interval.custom { border-color: var(--blue); color: var(--blue); font-weight: 600; }
@@ -187,25 +157,15 @@
 
     /* ── Add button ── */
     .btn-add {
-      width: 100%;
-      padding: 8px;
-      background: none;
-      border: 1.5px dashed var(--border);
-      border-radius: var(--r);
-      cursor: pointer;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
+      width: 100%; padding: 8px;
+      background: none; border: 1.5px dashed var(--border);
+      border-radius: var(--r); cursor: pointer;
+      color: var(--muted); font-size: 12px; font-weight: 600;
       transition: all .15s;
     }
     .btn-add:hover { border-color: var(--blue); color: var(--blue); background: #1a2840; }
 
-    .empty-hint {
-      text-align: center;
-      color: #3D4559;
-      font-size: 12px;
-      padding: 18px 0;
-    }
+    .empty-hint { text-align: center; color: #3D4559; font-size: 12px; padding: 18px 0; }
 
     /* ── Action buttons ── */
     .actions { display: flex; gap: 8px; margin-top: 12px; }
@@ -217,16 +177,16 @@
       cursor: pointer; font-size: 12px; font-weight: 700;
       transition: all .15s; white-space: nowrap;
     }
-    .btn-primary  { background: var(--blue);  color: #fff; flex: 1; }
-    .btn-primary:hover  { background: var(--blue-dark); }
-    .btn-danger   { background: var(--red);   color: #fff; flex: 1; }
-    .btn-danger:hover   { background: var(--red-dark); }
-    .btn-ghost    { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover    { background: var(--surface); border-color: #4B5563; }
+    .btn-primary { background: var(--blue);  color: #fff; flex: 1; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-danger  { background: var(--red);   color: #fff; flex: 1; }
+    .btn-danger:hover  { background: var(--red-dark); }
+    .btn-ghost   { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover   { background: var(--surface); border-color: #4B5563; }
 
     .hidden { display: none !important; }
 
-    /* ── Settings tab ── */
+    /* ── Setting cards ── */
     .setting-card {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -240,20 +200,14 @@
       color: var(--muted); margin-bottom: 10px;
     }
     .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
     }
     .setting-label { font-size: 12px; font-weight: 500; }
     .setting-desc  { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-    .interval-controls {
-      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-    }
-    input[type="range"] {
-      width: 90px; accent-color: var(--blue); cursor: pointer;
-    }
+    .interval-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    input[type="range"] { width: 90px; accent-color: var(--blue); cursor: pointer; }
     .interval-num {
       width: 52px; padding: 4px 6px;
       border: 1px solid var(--border); border-radius: 5px;
@@ -263,6 +217,63 @@
     }
     .interval-num:focus { border-color: var(--blue); }
     .interval-unit { font-size: 11px; color: var(--muted); }
+
+    /* ── Toggle switch ── */
+    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: var(--border); border-radius: 20px;
+      transition: background .2s;
+    }
+    .toggle-thumb {
+      position: absolute;
+      width: 14px; height: 14px;
+      top: 3px; left: 3px;
+      background: #fff; border-radius: 50%;
+      transition: transform .2s;
+      pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-track { background: var(--blue); }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+    /* ── Schedule details ── */
+    .schedule-details { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    .time-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--muted);
+    }
+    input[type="time"] {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 5px; padding: 4px 8px;
+      font-size: 12px; color: var(--text); outline: none; cursor: pointer;
+      transition: border-color .15s;
+    }
+    input[type="time"]:focus { border-color: var(--blue); }
+
+    .days-row { display: flex; gap: 4px; }
+    .day-btn {
+      width: 30px; height: 28px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--surface); color: var(--muted);
+      font-size: 10px; font-weight: 700; cursor: pointer;
+      transition: all .15s;
+    }
+    .day-btn.on  { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .day-btn:hover:not(.on) { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Config actions ── */
+    .config-btns { display: flex; gap: 8px; }
+    .btn-cfg {
+      flex: 1; padding: 7px 8px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--surface); color: var(--text);
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-cfg:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-cfg-danger:hover { border-color: var(--red); color: var(--red); }
 
     /* ── Debug ── */
     #debug-toggle {
@@ -274,7 +285,6 @@
       transition: all .15s;
     }
     #debug-toggle:hover { border-color: var(--blue); color: var(--blue); }
-
     #debug-box {
       display: none; margin-top: 6px;
       background: #0D1117; border-radius: 6px;
@@ -293,7 +303,6 @@
 </head>
 <body>
 
-  <!-- Header -->
   <div class="header">
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -305,18 +314,16 @@
     <span id="badge" class="badge badge-stopped">Arrêté</span>
   </div>
 
-  <!-- Progress bar -->
   <div id="progress-wrap" class="hidden">
     <div id="progress-bar"></div>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="rotation">Rotation</button>
     <button class="tab-btn" data-tab="settings">Paramètres</button>
   </div>
 
-  <!-- Tab: Rotation -->
+  <!-- Tab Rotation -->
   <div id="tab-rotation" class="tab-pane active">
     <div id="url-list"></div>
     <button id="btn-add" class="btn-add">+ Ajouter une URL</button>
@@ -327,9 +334,10 @@
     </div>
   </div>
 
-  <!-- Tab: Paramètres -->
+  <!-- Tab Paramètres -->
   <div id="tab-settings" class="tab-pane">
 
+    <!-- Intervalle -->
     <div class="setting-card">
       <div class="setting-card-title">Intervalle de rotation</div>
       <div class="setting-row">
@@ -345,6 +353,51 @@
       </div>
     </div>
 
+    <!-- Plages horaires -->
+    <div class="setting-card">
+      <div class="setting-card-title">Plages horaires</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Activation automatique</div>
+          <div class="setting-desc">Démarre et arrête la rotation selon l'horaire</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="schedule-enabled">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+      <div id="schedule-details" class="schedule-details hidden">
+        <div class="time-row">
+          <span>De</span>
+          <input type="time" id="schedule-start" value="08:00">
+          <span>à</span>
+          <input type="time" id="schedule-end" value="18:00">
+        </div>
+        <div class="days-row">
+          <button class="day-btn" data-day="1">Lu</button>
+          <button class="day-btn" data-day="2">Ma</button>
+          <button class="day-btn" data-day="3">Me</button>
+          <button class="day-btn" data-day="4">Je</button>
+          <button class="day-btn" data-day="5">Ve</button>
+          <button class="day-btn" data-day="6">Sa</button>
+          <button class="day-btn" data-day="0">Di</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import / Export -->
+    <div class="setting-card">
+      <div class="setting-card-title">Configuration</div>
+      <div class="config-btns">
+        <button id="btn-export" class="btn-cfg">⬇ Exporter</button>
+        <button id="btn-import" class="btn-cfg">⬆ Importer</button>
+        <button id="btn-reset"  class="btn-cfg btn-cfg-danger">↺ Réinitialiser</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" class="hidden">
+    </div>
+
+    <!-- Debug -->
     <div class="setting-card">
       <div class="setting-card-title">Debug</div>
       <button id="debug-toggle">⚙ Logs background</button>

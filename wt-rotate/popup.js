@@ -1,32 +1,39 @@
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
+  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null,
+  scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
+  scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false
 };
 
-let config       = null;
+let config        = null;
 let progressTimer = null;
 let dragSrcIndex  = null;
 
 const $ = id => document.getElementById(id);
 
-const badge        = $('badge');
-const progressWrap = $('progress-wrap');
-const progressBar  = $('progress-bar');
-const urlList      = $('url-list');
-const btnAdd       = $('btn-add');
-const slider       = $('slider');
-const intervalN    = $('interval');
-const btnStart     = $('btn-start');
-const btnStop      = $('btn-stop');
-const btnNext      = $('btn-next');
-const debugToggle  = $('debug-toggle');
-const debugBox     = $('debug-box');
-const debugLog     = $('debug-log');
-const debugClear   = $('debug-clear');
+const badge          = $('badge');
+const progressWrap   = $('progress-wrap');
+const progressBar    = $('progress-bar');
+const urlList        = $('url-list');
+const btnAdd         = $('btn-add');
+const slider         = $('slider');
+const intervalN      = $('interval');
+const btnStart       = $('btn-start');
+const btnStop        = $('btn-stop');
+const btnNext        = $('btn-next');
+const scheduleEnabledCb = $('schedule-enabled');
+const scheduleDetails   = $('schedule-details');
+const scheduleStart     = $('schedule-start');
+const scheduleEnd       = $('schedule-end');
+const debugToggle    = $('debug-toggle');
+const debugBox       = $('debug-box');
+const debugLog       = $('debug-log');
+const debugClear     = $('debug-clear');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
+  initDayButtons();
   await refresh();
 });
 
@@ -37,6 +44,20 @@ function initTabs() {
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       $('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function initDayButtons() {
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const day  = parseInt(btn.dataset.day);
+      const days = config.scheduleDays || [1, 2, 3, 4, 5];
+      const idx  = days.indexOf(day);
+      if (idx >= 0) days.splice(idx, 1); else days.push(day);
+      config.scheduleDays = days;
+      btn.classList.toggle('on', days.includes(day));
+      saveConfig();
     });
   });
 }
@@ -68,6 +89,7 @@ function renderAll() {
   renderUrls();
   slider.value    = Math.min(config.interval, 300);
   intervalN.value = config.interval;
+  renderSchedule();
   updateStatusUI();
 }
 
@@ -79,18 +101,16 @@ function renderUrls() {
     urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
     return;
   }
-
   config.urls.forEach((entry, i) => {
     const isActive = config.active && i === config.currentIndex;
     const row = document.createElement('div');
     row.className = 'url-row' + (isActive ? ' active-url' : '');
     row.draggable = true;
-
     row.innerHTML = `
       <span class="drag-handle">⠿</span>
       <div class="url-fields">
         <input class="name-input" type="text" value="${esc(entry.name || '')}"
-               placeholder="Nom affiché (ex: Dashboard RMM)" autocomplete="off">
+               placeholder="Nom affiché" autocomplete="off">
         <input class="url-input" type="text" value="${esc(entry.url || '')}"
                placeholder="https://..." spellcheck="false" autocomplete="off">
       </div>
@@ -99,12 +119,11 @@ function renderUrls() {
         <div class="url-interval-wrap">
           <input class="url-interval${entry.interval ? ' custom' : ''}" type="number"
                  value="${entry.interval || ''}" placeholder="${config.interval}"
-                 min="5" max="86400" title="Durée spécifique pour cette URL (s)">
+                 min="5" max="86400" title="Durée spécifique (s)">
           <span class="interval-s">s</span>
         </div>
       </div>
     `;
-
     const nameInp = row.querySelector('.name-input');
     const urlInp  = row.querySelector('.url-input');
     const intInp  = row.querySelector('.url-interval');
@@ -146,7 +165,6 @@ function renderUrls() {
       dragSrcIndex = null;
       urlList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
-
     urlList.appendChild(row);
   });
 }
@@ -163,14 +181,12 @@ function updateStatusUI() {
   progressWrap.classList.toggle('hidden', !on);
 
   if (on) {
-    const activeUrls = config.urls.filter(u => u?.url?.trim());
-    const cur  = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
-    const totalSec = config.currentAlarmSec || cur?.interval || config.interval;
-
-    let remainSec = totalSec;
+    const activeUrls  = config.urls.filter(u => u?.url?.trim());
+    const cur         = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
+    const totalSec    = config.currentAlarmSec || cur?.interval || config.interval;
+    let   remainSec   = totalSec;
     if (config.lastAlarmTime) {
-      const elapsed = (Date.now() - config.lastAlarmTime) / 1000;
-      remainSec = Math.max(1, totalSec - elapsed);
+      remainSec = Math.max(1, totalSec - (Date.now() - config.lastAlarmTime) / 1000);
     }
     startProgressBar(remainSec, totalSec);
   } else {
@@ -185,10 +201,9 @@ function startProgressBar(remainSec, totalSec) {
   const pct = (remainSec / totalSec) * 100;
   progressBar.style.transition = 'none';
   progressBar.style.width = pct + '%';
-  progressBar.offsetWidth; // force reflow
+  progressBar.offsetWidth;
   progressBar.style.transition = `width ${remainSec}s linear`;
   progressBar.style.width = '0%';
-
   progressTimer = setTimeout(async () => {
     try {
       const d = await chrome.storage.local.get('config');
@@ -203,45 +218,35 @@ function stopProgressBar() {
   progressBar.style.width = '0%';
 }
 
-// ── Start (toujours fullscreen) ───────────────────────────────────────────────
+// ── Start / Stop / Next ───────────────────────────────────────────────────────
 
 async function startRotation() {
   try {
     flushInputs();
     await saveConfig();
-
     const activeUrls = config.urls.filter(u => u?.url?.trim());
-    if (!activeUrls.length) {
-      alert('Ajoutez au moins une URL avant de démarrer.');
-      return;
-    }
+    if (!activeUrls.length) { alert('Ajoutez au moins une URL avant de démarrer.'); return; }
 
     let winExists = false;
     if (config.windowId) {
       try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
     }
-
     if (!winExists) {
       const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
       if (!win?.tabs?.[0]?.id) { alert("Impossible d'ouvrir la fenêtre."); return; }
       config.tabId    = win.tabs[0].id;
       config.windowId = win.id;
     } else {
-      if (config.tabId) {
-        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
-      }
+      if (config.tabId) try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
       await chrome.windows.update(config.windowId, { state: 'fullscreen' });
     }
-
     config.currentIndex    = 0;
     config.active          = true;
     config.lastAlarmTime   = Date.now();
     config.currentAlarmSec = activeUrls[0].interval || config.interval;
     await saveConfig();
-
     chrome.runtime.sendMessage({ action: 'startTimer', interval: config.currentAlarmSec }).catch(() => {});
     await refresh();
-
   } catch (err) {
     alert('Erreur : ' + (err?.message || String(err)));
   }
@@ -278,22 +283,98 @@ btnAdd.addEventListener('click', () => {
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
-// ── Interval controls (settings tab) ─────────────────────────────────────────
+// ── Interval ──────────────────────────────────────────────────────────────────
 
 slider.addEventListener('input', () => {
   config.interval = parseInt(slider.value);
   intervalN.value = config.interval;
-  saveConfig();
-  renderUrls(); // refresh interval placeholders
+  saveConfig(); renderUrls();
 });
 
 intervalN.addEventListener('change', () => {
   config.interval = Math.max(5, Math.min(86400, parseInt(intervalN.value) || 30));
   intervalN.value = config.interval;
   slider.value    = Math.min(config.interval, 300);
-  saveConfig();
-  renderUrls();
+  saveConfig(); renderUrls();
 });
+
+// ── Schedule ──────────────────────────────────────────────────────────────────
+
+function renderSchedule() {
+  scheduleEnabledCb.checked = !!config.scheduleEnabled;
+  scheduleDetails.classList.toggle('hidden', !config.scheduleEnabled);
+  scheduleStart.value = config.scheduleStart || '08:00';
+  scheduleEnd.value   = config.scheduleEnd   || '18:00';
+  const days = config.scheduleDays || [1, 2, 3, 4, 5];
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.classList.toggle('on', days.includes(parseInt(btn.dataset.day)));
+  });
+}
+
+scheduleEnabledCb.addEventListener('change', () => {
+  config.scheduleEnabled = scheduleEnabledCb.checked;
+  scheduleDetails.classList.toggle('hidden', !config.scheduleEnabled);
+  saveConfig();
+});
+
+scheduleStart.addEventListener('change', () => { config.scheduleStart = scheduleStart.value; saveConfig(); });
+scheduleEnd.addEventListener('change',   () => { config.scheduleEnd   = scheduleEnd.value;   saveConfig(); });
+
+// ── Import / Export ───────────────────────────────────────────────────────────
+
+$('btn-export').addEventListener('click', async () => {
+  const data = await chrome.storage.local.get('config');
+  const json = JSON.stringify(data.config, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'wee-rotate-config.json';
+  a.click(); URL.revokeObjectURL(url);
+});
+
+$('btn-import').addEventListener('click', () => $('import-file').click());
+
+$('import-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const raw = JSON.parse(await file.text());
+    if (!Array.isArray(raw.urls)) throw new Error('Format invalide');
+    config = migrateConfig(raw);
+    await saveConfig();
+    await refresh();
+    alert('Configuration importée avec succès.');
+  } catch (err) {
+    alert('Erreur import : ' + err.message);
+  }
+  e.target.value = '';
+});
+
+$('btn-reset').addEventListener('click', async () => {
+  if (!confirm('Réinitialiser toute la configuration ?')) return;
+  config = migrateConfig(null);
+  await saveConfig();
+  chrome.runtime.sendMessage({ action: 'stopTimer' }).catch(() => {});
+  await refresh();
+});
+
+// ── Debug ─────────────────────────────────────────────────────────────────────
+
+debugToggle.addEventListener('click', async () => {
+  const open = debugBox.classList.toggle('open');
+  if (open) await refreshDebugLogs();
+});
+debugClear.addEventListener('click', async () => {
+  await chrome.storage.local.set({ debugLogs: [] });
+  debugLog.textContent = '(logs effacés)';
+});
+async function refreshDebugLogs() {
+  try {
+    const data = await chrome.storage.local.get('debugLogs');
+    debugLog.textContent = (data.debugLogs || []).join('\n') || '(aucun log)';
+    debugBox.scrollTop = debugBox.scrollHeight;
+  } catch { debugLog.textContent = '(erreur)'; }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -309,27 +390,4 @@ function flushInputs() {
 
 function esc(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Debug ─────────────────────────────────────────────────────────────────────
-
-debugToggle.addEventListener('click', async () => {
-  const open = debugBox.classList.toggle('open');
-  if (open) await refreshDebugLogs();
-});
-
-debugClear.addEventListener('click', async () => {
-  await chrome.storage.local.set({ debugLogs: [] });
-  debugLog.textContent = '(logs effacés)';
-});
-
-async function refreshDebugLogs() {
-  try {
-    const data = await chrome.storage.local.get('debugLogs');
-    const logs = data.debugLogs || [];
-    debugLog.textContent = logs.length ? logs.join('\n') : '(aucun log)';
-    debugBox.scrollTop = debugBox.scrollHeight;
-  } catch {
-    debugLog.textContent = '(erreur)';
-  }
 }

@@ -1,5 +1,7 @@
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
+  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null,
+  scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
+  scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false
 };
 
 const MAX_LOGS = 60;
@@ -13,30 +15,42 @@ function migrateConfig(raw) {
   return c;
 }
 
-// ── Listeners ────────────────────────────────────────────────────────────────
+function isInSchedule(config) {
+  if (!config.scheduleEnabled) return true;
+  const now = new Date();
+  const day = now.getDay();
+  if (!(config.scheduleDays || []).includes(day)) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = (config.scheduleStart || '08:00').split(':').map(Number);
+  const [eh, em] = (config.scheduleEnd   || '18:00').split(':').map(Number);
+  return cur >= sh * 60 + sm && cur < eh * 60 + em;
+}
+
+// ── Listeners ─────────────────────────────────────────────────────────────────
 
 chrome.runtime.onInstalled.addListener(async () => {
   const data = await chrome.storage.local.get('config');
   if (!data.config) await chrome.storage.local.set({ config: DEFAULT_CONFIG });
+  chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
   await log('onInstalled');
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await log('onStartup');
+  chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   if (config.active) {
     const activeUrls = config.urls.filter(u => u?.url?.trim());
     const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
-    const interval = cur?.interval || config.interval;
-    await log('onStartup — relance alarme ' + interval + 's');
-    await setNextAlarm(interval);
+    await setNextAlarm(cur?.interval || config.interval);
+    await log('onStartup — relance alarme');
   }
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  await log('alarm: ' + alarm.name);
-  if (alarm.name === 'wt-rotate') await rotateToNext();
+  if (alarm.name === 'wt-rotate')   await rotateToNext();
+  if (alarm.name === 'wt-watchdog') await checkSchedule();
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
@@ -73,7 +87,67 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   return false;
 });
 
-// ── Alarme (one-shot, recrée après chaque rotation) ───────────────────────────
+// ── Schedule ──────────────────────────────────────────────────────────────────
+
+async function checkSchedule() {
+  const data = await chrome.storage.local.get('config');
+  const config = migrateConfig(data.config);
+  if (!config.scheduleEnabled) return;
+
+  const wasIn = config.lastScheduleState ?? false;
+  const nowIn = isInSchedule(config);
+  config.lastScheduleState = nowIn;
+
+  if (nowIn && !wasIn) {
+    // Vient d'entrer dans la plage → démarrage auto
+    const activeUrls = config.urls.filter(u => u?.url?.trim());
+    if (activeUrls.length > 0 && !config.active) {
+      await autoStartRotation(config);
+      await log('schedule — démarrage auto');
+      return;
+    }
+  } else if (!nowIn && wasIn && config.active) {
+    // Vient de sortir de la plage → arrêt auto
+    config.active = false;
+    chrome.alarms.clear('wt-rotate');
+    await chrome.storage.local.set({ config });
+    await log('schedule — arrêt auto');
+    return;
+  }
+
+  await chrome.storage.local.set({ config });
+}
+
+async function autoStartRotation(config) {
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  let winExists = false;
+  if (config.windowId) {
+    try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
+  }
+  try {
+    if (!winExists) {
+      const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
+      config.tabId    = win.tabs[0].id;
+      config.windowId = win.id;
+    } else {
+      if (config.tabId) {
+        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
+      }
+      await chrome.windows.update(config.windowId, { state: 'fullscreen' });
+    }
+    config.currentIndex    = 0;
+    config.active          = true;
+    config.lastAlarmTime   = Date.now();
+    config.currentAlarmSec = activeUrls[0].interval || config.interval;
+    await chrome.storage.local.set({ config });
+    await setNextAlarm(config.currentAlarmSec);
+  } catch (e) {
+    await log('autoStart ERR: ' + e.message);
+    await chrome.storage.local.set({ config });
+  }
+}
+
+// ── Alarme (one-shot) ─────────────────────────────────────────────────────────
 
 function setNextAlarm(interval) {
   return new Promise(resolve => {
@@ -94,21 +168,26 @@ async function rotateToNext() {
   if (!config.active) { await log('inactif — abandon'); return; }
   if (!config.tabId)  { await log('tabId null — abandon'); return; }
 
-  const activeUrls = config.urls.filter(u => u?.url?.trim());
-  if (activeUrls.length < 2) {
-    await log('moins de 2 URLs — abandon');
+  if (config.scheduleEnabled && !isInSchedule(config)) {
+    await log('hors plage horaire — arrêt');
+    config.active = false;
+    chrome.alarms.clear('wt-rotate');
+    await chrome.storage.local.set({ config });
     return;
   }
 
-  const next  = (config.currentIndex + 1) % activeUrls.length;
-  const entry = activeUrls[next];
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  if (activeUrls.length < 2) { await log('moins de 2 URLs — abandon'); return; }
+
+  const next     = (config.currentIndex + 1) % activeUrls.length;
+  const entry    = activeUrls[next];
   const interval = entry.interval || config.interval;
 
   try {
     await chrome.tabs.update(config.tabId, { url: entry.url });
-    config.currentIndex     = next;
-    config.lastAlarmTime    = Date.now();
-    config.currentAlarmSec  = interval;
+    config.currentIndex    = next;
+    config.lastAlarmTime   = Date.now();
+    config.currentAlarmSec = interval;
     await chrome.storage.local.set({ config });
     await setNextAlarm(interval);
     await log('OK → ' + (entry.name || entry.url.slice(0, 50)));

@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null
+  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
 };
 
 let config = null;
@@ -20,8 +20,6 @@ const btnStart  = $('btn-start');
 const btnStop   = $('btn-stop');
 const btnFs     = $('btn-fs');
 const btnNext   = $('btn-next');
-
-// ── Init ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
   await refresh();
@@ -53,36 +51,29 @@ function renderAll() {
 
 function renderUrls() {
   urlList.innerHTML = '';
-
   if (!config.urls.length) {
     urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
     return;
   }
-
   config.urls.forEach((url, i) => {
     const row = document.createElement('div');
     row.className = 'url-row' + (config.active && i === config.currentIndex ? ' active-url' : '');
     row.draggable = true;
-
     row.innerHTML = `
       <span class="drag-handle">⠿</span>
       <span class="url-num">${i + 1}</span>
       <input class="url-input" type="text" value="${esc(url)}" placeholder="https://exemple.com" spellcheck="false">
       <button class="btn-del" title="Supprimer">✕</button>
     `;
-
     const input = row.querySelector('.url-input');
     input.addEventListener('input', () => { config.urls[i] = input.value; saveConfig(); });
     input.addEventListener('blur',  () => { input.value = input.value.trim(); config.urls[i] = input.value; saveConfig(); });
     input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
-
     row.querySelector('.btn-del').addEventListener('click', () => {
       config.urls.splice(i, 1);
       if (config.currentIndex >= config.urls.filter(u => u?.trim()).length) config.currentIndex = 0;
-      saveConfig();
-      renderUrls();
+      saveConfig(); renderUrls();
     });
-
     row.addEventListener('dragstart', e => { dragSrcIndex = i; e.dataTransfer.effectAllowed = 'move'; });
     row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
     row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
@@ -91,14 +82,12 @@ function renderUrls() {
       if (dragSrcIndex === null || dragSrcIndex === i) return;
       const moved = config.urls.splice(dragSrcIndex, 1)[0];
       config.urls.splice(i, 0, moved);
-      dragSrcIndex = null;
-      saveConfig(); renderUrls();
+      dragSrcIndex = null; saveConfig(); renderUrls();
     });
     row.addEventListener('dragend', () => {
       dragSrcIndex = null;
       urlList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
-
     urlList.appendChild(row);
   });
 }
@@ -137,7 +126,7 @@ function startLocalCountdown() {
   }, 1000);
 }
 
-// ── Start / Stop — popup gère directement les fenêtres et onglets ─────────
+// ── Démarrage — 1 onglet, navigation par URL ──────────────────────────────
 
 async function startRotation(fullscreen) {
   try {
@@ -150,45 +139,37 @@ async function startRotation(fullscreen) {
       return;
     }
 
-    // Vérifier si la fenêtre de rotation existe encore
+    // Vérifier si la fenêtre existe encore
     let winExists = false;
     if (config.windowId) {
       try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
     }
 
     if (!winExists) {
-      // Ouvrir la première URL dans une nouvelle fenêtre
+      // Ouvrir 1 seul onglet
       const win = await chrome.windows.create({
         url: activeUrls[0],
         state: fullscreen ? 'fullscreen' : 'maximized'
       });
-
       if (!win?.tabs?.[0]?.id) {
         alert('Impossible d\'ouvrir la fenêtre de rotation.');
         return;
       }
-
-      const tabIds = [win.tabs[0].id];
-
-      // Ouvrir les URLs suivantes comme onglets dans la même fenêtre
-      for (let i = 1; i < activeUrls.length; i++) {
-        const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i], active: false });
-        tabIds.push(tab.id);
-      }
-
-      config.tabIds   = tabIds;
+      config.tabId    = win.tabs[0].id;
       config.windowId = win.id;
     } else {
-      // Réutiliser les onglets existants
+      // Réutiliser l'onglet existant, recharger la 1re URL
+      if (config.tabId) {
+        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0] }); } catch {}
+      }
       if (fullscreen) await chrome.windows.update(config.windowId, { state: 'fullscreen' });
-      if (config.tabIds?.[0]) try { await chrome.tabs.update(config.tabIds[0], { active: true }); } catch {}
     }
 
     config.currentIndex = 0;
     config.active = true;
     await saveConfig();
 
-    // Dire au background de démarrer le timer (fire-and-forget)
+    // Démarrer le timer dans le background
     chrome.runtime.sendMessage({ action: 'startTimer', interval: config.interval }).catch(() => {});
 
     await refresh();
@@ -211,9 +192,10 @@ btnStop.addEventListener('click', async () => {
 });
 
 btnNext.addEventListener('click', async () => {
-  if (!config.tabIds?.length) return;
-  const next = (config.currentIndex + 1) % config.tabIds.length;
-  try { await chrome.tabs.update(config.tabIds[next], { active: true }); } catch {}
+  const activeUrls = config.urls.filter(u => u?.trim());
+  if (!config.tabId || !activeUrls.length) return;
+  const next = (config.currentIndex + 1) % activeUrls.length;
+  try { await chrome.tabs.update(config.tabId, { url: activeUrls[next] }); } catch {}
   config.currentIndex = next;
   await saveConfig();
   countdownSec = config.interval;
@@ -223,8 +205,7 @@ btnNext.addEventListener('click', async () => {
 btnAdd.addEventListener('click', () => {
   if (!config) config = { ...DEFAULT_CONFIG };
   config.urls.push('');
-  saveConfig();
-  renderUrls();
+  saveConfig(); renderUrls();
   const inputs = urlList.querySelectorAll('.url-input');
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
@@ -243,8 +224,6 @@ intervalN.addEventListener('change', () => {
   countdownSec    = config.interval;
   saveConfig();
 });
-
-// ── Helpers ───────────────────────────────────────────────────────────────
 
 function flushInputs() {
   urlList.querySelectorAll('.url-input').forEach((inp, i) => {

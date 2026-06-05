@@ -1,8 +1,8 @@
-// Background service worker — gère UNIQUEMENT le timer de rotation.
-// L'ouverture des fenêtres/onglets est faite directement par le popup.
+// Background — gère uniquement le timer et la navigation entre URLs.
+// 1 seul onglet qui charge chaque URL à tour de rôle.
 
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null
+  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
 };
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -26,13 +26,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-// Si l'utilisateur ferme un onglet de la rotation, on arrête
+// Si l'onglet de rotation est fermé → on arrête
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const data = await chrome.storage.local.get('config');
   const config = data.config;
-  if (config?.tabIds?.includes(tabId)) {
+  if (config?.tabId === tabId) {
     config.active = false;
-    config.tabIds = [];
+    config.tabId = null;
     config.windowId = null;
     await stopTimer();
     await chrome.storage.local.set({ config });
@@ -40,26 +40,22 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Tick du timer offscreen
   if (message.action === 'rotate' && message.source === 'offscreen') {
     rotateToNext();
     return false;
   }
-
   if (message.action === 'startTimer') {
     startTimer(message.interval)
       .then(() => sendResponse({ success: true }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
-
   if (message.action === 'stopTimer') {
     stopTimer()
       .then(() => sendResponse({ success: true }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
-
   sendResponse({ success: false, error: 'Action inconnue' });
   return false;
 });
@@ -76,17 +72,14 @@ async function startTimer(interval) {
           reasons: ['BLOBS'],
           justification: 'Interval timer for URL rotation'
         });
-        // Laisser le temps au document de charger son JS et enregistrer ses listeners
         await new Promise(r => setTimeout(r, 300));
       }
-      // Le doc offscreen se démarre aussi tout seul depuis le storage (double filet)
       chrome.runtime.sendMessage({ target: 'offscreen', action: 'start-timer', interval }).catch(() => {});
       return;
     } catch (e) {
       console.warn('[wt-rotate] offscreen indisponible, fallback alarms');
     }
   }
-  // Fallback alarms (min ~30s packagée, ~1 min en mode dev)
   chrome.alarms.clear('wt-rotate');
   chrome.alarms.create('wt-rotate', { periodInMinutes: Math.max(interval / 60, 0.5) });
 }
@@ -103,23 +96,28 @@ async function stopTimer() {
   } catch {}
 }
 
-// ── Rotation ──────────────────────────────────────────────────────────────
+// ── Rotation — 1 onglet, navigation par URL ───────────────────────────────
 
 async function rotateToNext() {
   const data = await chrome.storage.local.get('config');
   const config = data.config || DEFAULT_CONFIG;
-  if (!config.active || !config.tabIds?.length) return;
 
-  const next = (config.currentIndex + 1) % config.tabIds.length;
-  const tabId = config.tabIds[next];
+  if (!config.active || !config.tabId) return;
+
+  const activeUrls = config.urls.filter(u => u?.trim());
+  if (activeUrls.length < 2) return;
+
+  const next = (config.currentIndex + 1) % activeUrls.length;
+
   try {
-    await chrome.tabs.update(tabId, { active: true });
-    await chrome.tabs.reload(tabId);   // Rafraîchit la page dès qu'elle devient active
+    // Naviguer vers la prochaine URL dans le même onglet (reload automatique)
+    await chrome.tabs.update(config.tabId, { url: activeUrls[next] });
     config.currentIndex = next;
     await chrome.storage.local.set({ config });
   } catch {
+    // L'onglet a été fermé
     config.active = false;
-    config.tabIds = [];
+    config.tabId = null;
     config.windowId = null;
     await stopTimer();
     await chrome.storage.local.set({ config });

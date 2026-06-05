@@ -2,36 +2,60 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null
 };
 
-let config = null;
-let countdownSec = 0;
-let countdownTimer = null;
-let dragSrcIndex = null;
+let config       = null;
+let progressTimer = null;
+let dragSrcIndex  = null;
 
 const $ = id => document.getElementById(id);
-const badge     = $('badge');
-const statusBar = $('status-bar');
-const statusCur = $('status-current');
-const statusCnt = $('status-countdown');
-const urlList   = $('url-list');
-const btnAdd    = $('btn-add');
-const slider    = $('slider');
-const intervalN = $('interval');
-const btnStart  = $('btn-start');
-const btnStop   = $('btn-stop');
-const btnFs     = $('btn-fs');
-const btnNext   = $('btn-next');
+
+const badge        = $('badge');
+const progressWrap = $('progress-wrap');
+const progressBar  = $('progress-bar');
+const urlList      = $('url-list');
+const btnAdd       = $('btn-add');
+const slider       = $('slider');
+const intervalN    = $('interval');
+const btnStart     = $('btn-start');
+const btnStop      = $('btn-stop');
+const btnNext      = $('btn-next');
+const debugToggle  = $('debug-toggle');
+const debugBox     = $('debug-box');
+const debugLog     = $('debug-log');
+const debugClear   = $('debug-clear');
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initTabs();
   await refresh();
-  startLocalCountdown();
 });
+
+function initTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function migrateConfig(raw) {
+  if (!raw) return { ...DEFAULT_CONFIG };
+  const c = { ...DEFAULT_CONFIG, ...raw };
+  c.urls = (c.urls || []).map(u =>
+    typeof u === 'string' ? { url: u, name: '', interval: null } : u
+  );
+  return c;
+}
 
 async function refresh() {
   try {
     const data = await chrome.storage.local.get('config');
-    config = data?.config || { ...DEFAULT_CONFIG };
+    config = migrateConfig(data?.config);
   } catch {
-    config = config || { ...DEFAULT_CONFIG };
+    config = config || migrateConfig(null);
   }
   renderAll();
 }
@@ -47,7 +71,7 @@ function renderAll() {
   updateStatusUI();
 }
 
-// ── URL list ──────────────────────────────────────────────────────────────
+// ── URL list ──────────────────────────────────────────────────────────────────
 
 function renderUrls() {
   urlList.innerHTML = '';
@@ -55,25 +79,59 @@ function renderUrls() {
     urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
     return;
   }
-  config.urls.forEach((url, i) => {
+
+  config.urls.forEach((entry, i) => {
+    const isActive = config.active && i === config.currentIndex;
     const row = document.createElement('div');
-    row.className = 'url-row' + (config.active && i === config.currentIndex ? ' active-url' : '');
+    row.className = 'url-row' + (isActive ? ' active-url' : '');
     row.draggable = true;
+
     row.innerHTML = `
       <span class="drag-handle">⠿</span>
-      <span class="url-num">${i + 1}</span>
-      <input class="url-input" type="text" value="${esc(url)}" placeholder="https://exemple.com" spellcheck="false">
-      <button class="btn-del" title="Supprimer">✕</button>
+      <div class="url-fields">
+        <input class="name-input" type="text" value="${esc(entry.name || '')}"
+               placeholder="Nom affiché (ex: Dashboard RMM)" autocomplete="off">
+        <input class="url-input" type="text" value="${esc(entry.url || '')}"
+               placeholder="https://..." spellcheck="false" autocomplete="off">
+      </div>
+      <div class="url-actions">
+        <button class="btn-del" title="Supprimer">✕</button>
+        <div class="url-interval-wrap">
+          <input class="url-interval${entry.interval ? ' custom' : ''}" type="number"
+                 value="${entry.interval || ''}" placeholder="${config.interval}"
+                 min="5" max="86400" title="Durée spécifique pour cette URL (s)">
+          <span class="interval-s">s</span>
+        </div>
+      </div>
     `;
-    const input = row.querySelector('.url-input');
-    input.addEventListener('input', () => { config.urls[i] = input.value; saveConfig(); });
-    input.addEventListener('blur',  () => { input.value = input.value.trim(); config.urls[i] = input.value; saveConfig(); });
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+
+    const nameInp = row.querySelector('.name-input');
+    const urlInp  = row.querySelector('.url-input');
+    const intInp  = row.querySelector('.url-interval');
+
+    nameInp.addEventListener('input', () => { config.urls[i].name = nameInp.value; saveConfig(); });
+    nameInp.addEventListener('blur',  () => { config.urls[i].name = nameInp.value.trim(); nameInp.value = config.urls[i].name; saveConfig(); });
+    nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.focus(); });
+
+    urlInp.addEventListener('input', () => { config.urls[i].url = urlInp.value; saveConfig(); });
+    urlInp.addEventListener('blur',  () => { config.urls[i].url = urlInp.value.trim(); urlInp.value = config.urls[i].url; saveConfig(); });
+    urlInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.blur(); });
+
+    intInp.addEventListener('change', () => {
+      const val = parseInt(intInp.value);
+      config.urls[i].interval = val >= 5 ? val : null;
+      intInp.value = config.urls[i].interval || '';
+      intInp.classList.toggle('custom', !!config.urls[i].interval);
+      saveConfig();
+    });
+
     row.querySelector('.btn-del').addEventListener('click', () => {
       config.urls.splice(i, 1);
-      if (config.currentIndex >= config.urls.filter(u => u?.trim()).length) config.currentIndex = 0;
+      const valid = config.urls.filter(u => u?.url?.trim());
+      if (config.currentIndex >= valid.length) config.currentIndex = 0;
       saveConfig(); renderUrls();
     });
+
     row.addEventListener('dragstart', e => { dragSrcIndex = i; e.dataTransfer.effectAllowed = 'move'; });
     row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
     row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
@@ -88,11 +146,12 @@ function renderUrls() {
       dragSrcIndex = null;
       urlList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
+
     urlList.appendChild(row);
   });
 }
 
-// ── Status ────────────────────────────────────────────────────────────────
+// ── Status ────────────────────────────────────────────────────────────────────
 
 function updateStatusUI() {
   const on = config.active;
@@ -101,88 +160,94 @@ function updateStatusUI() {
   btnStart.classList.toggle('hidden', on);
   btnStop.classList.toggle('hidden', !on);
   btnNext.classList.toggle('hidden', !on);
-  statusBar.classList.toggle('visible', on);
+  progressWrap.classList.toggle('hidden', !on);
+
   if (on) {
-    const urls = config.urls.filter(u => u?.trim());
-    statusCur.textContent = '▶ ' + (urls[config.currentIndex % Math.max(urls.length, 1)] || '');
-    statusCnt.textContent = `⏱ Prochain dans ${countdownSec}s`;
+    const activeUrls = config.urls.filter(u => u?.url?.trim());
+    const cur  = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
+    const totalSec = config.currentAlarmSec || cur?.interval || config.interval;
+
+    let remainSec = totalSec;
+    if (config.lastAlarmTime) {
+      const elapsed = (Date.now() - config.lastAlarmTime) / 1000;
+      remainSec = Math.max(1, totalSec - elapsed);
+    }
+    startProgressBar(remainSec, totalSec);
+  } else {
+    stopProgressBar();
   }
 }
 
-// ── Countdown ─────────────────────────────────────────────────────────────
+// ── Progress bar ──────────────────────────────────────────────────────────────
 
-function startLocalCountdown() {
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownSec = config?.interval || 30;
-  countdownTimer = setInterval(async () => {
-    if (!config?.active) return;
-    countdownSec = Math.max(0, countdownSec - 1);
-    statusCnt.textContent = `⏱ Prochain dans ${countdownSec}s`;
-    if (countdownSec === 0) {
-      countdownSec = config.interval;
-      try { const d = await chrome.storage.local.get('config'); if (d?.config) config = d.config; } catch {}
-      renderUrls(); updateStatusUI();
-    }
-  }, 1000);
+function startProgressBar(remainSec, totalSec) {
+  stopProgressBar();
+  const pct = (remainSec / totalSec) * 100;
+  progressBar.style.transition = 'none';
+  progressBar.style.width = pct + '%';
+  progressBar.offsetWidth; // force reflow
+  progressBar.style.transition = `width ${remainSec}s linear`;
+  progressBar.style.width = '0%';
+
+  progressTimer = setTimeout(async () => {
+    try {
+      const d = await chrome.storage.local.get('config');
+      if (d?.config) { config = migrateConfig(d.config); renderAll(); }
+    } catch {}
+  }, remainSec * 1000);
 }
 
-// ── Démarrage — 1 onglet, navigation par URL ──────────────────────────────
+function stopProgressBar() {
+  if (progressTimer) { clearTimeout(progressTimer); progressTimer = null; }
+  progressBar.style.transition = 'none';
+  progressBar.style.width = '0%';
+}
 
-async function startRotation(fullscreen) {
+// ── Start (toujours fullscreen) ───────────────────────────────────────────────
+
+async function startRotation() {
   try {
     flushInputs();
     await saveConfig();
 
-    const activeUrls = config.urls.filter(u => u?.trim());
+    const activeUrls = config.urls.filter(u => u?.url?.trim());
     if (!activeUrls.length) {
       alert('Ajoutez au moins une URL avant de démarrer.');
       return;
     }
 
-    // Vérifier si la fenêtre existe encore
     let winExists = false;
     if (config.windowId) {
       try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
     }
 
     if (!winExists) {
-      // Ouvrir 1 seul onglet
-      const win = await chrome.windows.create({
-        url: activeUrls[0],
-        state: fullscreen ? 'fullscreen' : 'maximized'
-      });
-      if (!win?.tabs?.[0]?.id) {
-        alert('Impossible d\'ouvrir la fenêtre de rotation.');
-        return;
-      }
+      const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
+      if (!win?.tabs?.[0]?.id) { alert("Impossible d'ouvrir la fenêtre."); return; }
       config.tabId    = win.tabs[0].id;
       config.windowId = win.id;
     } else {
-      // Réutiliser l'onglet existant, recharger la 1re URL
       if (config.tabId) {
-        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0] }); } catch {}
+        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
       }
-      if (fullscreen) await chrome.windows.update(config.windowId, { state: 'fullscreen' });
+      await chrome.windows.update(config.windowId, { state: 'fullscreen' });
     }
 
-    config.currentIndex = 0;
-    config.active = true;
+    config.currentIndex    = 0;
+    config.active          = true;
+    config.lastAlarmTime   = Date.now();
+    config.currentAlarmSec = activeUrls[0].interval || config.interval;
     await saveConfig();
 
-    // Démarrer le timer dans le background
-    chrome.runtime.sendMessage({ action: 'startTimer', interval: config.interval }).catch(() => {});
-
+    chrome.runtime.sendMessage({ action: 'startTimer', interval: config.currentAlarmSec }).catch(() => {});
     await refresh();
-    countdownSec = config.interval;
-    startLocalCountdown();
 
   } catch (err) {
     alert('Erreur : ' + (err?.message || String(err)));
   }
 }
 
-btnStart.addEventListener('click', () => startRotation(false));
-btnFs.addEventListener('click',    () => startRotation(true));
+btnStart.addEventListener('click', startRotation);
 
 btnStop.addEventListener('click', async () => {
   config.active = false;
@@ -192,55 +257,61 @@ btnStop.addEventListener('click', async () => {
 });
 
 btnNext.addEventListener('click', async () => {
-  const activeUrls = config.urls.filter(u => u?.trim());
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
   if (!config.tabId || !activeUrls.length) return;
   const next = (config.currentIndex + 1) % activeUrls.length;
-  try { await chrome.tabs.update(config.tabId, { url: activeUrls[next] }); } catch {}
-  config.currentIndex = next;
+  try { await chrome.tabs.update(config.tabId, { url: activeUrls[next].url }); } catch {}
+  config.currentIndex    = next;
+  config.lastAlarmTime   = Date.now();
+  config.currentAlarmSec = activeUrls[next].interval || config.interval;
   await saveConfig();
-  countdownSec = config.interval;
   renderUrls(); updateStatusUI();
 });
 
+// ── Add URL ───────────────────────────────────────────────────────────────────
+
 btnAdd.addEventListener('click', () => {
-  if (!config) config = { ...DEFAULT_CONFIG };
-  config.urls.push('');
+  if (!config) config = migrateConfig(null);
+  config.urls.push({ url: '', name: '', interval: null });
   saveConfig(); renderUrls();
   const inputs = urlList.querySelectorAll('.url-input');
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
+// ── Interval controls (settings tab) ─────────────────────────────────────────
+
 slider.addEventListener('input', () => {
   config.interval = parseInt(slider.value);
   intervalN.value = config.interval;
-  countdownSec    = config.interval;
   saveConfig();
+  renderUrls(); // refresh interval placeholders
 });
 
 intervalN.addEventListener('change', () => {
   config.interval = Math.max(5, Math.min(86400, parseInt(intervalN.value) || 30));
   intervalN.value = config.interval;
   slider.value    = Math.min(config.interval, 300);
-  countdownSec    = config.interval;
   saveConfig();
+  renderUrls();
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function flushInputs() {
-  urlList.querySelectorAll('.url-input').forEach((inp, i) => {
-    if (config.urls[i] !== undefined) config.urls[i] = inp.value.trim();
+  urlList.querySelectorAll('.url-row').forEach((row, i) => {
+    if (!config.urls[i]) return;
+    const n = row.querySelector('.name-input');
+    const u = row.querySelector('.url-input');
+    if (n) config.urls[i].name = n.value.trim();
+    if (u) config.urls[i].url  = u.value.trim();
   });
 }
 
 function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Debug panel ───────────────────────────────────────────────────────────
-
-const debugToggle = $('debug-toggle');
-const debugBox    = $('debug-box');
-const debugLog    = $('debug-log');
-const debugClear  = $('debug-clear');
+// ── Debug ─────────────────────────────────────────────────────────────────────
 
 debugToggle.addEventListener('click', async () => {
   const open = debugBox.classList.toggle('open');
@@ -259,6 +330,6 @@ async function refreshDebugLogs() {
     debugLog.textContent = logs.length ? logs.join('\n') : '(aucun log)';
     debugBox.scrollTop = debugBox.scrollHeight;
   } catch {
-    debugLog.textContent = '(erreur lecture logs)';
+    debugLog.textContent = '(erreur)';
   }
 }

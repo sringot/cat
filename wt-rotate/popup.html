@@ -5,18 +5,18 @@
   <title>wee rotate</title>
   <style>
     :root {
-      --blue:       #1D6FF3;
-      --blue-dark:  #1558CC;
-      --bg:         #FFFFFF;
-      --surface:    #F9FAFB;
-      --border:     #E5E7EB;
-      --text:       #111827;
-      --muted:      #6B7280;
-      --red:        #DC2626;
-      --red-dark:   #B91C1C;
-      --green-bg:   #F0FDF4;
-      --green-bd:   #86EFAC;
-      --green-txt:  #15803D;
+      --blue:       #3D80EF;
+      --blue-dark:  #2563EB;
+      --bg:         #1C1F2E;
+      --surface:    #13151E;
+      --border:     #2A2D3E;
+      --text:       #E2E8F0;
+      --muted:      #64748B;
+      --red:        #EF4444;
+      --red-dark:   #DC2626;
+      --green-bg:   #0D2918;
+      --green-bd:   #166534;
+      --green-txt:  #4ADE80;
       --r:          8px;
     }
 
@@ -28,6 +28,7 @@
       font-size: 13px;
       color: var(--text);
       background: var(--surface);
+      color-scheme: dark;
     }
 
     /* ── Header ── */
@@ -118,10 +119,10 @@
     }
     .url-row:focus-within  { border-color: var(--blue); }
     .url-row.active-url    { border-color: var(--green-bd); background: var(--green-bg); }
-    .url-row.drag-over     { border-color: var(--blue); background: #EFF6FF; }
+    .url-row.drag-over     { border-color: var(--blue); background: #1a2840; }
 
     .drag-handle {
-      color: #D1D5DB;
+      color: #3D4559;
       cursor: grab;
       font-size: 14px;
       user-select: none;
@@ -136,7 +137,7 @@
       font-size: 12px; font-weight: 600; color: var(--text);
       width: 100%;
     }
-    .name-input::placeholder { color: #D1D5DB; font-weight: 400; }
+    .name-input::placeholder { color: #3D4559; font-weight: 400; }
 
     .url-input {
       border: none; outline: none; background: transparent;
@@ -145,7 +146,7 @@
       color: var(--muted);
       width: 100%;
     }
-    .url-input::placeholder { color: #D1D5DB; }
+    .url-input::placeholder { color: #3D4559; }
 
     .url-actions {
       display: flex;
@@ -157,7 +158,7 @@
 
     .btn-del {
       background: none; border: none; cursor: pointer;
-      color: #D1D5DB; padding: 1px 2px;
+      color: #3D4559; padding: 1px 2px;
       font-size: 12px; line-height: 1; border-radius: 3px;
       transition: color .15s;
     }
@@ -182,7 +183,7 @@
     }
     .url-interval:focus { border-color: var(--blue); }
     .url-interval.custom { border-color: var(--blue); color: var(--blue); font-weight: 600; }
-    .interval-s { font-size: 9px; color: #D1D5DB; }
+    .interval-s { font-size: 9px; color: #3D4559; }
 
     /* ── Add button ── */
     .btn-add {
@@ -197,11 +198,11 @@
       font-weight: 600;
       transition: all .15s;
     }
-    .btn-add:hover { border-color: var(--blue); color: var(--blue); background: #EFF6FF; }
+    .btn-add:hover { border-color: var(--blue); color: var(--blue); background: #1a2840; }
 
     .empty-hint {
       text-align: center;
-      color: #D1D5DB;
+      color: #3D4559;
       font-size: 12px;
       padding: 18px 0;
     }
@@ -221,7 +222,7 @@
     .btn-danger   { background: var(--red);   color: #fff; flex: 1; }
     .btn-danger:hover   { background: var(--red-dark); }
     .btn-ghost    { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover    { background: var(--surface); border-color: #9CA3AF; }
+    .btn-ghost:hover    { background: var(--surface); border-color: #4B5563; }
 
     .hidden { display: none !important; }
 
@@ -257,6 +258,7 @@
       width: 52px; padding: 4px 6px;
       border: 1px solid var(--border); border-radius: 5px;
       font-size: 12px; text-align: center; outline: none;
+      background: var(--surface); color: var(--text);
       transition: border-color .15s;
     }
     .interval-num:focus { border-color: var(--blue); }

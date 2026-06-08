@@ -3,345 +3,413 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>wt-rotate remote</title>
+<title>wt · remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #13151E; color: #E2E8F0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; padding: 20px;
-  }
-  .card {
-    background: #1C1F2E; border: 1px solid #2A2D3E;
-    border-radius: 18px; padding: 28px 22px;
-    width: 100%; max-width: 380px;
-  }
-  .logo {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
-  }
-  .logo-circle {
-    width: 38px; height: 38px; background: #1D6FF3;
-    border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; flex-shrink: 0;
-  }
-  .logo-circle svg { width: 22px; height: 22px; }
-  .logo-name { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-  .logo-sub  { font-size: 11px; color: #64748B; margin-top: 1px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  /* ── Inputs ── */
-  input[type=text], input[type=url] {
-    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 10px;
-    color: #E2E8F0; font-size: 15px; padding: 13px 14px; width: 100%;
-    outline: none; transition: border-color .15s;
-  }
-  input:focus { border-color: #3D80EF; }
-  #pin-input {
-    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 10px;
-    color: #E2E8F0; font-size: 28px; font-weight: 700; letter-spacing: 10px;
-    text-align: center; padding: 16px 14px; width: 100%;
-    outline: none; transition: border-color .15s;
-  }
-  #pin-input:focus { border-color: #3D80EF; }
+:root {
+  --bg:       #F2F2F7;
+  --card:     #FFFFFF;
+  --text:     #0A0A0F;
+  --sub:      #8E8E93;
+  --border:   #E5E5EA;
+  --black:    #0A0A0F;
+  --green:    #34C759;
+  --green-bg: #F0FFF4;
+  --red:      #FF3B30;
+  --red-bg:   #FFF1F0;
+  --blue:     #007AFF;
+  --r:        16px;
+  --sh:       0 1px 0 rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06);
+}
 
-  /* ── Buttons ── */
-  .btn {
-    border: none; border-radius: 12px; cursor: pointer;
-    font-size: 15px; font-weight: 700; padding: 15px 18px;
-    transition: opacity .15s, transform .08s; width: 100%; margin-top: 10px;
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn:disabled { opacity: 0.35; pointer-events: none; }
-  .btn-blue    { background: #3D80EF; color: #fff; }
-  .btn-blue:hover  { background: #2563EB; }
-  .btn-green   { background: #22C55E; color: #fff; }
-  .btn-green:hover { background: #16A34A; }
-  .btn-red     { background: #EF4444; color: #fff; }
-  .btn-red:hover   { background: #DC2626; }
-  .btn-ghost   { background: #2A2D3E; color: #E2E8F0; }
-  .btn-ghost:hover { background: #343747; }
-  .btn-outline-red {
-    background: transparent; color: #EF4444;
-    border: 1px solid #EF4444;
-  }
-  .btn-outline-red:hover { background: #1a0a0a; }
-  .btn-sm {
-    padding: 11px 14px; font-size: 13px; border-radius: 10px; flex: 1;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', -apple-system, sans-serif;
+  min-height: 100vh;
+  padding-bottom: 48px;
+}
 
-  /* ── Screens ── */
-  .screen { display: none; }
-  .screen.active { display: block; }
+/* ── Header ─────────────────────────────────────────────── */
+.hdr {
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.hdr-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-sq {
+  width: 34px; height: 34px;
+  background: var(--black);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-sq svg { width: 18px; height: 18px; }
+.logo-name  { font-size: 16px; font-weight: 700; letter-spacing: -0.4px; }
+.logo-name em { font-style: normal; color: var(--sub); font-weight: 500; }
 
-  /* ── Status bar ── */
-  .status-bar {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 18px; font-size: 13px; color: #64748B;
-  }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  }
-  .dot-green  { background: #22C55E; }
-  .dot-red    { background: #EF4444; }
-  .dot-yellow { background: #EAB308; box-shadow: 0 0 6px #EAB308; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+.chip-dot { width: 7px; height: 7px; border-radius: 50%; }
+.chip.on  { background: var(--green-bg); color: #1A7F37; }
+.chip.on  .chip-dot { background: var(--green); }
+.chip.off { background: var(--red-bg); color: var(--red); }
+.chip.off .chip-dot { background: var(--red); }
 
-  /* ── Current display ── */
-  .current-card {
-    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 12px;
-    padding: 14px 16px; margin-bottom: 18px;
-  }
-  .current-label { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
-  .current-name  { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
-  .current-url   { font-size: 11px; color: #64748B; word-break: break-all; font-family: monospace; }
+/* ── Layout ─────────────────────────────────────────────── */
+.wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-  .badge {
-    display: inline-flex; align-items: center;
-    padding: 3px 9px; border-radius: 20px;
-    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-  }
-  .badge-on  { background: #0D2918; color: #4ADE80; border: 1px solid #166534; }
-  .badge-off { background: #1a0a0a; color: #EF4444; border: 1px solid #7f1d1d; }
+/* ── Card ───────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+.card-body { padding: 18px 18px 20px; }
+.lbl {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--sub); margin-bottom: 12px;
+}
 
-  /* ── Row of 2 buttons ── */
-  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+/* ── Now playing ─────────────────────────────────────────── */
+.np-name {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.np-url {
+  font-size: 11px; color: var(--sub);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  word-break: break-all; margin-bottom: 12px;
+}
+.status-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.status-chip.on  { background: var(--green-bg); color: #1A7F37; }
+.status-chip.off { background: var(--red-bg);   color: var(--red); }
 
-  /* ── Separator ── */
-  hr { border: none; border-top: 1px solid #2A2D3E; margin: 18px 0; }
+/* ── URL bar ─────────────────────────────────────────────── */
+.url-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.url-input {
+  flex: 1;
+  background: #F7F7F9;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s, background .15s;
+  min-width: 0;
+}
+.url-input:focus { border-color: var(--black); background: #fff; }
+.url-input::placeholder { color: #C7C7CC; }
 
-  .section-label {
-    font-size: 10px; font-weight: 700; color: #64748B;
-    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
-  }
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  border: none; border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px; font-weight: 600;
+  padding: 15px 20px;
+  transition: opacity .12s, transform .1s;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn.full   { width: 100%; }
 
-  /* ── Error / info ── */
-  .error-msg {
-    color: #EF4444; font-size: 13px; text-align: center;
-    margin-top: 10px; display: none;
-  }
-  .hint {
-    font-size: 12px; color: #64748B; text-align: center; margin-top: 10px;
-  }
+.btn-k     { background: var(--black); color: #fff; }
+.btn-k:hover { background: #222; }
+.btn-g     { background: var(--green); color: #fff; }
+.btn-r     { background: var(--red); color: #fff; }
+.btn-ghost { background: #F7F7F9; color: var(--text); border: 1.5px solid var(--border); }
+.btn-ghost:hover { border-color: #000; }
+.btn-r-out { background: #fff; color: var(--red); border: 1.5px solid #FECACA; }
+.btn-r-out:hover { background: var(--red-bg); border-color: var(--red); }
 
-  /* ── Connecting spinner ── */
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid #2A2D3E; border-top-color: #3D80EF;
-    border-radius: 50%; animation: spin .7s linear infinite;
-  }
+.btn-sm { padding: 12px 14px; font-size: 13px; border-radius: 10px; flex: 1; }
+
+.btn-row { display: flex; gap: 8px; }
+
+/* ── Presets grid ────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.preset {
+  background: #F7F7F9;
+  border: 1.5px solid var(--border);
+  border-radius: 13px;
+  padding: 14px 8px 12px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  transition: all .15s;
+  font-family: 'Poppins', sans-serif;
+}
+.preset:hover  { border-color: var(--black); background: #fff; }
+.preset:active { transform: scale(0.95); }
+.preset-icon { font-size: 24px; line-height: 1.1; }
+.preset-name { font-size: 11px; font-weight: 600; color: var(--text); }
+
+/* ── Separator ───────────────────────────────────────────── */
+.sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* ── Screens ─────────────────────────────────────────────── */
+.scr { display: none; }
+.scr.on { display: flex; }
+
+#scr-loading, #scr-err {
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 70vh;
+  gap: 14px; padding: 32px;
+  text-align: center;
+}
+.spin {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--black);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.scr-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+.scr-sub   { font-size: 13px; color: var(--sub); line-height: 1.6; max-width: 280px; }
+
+#scr-ctrl { flex-direction: column; }
 </style>
 </head>
 <body>
-<div class="card">
 
-  <div class="logo">
-    <div class="logo-circle">
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="logo-sq">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M5 7.5L8.5 17L12 10L15.5 17L19 7.5"
-              stroke="#fff" stroke-width="2.2"
+              stroke="white" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div>
-      <div class="logo-name">wt-rotate</div>
-      <div class="logo-sub">Contrôle à distance</div>
-    </div>
+    <div class="logo-name">wt<em> · remote</em></div>
   </div>
-
-  <!-- PIN screen -->
-  <div id="screen-pin" class="screen active">
-    <div class="section-label">PIN affiché dans l'extension</div>
-    <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*"
-           placeholder="0000" maxlength="4" autocomplete="off">
-    <button class="btn btn-blue" id="btn-connect">
-      <div id="connect-spinner" class="spinner" style="display:none"></div>
-      <span id="btn-connect-label">Se connecter</span>
-    </button>
-    <div id="pin-error" class="error-msg"></div>
-    <div class="hint">Le PIN change à chaque démarrage du serveur</div>
+  <div class="chip off" id="conn-chip">
+    <div class="chip-dot"></div>
+    <span id="conn-txt">Connexion…</span>
   </div>
+</div>
 
-  <!-- Control screen -->
-  <div id="screen-ctrl" class="screen">
-    <div class="status-bar">
-      <div class="dot dot-green" id="ws-dot"></div>
-      <span>Connecté</span>
-      <span id="rotation-badge" style="margin-left:auto"></span>
+<!-- Loading -->
+<div id="scr-loading" class="scr on">
+  <div class="spin"></div>
+  <div class="scr-sub">Connexion au serveur…</div>
+</div>
+
+<!-- Error -->
+<div id="scr-err" class="scr">
+  <div style="font-size:44px">📡</div>
+  <div class="scr-title">Serveur introuvable</div>
+  <div class="scr-sub">Assurez-vous que <strong>start_remote.bat</strong> tourne sur le NUC et que vous êtes sur le même réseau Wi-Fi.</div>
+  <button class="btn btn-k" style="margin-top:8px;padding:14px 28px" onclick="location.reload()">↺ Réessayer</button>
+</div>
+
+<!-- Control -->
+<div id="scr-ctrl" class="scr">
+  <div class="wrap">
+
+    <!-- Now playing -->
+    <div class="card">
+      <div class="card-body">
+        <div class="lbl">En cours d'affichage</div>
+        <div class="np-name" id="np-name">—</div>
+        <div class="np-url"  id="np-url">—</div>
+        <span class="status-chip on" id="status-chip">
+          <svg width="7" height="7" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+          Rotation active
+        </span>
+      </div>
     </div>
 
-    <div class="current-card">
-      <div class="current-label">En cours d'affichage</div>
-      <div class="current-name" id="cur-name">—</div>
-      <div class="current-url"  id="cur-url">—</div>
+    <!-- Send URL -->
+    <div class="card">
+      <div class="card-body">
+        <div class="lbl">Afficher sur la TV</div>
+        <div class="url-row">
+          <input class="url-input" id="url-in"
+                 type="url" placeholder="https://…"
+                 autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="btn btn-k" id="btn-send" onclick="sendUrl()">Envoyer</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Pause / Resume -->
-    <button class="btn btn-red"   id="btn-pause"  onclick="cmd('pause')">⏸ Pause la rotation</button>
-    <button class="btn btn-green" id="btn-resume" onclick="cmd('resume')" style="display:none">▶ Reprendre la rotation</button>
-
-    <hr>
-
-    <!-- Custom URL -->
-    <div class="section-label">Afficher une URL dans la salle</div>
-    <input type="url" id="custom-url" placeholder="https://youtube.com" autocomplete="off">
-    <button class="btn btn-ghost" onclick="openCustomUrl()">📺 Afficher sur le kiosque</button>
-
-    <hr>
-
-    <!-- Prev / Next -->
-    <div class="btn-row">
-      <button class="btn btn-ghost btn-sm" onclick="cmd('prev')">⏮ Préc.</button>
-      <button class="btn btn-ghost btn-sm" onclick="cmd('next')">Suiv. ⏭</button>
+    <!-- Presets -->
+    <div class="card">
+      <div class="card-body">
+        <div class="lbl">Raccourcis</div>
+        <div class="grid">
+          <button class="preset" onclick="preset('https://youtube.com')">
+            <span class="preset-icon">▶️</span><span class="preset-name">YouTube</span>
+          </button>
+          <button class="preset" onclick="preset('https://netflix.com')">
+            <span class="preset-icon">🎬</span><span class="preset-name">Netflix</span>
+          </button>
+          <button class="preset" onclick="preset('https://open.spotify.com')">
+            <span class="preset-icon">🎵</span><span class="preset-name">Spotify</span>
+          </button>
+          <button class="preset" onclick="preset('https://twitch.tv')">
+            <span class="preset-icon">🟣</span><span class="preset-name">Twitch</span>
+          </button>
+          <button class="preset" onclick="preset('https://www.disneyplus.com')">
+            <span class="preset-icon">✨</span><span class="preset-name">Disney+</span>
+          </button>
+          <button class="preset" onclick="preset('https://primevideo.com')">
+            <span class="preset-icon">🎭</span><span class="preset-name">Prime</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <hr>
+    <!-- Rotation controls -->
+    <div class="card">
+      <div class="card-body">
+        <div class="lbl">Rotation</div>
+        <button class="btn btn-r full" id="btn-pause"  onclick="cmd('pause')">⏸&nbsp; Mettre en pause</button>
+        <button class="btn btn-g full" id="btn-resume" onclick="cmd('resume')" style="display:none;margin-top:0">▶&nbsp; Reprendre la rotation</button>
+        <div class="sep"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" onclick="cmd('prev')">⏮&nbsp; Précédent</button>
+          <button class="btn btn-ghost btn-sm" onclick="cmd('next')">Suivant &nbsp;⏭</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Release -->
-    <button class="btn btn-outline-red" onclick="releaseControl()">
-      Libérer le contrôle
-    </button>
-  </div>
-
-  <!-- Disconnected screen -->
-  <div id="screen-dc" class="screen">
-    <div class="status-bar">
-      <div class="dot dot-red"></div>
-      <span>Déconnecté du serveur</span>
+    <div class="card">
+      <div class="card-body" style="padding-bottom:18px">
+        <button class="btn btn-r-out full" onclick="cmd('release')">Libérer le contrôle</button>
+      </div>
     </div>
-    <button class="btn btn-blue" onclick="window.location.reload()">↺ Recharger</button>
-  </div>
 
+  </div>
 </div>
 
 <script>
-let ws = null;
-let wsIp   = null;
-let wsPort = 8765;
-
-// ── Init ──────────────────────────────────────────────────────────────────────
+let ws = null, wsIp = null, wsPort = 8765;
 
 async function init() {
-  const params = new URLSearchParams(window.location.search);
-  const urlPin = params.get('pin');
-  if (urlPin) document.getElementById('pin-input').value = urlPin;
-
   try {
-    const res  = await fetch('/info');
-    const info = await res.json();
-    wsIp   = info.ip;
-    wsPort = info.ws_port || 8765;
-  } catch {
-    wsIp = window.location.hostname;
-  }
-
-  // Auto-connect if PIN in URL
-  if (urlPin) connectWithPin(urlPin);
+    const d = await fetch('/info').then(r => r.json());
+    wsIp   = d.ip;
+    wsPort = d.ws_port || 8765;
+  } catch { wsIp = location.hostname; }
+  connect();
 }
 
 function show(id) {
-  ['screen-pin','screen-ctrl','screen-dc'].forEach(s => {
-    document.getElementById(s).classList.toggle('active', s === id);
+  ['scr-loading','scr-err','scr-ctrl'].forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.toggle('on', s === id);
   });
 }
 
-// ── Connection ────────────────────────────────────────────────────────────────
+function badge(online) {
+  const c = document.getElementById('conn-chip');
+  c.className = 'chip ' + (online ? 'on' : 'off');
+  document.getElementById('conn-txt').textContent = online ? 'Connecté' : 'Déconnecté';
+}
 
-document.getElementById('btn-connect').addEventListener('click', () => {
-  const pin = document.getElementById('pin-input').value.trim();
-  connectWithPin(pin);
-});
-
-document.getElementById('pin-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-connect').click();
-});
-
-function connectWithPin(pin) {
-  if (!pin) return;
-  setConnecting(true);
-  clearError();
-
+function connect() {
   ws = new WebSocket(`ws://${wsIp}:${wsPort}`);
-
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'mobile', pin }));
-
+  ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
-    const msg = JSON.parse(e.data);
-    setConnecting(false);
-    if (msg.type === 'error') { showError(msg.msg); ws.close(); return; }
-    if (msg.type === 'auth_ok') { show('screen-ctrl'); return; }
-    if (msg.type === 'state')   { updateState(msg); }
+    const m = JSON.parse(e.data);
+    if (m.type === 'auth_ok') { show('scr-ctrl'); badge(true); }
+    if (m.type === 'state')   updateState(m);
   };
-
   ws.onclose = () => {
-    setConnecting(false);
-    if (document.getElementById('screen-ctrl').classList.contains('active')) {
-      show('screen-dc');
-    }
+    badge(false);
+    if (!document.getElementById('scr-ctrl').classList.contains('on')) show('scr-err');
   };
-
-  ws.onerror = () => {
-    setConnecting(false);
-    showError('Impossible de joindre le serveur');
-  };
+  ws.onerror = () => show('scr-err');
 }
-
-function setConnecting(on) {
-  document.getElementById('connect-spinner').style.display    = on ? '' : 'none';
-  document.getElementById('btn-connect-label').style.display  = on ? 'none' : '';
-  document.getElementById('btn-connect').disabled = on;
-}
-function showError(msg) {
-  const el = document.getElementById('pin-error');
-  el.textContent = msg; el.style.display = 'block';
-}
-function clearError() {
-  document.getElementById('pin-error').style.display = 'none';
-}
-
-// ── State update ──────────────────────────────────────────────────────────────
 
 function updateState(s) {
-  const urls = s.urls || [];
-  const idx  = s.currentIndex || 0;
-  const cur  = urls[idx] || {};
-
-  document.getElementById('cur-name').textContent = cur.name || cur.url || '—';
-  document.getElementById('cur-url').textContent  = cur.url  || '—';
-
-  const badge   = document.getElementById('rotation-badge');
-  const btnPause  = document.getElementById('btn-pause');
-  const btnResume = document.getElementById('btn-resume');
-
-  if (s.active) {
-    badge.innerHTML = '<span class="badge badge-on">Actif</span>';
-    btnPause.style.display  = '';
-    btnResume.style.display = 'none';
-  } else {
-    badge.innerHTML = '<span class="badge badge-off">En pause</span>';
-    btnPause.style.display  = 'none';
-    btnResume.style.display = '';
-  }
+  const urls = s.urls || [], cur = urls[s.currentIndex || 0] || {};
+  document.getElementById('np-name').textContent = cur.name || cur.url || '—';
+  document.getElementById('np-url').textContent  = cur.url  || '—';
+  const chip = document.getElementById('status-chip');
+  const bp   = document.getElementById('btn-pause');
+  const br   = document.getElementById('btn-resume');
+  chip.className = 'status-chip ' + (s.active ? 'on' : 'off');
+  chip.innerHTML = `<svg width="7" height="7" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg> ${s.active ? 'Rotation active' : 'En pause'}`;
+  bp.style.display = s.active ? '' : 'none';
+  br.style.display = s.active ? 'none' : '';
+  if (!s.active) br.style.marginTop = '0';
 }
-
-// ── Commands ──────────────────────────────────────────────────────────────────
 
 function cmd(action, extra = {}) {
-  if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'command', action, ...extra }));
-  }
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type:'command', action, ...extra }));
 }
 
-function openCustomUrl() {
-  const url = document.getElementById('custom-url').value.trim();
-  if (!url) return;
-  cmd('open_url', { url });
-  document.getElementById('custom-url').value = '';
+function sendUrl() {
+  const u = document.getElementById('url-in').value.trim();
+  if (!u) return;
+  cmd('open_url', { url: u });
+  document.getElementById('url-in').value = '';
 }
 
-function releaseControl() {
-  cmd('release');
-}
+function preset(url) { cmd('open_url', { url }); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('url-in').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendUrl();
+  });
+});
 
 init();
 </script>

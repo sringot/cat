@@ -414,7 +414,6 @@ async function refreshRemoteInfo() {
       statusTxt.textContent = 'Serveur connecté';
       statusTxt.style.color = 'var(--green-txt)';
       $('remote-url-box').textContent = url;
-      $('remote-pin').textContent = info.pin;
       online.classList.remove('hidden');
       offlineHint.classList.add('hidden');
     } else {

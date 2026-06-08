@@ -3,335 +3,361 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
 <title>wt · remote</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
 
 :root {
-  --bg:       #F2F2F7;
-  --card:     #FFFFFF;
-  --text:     #0A0A0F;
-  --sub:      #8E8E93;
-  --border:   #E5E5EA;
-  --black:    #0A0A0F;
-  --green:    #34C759;
-  --green-bg: #F0FFF4;
-  --red:      #FF3B30;
-  --red-bg:   #FFF1F0;
-  --blue:     #007AFF;
-  --r:        16px;
-  --sh:       0 1px 0 rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06);
+  --black:  #0D0D0D;
+  --white:  #FFFFFF;
+  --bg:     #F5F5F7;
+  --card:   #FFFFFF;
+  --t1:     #0D0D0D;
+  --t2:     #6E6E73;
+  --t3:     #AEAEB2;
+  --bdr:    #E8E8ED;
+  --green:  #30D158;
+  --gbg:    #F0FFF5;
+  --red:    #FF3B30;
+  --rbg:    #FFF1F0;
+  --sh:     0 1px 1px rgba(0,0,0,.03), 0 4px 16px rgba(0,0,0,.06);
 }
+
+html { -webkit-font-smoothing: antialiased; }
 
 body {
   background: var(--bg);
-  color: var(--text);
-  font-family: 'Poppins', -apple-system, sans-serif;
+  color: var(--t1);
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  padding-bottom: 48px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
 }
 
-/* ── Header ─────────────────────────────────────────────── */
-.hdr {
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* ── HEADER ────────────────────────────────────────────── */
+.nav {
+  position: sticky; top: 0; z-index: 99;
+  background: rgba(245,245,247,.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: 13px 20px;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.hdr-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
 }
-.logo-sq {
-  width: 34px; height: 34px;
-  background: var(--black);
-  border-radius: 9px;
+.brand-icon {
+  width: 32px; height: 32px; background: var(--black);
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
 }
-.logo-sq svg { width: 18px; height: 18px; }
-.logo-name  { font-size: 16px; font-weight: 700; letter-spacing: -0.4px; }
-.logo-name em { font-style: normal; color: var(--sub); font-weight: 500; }
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
+.brand-icon svg { width: 17px; height: 17px; }
+.brand-name {
+  font-size: 15px; font-weight: 700; letter-spacing: -.4px;
+  color: var(--t1);
 }
-.chip-dot { width: 7px; height: 7px; border-radius: 50%; }
-.chip.on  { background: var(--green-bg); color: #1A7F37; }
-.chip.on  .chip-dot { background: var(--green); }
-.chip.off { background: var(--red-bg); color: var(--red); }
-.chip.off .chip-dot { background: var(--red); }
+.brand-name span { color: var(--t2); font-weight: 500; }
 
-/* ── Layout ─────────────────────────────────────────────── */
-.wrap {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 16px 16px 0;
-  display: flex;
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: -.1px;
+}
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+.pill.on  { background: var(--gbg); color: #1D7A3A; }
+.pill.on  .pill-dot { background: var(--green); }
+.pill.off { background: var(--rbg); color: var(--red); }
+.pill.off .pill-dot { background: var(--red); }
+.pill.wait { background: #F5F5F7; color: var(--t2); }
+.pill.wait .pill-dot { background: var(--t3); }
+
+/* ── SCREENS ────────────────────────────────────────────── */
+.screen { display: none; }
+.screen.show { display: flex; }
+
+#s-load, #s-err {
   flex-direction: column;
-  gap: 12px;
+  align-items: center; justify-content: center;
+  min-height: 72vh;
+  gap: 14px; padding: 40px 28px; text-align: center;
+}
+.loader {
+  width: 38px; height: 38px;
+  border: 3px solid var(--bdr);
+  border-top-color: var(--black);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.err-icon  { font-size: 48px; }
+.err-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.err-body  { font-size: 14px; color: var(--t2); line-height: 1.6; max-width: 300px; }
+
+#s-main { flex-direction: column; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.stack {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px 16px 0;
+  max-width: 520px; margin: 0 auto;
 }
 
-/* ── Card ───────────────────────────────────────────────── */
+/* ── CARD ───────────────────────────────────────────────── */
 .card {
   background: var(--card);
-  border-radius: var(--r);
+  border-radius: 18px;
   box-shadow: var(--sh);
   overflow: hidden;
 }
-.card-body { padding: 18px 18px 20px; }
-.lbl {
+.card-p { padding: 20px; }
+
+.sect-lbl {
   font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1.2px;
-  color: var(--sub); margin-bottom: 12px;
+  text-transform: uppercase; letter-spacing: 1.4px;
+  color: var(--t2); margin-bottom: 14px;
 }
 
-/* ── Now playing ─────────────────────────────────────────── */
+/* ── NOW PLAYING ────────────────────────────────────────── */
+.np-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+  margin-bottom: 6px;
+}
 .np-name {
-  font-size: 18px; font-weight: 700; letter-spacing: -0.4px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: 3px;
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -.5px; line-height: 1.2;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .np-url {
-  font-size: 11px; color: var(--sub);
-  font-family: 'SF Mono', 'Consolas', monospace;
-  word-break: break-all; margin-bottom: 12px;
+  font-size: 11px; color: var(--t2);
+  font-family: 'SF Mono','Consolas','Courier New',monospace;
+  margin-bottom: 14px; word-break: break-all;
+  line-height: 1.5;
 }
-.status-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border-radius: 20px;
-  font-size: 11px; font-weight: 600;
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
 }
-.status-chip.on  { background: var(--green-bg); color: #1A7F37; }
-.status-chip.off { background: var(--red-bg);   color: var(--red); }
+.sb-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-badge.on  { background: var(--gbg); color: #1D7A3A; }
+.status-badge.on  .sb-dot { background: var(--green); }
+.status-badge.off { background: var(--rbg); color: var(--red); }
+.status-badge.off .sb-dot { background: var(--red); }
 
-/* ── URL bar ─────────────────────────────────────────────── */
-.url-row {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
+/* ── URL BAR ────────────────────────────────────────────── */
+.url-bar {
+  display: flex; align-items: stretch;
+  background: #F5F5F7; border-radius: 14px;
+  border: 1.5px solid var(--bdr);
+  overflow: hidden; transition: border-color .15s;
 }
-.url-input {
-  flex: 1;
-  background: #F7F7F9;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  font-size: 14px;
+.url-bar:focus-within { border-color: var(--black); background: #fff; }
+.url-bar input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
   font-family: 'Poppins', sans-serif;
-  color: var(--text);
-  outline: none;
-  transition: border-color .15s, background .15s;
-  min-width: 0;
+  font-size: 14px; font-weight: 400; color: var(--t1);
+  padding: 15px 16px;
 }
-.url-input:focus { border-color: var(--black); background: #fff; }
-.url-input::placeholder { color: #C7C7CC; }
-
-/* ── Buttons ─────────────────────────────────────────────── */
-.btn {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  border: none; border-radius: 12px;
-  cursor: pointer;
+.url-bar input::placeholder { color: var(--t3); }
+.url-bar-btn {
+  background: var(--black); border: none; cursor: pointer;
+  padding: 0 20px; color: #fff;
   font-family: 'Poppins', sans-serif;
-  font-size: 14px; font-weight: 600;
-  padding: 15px 20px;
-  transition: opacity .12s, transform .1s;
-  letter-spacing: -0.1px;
-  white-space: nowrap;
+  font-size: 13px; font-weight: 700;
+  white-space: nowrap; transition: background .15s;
+  border-radius: 0 12px 12px 0;
 }
-.btn:active { transform: scale(0.97); }
-.btn.full   { width: 100%; }
+.url-bar-btn:hover  { background: #222; }
+.url-bar-btn:active { background: #444; transform: scale(.98); }
 
-.btn-k     { background: var(--black); color: #fff; }
-.btn-k:hover { background: #222; }
-.btn-g     { background: var(--green); color: #fff; }
-.btn-r     { background: var(--red); color: #fff; }
-.btn-ghost { background: #F7F7F9; color: var(--text); border: 1.5px solid var(--border); }
-.btn-ghost:hover { border-color: #000; }
-.btn-r-out { background: #fff; color: var(--red); border: 1.5px solid #FECACA; }
-.btn-r-out:hover { background: var(--red-bg); border-color: var(--red); }
-
-.btn-sm { padding: 12px 14px; font-size: 13px; border-radius: 10px; flex: 1; }
-
-.btn-row { display: flex; gap: 8px; }
-
-/* ── Presets grid ────────────────────────────────────────── */
-.grid {
+/* ── PRESETS ────────────────────────────────────────────── */
+.presets {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
-.preset {
-  background: #F7F7F9;
-  border: 1.5px solid var(--border);
-  border-radius: 13px;
-  padding: 14px 8px 12px;
-  cursor: pointer;
+.ps {
   display: flex; flex-direction: column;
-  align-items: center; gap: 6px;
+  align-items: center; gap: 7px;
+  background: #F5F5F7; border: 1.5px solid var(--bdr);
+  border-radius: 14px; padding: 16px 8px 14px;
+  cursor: pointer; font-family: 'Poppins', sans-serif;
   transition: all .15s;
+}
+.ps:hover  { border-color: #222; background: var(--white); }
+.ps:active { transform: scale(.95); }
+.ps-ico  { font-size: 26px; line-height: 1; }
+.ps-name { font-size: 11px; font-weight: 600; color: var(--t1); }
+
+/* ── BUTTONS ────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%; border: none; cursor: pointer;
   font-family: 'Poppins', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: -.2px;
+  padding: 17px 20px; border-radius: 14px;
+  transition: all .13s;
 }
-.preset:hover  { border-color: var(--black); background: #fff; }
-.preset:active { transform: scale(0.95); }
-.preset-icon { font-size: 24px; line-height: 1.1; }
-.preset-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.btn:active { transform: scale(.97); }
 
-/* ── Separator ───────────────────────────────────────────── */
-.sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
-
-/* ── Screens ─────────────────────────────────────────────── */
-.scr { display: none; }
-.scr.on { display: flex; }
-
-#scr-loading, #scr-err {
-  flex-direction: column;
-  align-items: center; justify-content: center;
-  min-height: 70vh;
-  gap: 14px; padding: 32px;
-  text-align: center;
+.btn-k    { background: var(--black); color: #fff; }
+.btn-k:hover   { background: #222; }
+.btn-g    { background: var(--green); color: #fff; }
+.btn-g:hover   { background: #25b84e; }
+.btn-r    { background: var(--red);   color: #fff; }
+.btn-r:hover   { background: #e0332a; }
+.btn-line { background: #fff; color: var(--t1); border: 1.5px solid var(--bdr); }
+.btn-line:hover { border-color: #222; }
+.btn-line-r {
+  background: #fff; color: var(--red);
+  border: 1.5px solid #FFCDD2; border-radius: 14px;
 }
-.spin {
-  width: 40px; height: 40px;
-  border: 3px solid var(--border);
-  border-top-color: var(--black);
-  border-radius: 50%;
-  animation: spin .75s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.scr-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
-.scr-sub   { font-size: 13px; color: var(--sub); line-height: 1.6; max-width: 280px; }
+.btn-line-r:hover { background: var(--rbg); border-color: var(--red); }
 
-#scr-ctrl { flex-direction: column; }
+.btn-sm { padding: 13px 14px; font-size: 13px; border-radius: 12px; flex: 1; }
+.row2 { display: flex; gap: 8px; }
+
+/* ── SEP ────────────────────────────────────────────────── */
+.div  { border: none; border-top: 1px solid var(--bdr); margin: 14px 0; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<div class="hdr">
-  <div class="hdr-logo">
-    <div class="logo-sq">
+<div class="nav">
+  <div class="nav-brand">
+    <div class="brand-icon">
       <svg viewBox="0 0 24 24" fill="none">
-        <path d="M5 7.5L8.5 17L12 10L15.5 17L19 7.5"
-              stroke="white" stroke-width="2.2"
+        <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7"
+              stroke="white" stroke-width="2.3"
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="logo-name">wt<em> · remote</em></div>
+    <div class="brand-name">wt<span> remote</span></div>
   </div>
-  <div class="chip off" id="conn-chip">
-    <div class="chip-dot"></div>
-    <span id="conn-txt">Connexion…</span>
+  <div class="pill wait" id="cpill">
+    <div class="pill-dot"></div>
+    <span id="ctxt">Connexion…</span>
   </div>
 </div>
 
 <!-- Loading -->
-<div id="scr-loading" class="scr on">
-  <div class="spin"></div>
-  <div class="scr-sub">Connexion au serveur…</div>
+<div id="s-load" class="screen show">
+  <div class="loader"></div>
+  <p style="font-size:14px;color:var(--t2);font-family:Poppins,sans-serif">
+    Connexion au serveur…
+  </p>
 </div>
 
 <!-- Error -->
-<div id="scr-err" class="scr">
-  <div style="font-size:44px">📡</div>
-  <div class="scr-title">Serveur introuvable</div>
-  <div class="scr-sub">Assurez-vous que <strong>start_remote.bat</strong> tourne sur le NUC et que vous êtes sur le même réseau Wi-Fi.</div>
-  <button class="btn btn-k" style="margin-top:8px;padding:14px 28px" onclick="location.reload()">↺ Réessayer</button>
+<div id="s-err" class="screen">
+  <div class="err-icon">📡</div>
+  <div class="err-title">Serveur introuvable</div>
+  <div class="err-body">
+    Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être
+    sur le même réseau Wi-Fi.
+  </div>
+  <button class="btn btn-k" style="max-width:240px;margin-top:10px" onclick="location.reload()">
+    ↺ &nbsp;Réessayer
+  </button>
 </div>
 
 <!-- Control -->
-<div id="scr-ctrl" class="scr">
-  <div class="wrap">
+<div id="s-main" class="screen">
+  <div class="stack">
 
     <!-- Now playing -->
     <div class="card">
-      <div class="card-body">
-        <div class="lbl">En cours d'affichage</div>
-        <div class="np-name" id="np-name">—</div>
-        <div class="np-url"  id="np-url">—</div>
-        <span class="status-chip on" id="status-chip">
-          <svg width="7" height="7" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
-          Rotation active
+      <div class="card-p">
+        <div class="sect-lbl">En cours d'affichage</div>
+        <div class="np-top">
+          <div class="np-name" id="np-n">—</div>
+        </div>
+        <div class="np-url" id="np-u">—</div>
+        <span class="status-badge on" id="sbadge">
+          <span class="sb-dot"></span>
+          <span id="sbtxt">Rotation active</span>
         </span>
       </div>
     </div>
 
     <!-- Send URL -->
     <div class="card">
-      <div class="card-body">
-        <div class="lbl">Afficher sur la TV</div>
-        <div class="url-row">
-          <input class="url-input" id="url-in"
-                 type="url" placeholder="https://…"
-                 autocomplete="off" autocorrect="off" spellcheck="false">
-          <button class="btn btn-k" id="btn-send" onclick="sendUrl()">Envoyer</button>
+      <div class="card-p">
+        <div class="sect-lbl">Afficher sur la TV</div>
+        <div class="url-bar">
+          <input id="urlin" type="url"
+                 placeholder="https://youtube.com/watch?v=…"
+                 autocomplete="off" autocorrect="off"
+                 autocapitalize="off" spellcheck="false">
+          <button class="url-bar-btn" onclick="sendUrl()">Envoyer</button>
         </div>
       </div>
     </div>
 
     <!-- Presets -->
     <div class="card">
-      <div class="card-body">
-        <div class="lbl">Raccourcis</div>
-        <div class="grid">
-          <button class="preset" onclick="preset('https://youtube.com')">
-            <span class="preset-icon">▶️</span><span class="preset-name">YouTube</span>
+      <div class="card-p">
+        <div class="sect-lbl">Raccourcis</div>
+        <div class="presets">
+          <button class="ps" onclick="go('https://youtube.com')">
+            <span class="ps-ico">▶️</span>
+            <span class="ps-name">YouTube</span>
           </button>
-          <button class="preset" onclick="preset('https://netflix.com')">
-            <span class="preset-icon">🎬</span><span class="preset-name">Netflix</span>
+          <button class="ps" onclick="go('https://netflix.com')">
+            <span class="ps-ico">🎬</span>
+            <span class="ps-name">Netflix</span>
           </button>
-          <button class="preset" onclick="preset('https://open.spotify.com')">
-            <span class="preset-icon">🎵</span><span class="preset-name">Spotify</span>
+          <button class="ps" onclick="go('https://open.spotify.com')">
+            <span class="ps-ico">🎵</span>
+            <span class="ps-name">Spotify</span>
           </button>
-          <button class="preset" onclick="preset('https://twitch.tv')">
-            <span class="preset-icon">🟣</span><span class="preset-name">Twitch</span>
+          <button class="ps" onclick="go('https://twitch.tv')">
+            <span class="ps-ico">🟣</span>
+            <span class="ps-name">Twitch</span>
           </button>
-          <button class="preset" onclick="preset('https://www.disneyplus.com')">
-            <span class="preset-icon">✨</span><span class="preset-name">Disney+</span>
+          <button class="ps" onclick="go('https://disneyplus.com')">
+            <span class="ps-ico">✨</span>
+            <span class="ps-name">Disney+</span>
           </button>
-          <button class="preset" onclick="preset('https://primevideo.com')">
-            <span class="preset-icon">🎭</span><span class="preset-name">Prime</span>
+          <button class="ps" onclick="go('https://primevideo.com')">
+            <span class="ps-ico">🎭</span>
+            <span class="ps-name">Prime</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Rotation controls -->
+    <!-- Controls -->
     <div class="card">
-      <div class="card-body">
-        <div class="lbl">Rotation</div>
-        <button class="btn btn-r full" id="btn-pause"  onclick="cmd('pause')">⏸&nbsp; Mettre en pause</button>
-        <button class="btn btn-g full" id="btn-resume" onclick="cmd('resume')" style="display:none;margin-top:0">▶&nbsp; Reprendre la rotation</button>
-        <div class="sep"></div>
-        <div class="btn-row">
-          <button class="btn btn-ghost btn-sm" onclick="cmd('prev')">⏮&nbsp; Précédent</button>
-          <button class="btn btn-ghost btn-sm" onclick="cmd('next')">Suivant &nbsp;⏭</button>
+      <div class="card-p">
+        <div class="sect-lbl">Contrôles</div>
+        <button class="btn btn-r"   id="bpause"  onclick="cmd('pause')">⏸&nbsp; Pause la rotation</button>
+        <button class="btn btn-g"   id="bresume" onclick="cmd('resume')" style="display:none">▶&nbsp; Reprendre la rotation</button>
+        <div class="div"></div>
+        <div class="row2">
+          <button class="btn btn-line btn-sm" onclick="cmd('prev')">⏮ &nbsp;Précédent</button>
+          <button class="btn btn-line btn-sm" onclick="cmd('next')">Suivant&nbsp; ⏭</button>
         </div>
       </div>
     </div>
 
     <!-- Release -->
-    <div class="card">
-      <div class="card-body" style="padding-bottom:18px">
-        <button class="btn btn-r-out full" onclick="cmd('release')">Libérer le contrôle</button>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-p">
+        <button class="btn btn-line-r" onclick="cmd('release')">
+          Libérer le contrôle
+        </button>
       </div>
     </div>
 
@@ -339,79 +365,84 @@ body {
 </div>
 
 <script>
-let ws = null, wsIp = null, wsPort = 8765;
+let ws = null, ip = null, port = 8765;
 
-async function init() {
+async function boot() {
   try {
     const d = await fetch('/info').then(r => r.json());
-    wsIp   = d.ip;
-    wsPort = d.ws_port || 8765;
-  } catch { wsIp = location.hostname; }
+    ip   = d.ip;
+    port = d.ws_port || 8765;
+  } catch { ip = location.hostname; }
   connect();
 }
 
 function show(id) {
-  ['scr-loading','scr-err','scr-ctrl'].forEach(s => {
-    const el = document.getElementById(s);
-    el.classList.toggle('on', s === id);
-  });
+  document.querySelectorAll('.screen').forEach(el =>
+    el.classList.toggle('show', el.id === id));
 }
 
-function badge(online) {
-  const c = document.getElementById('conn-chip');
-  c.className = 'chip ' + (online ? 'on' : 'off');
-  document.getElementById('conn-txt').textContent = online ? 'Connecté' : 'Déconnecté';
+function badge(state) { // 'on' | 'off' | 'wait'
+  const p = document.getElementById('cpill');
+  const t = document.getElementById('ctxt');
+  p.className = 'pill ' + state;
+  t.textContent = state === 'on' ? 'Connecté' : state === 'off' ? 'Déconnecté' : 'Connexion…';
 }
 
 function connect() {
-  ws = new WebSocket(`ws://${wsIp}:${wsPort}`);
+  badge('wait');
+  ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
-    if (m.type === 'auth_ok') { show('scr-ctrl'); badge(true); }
-    if (m.type === 'state')   updateState(m);
+    if (m.type === 'auth_ok') { show('s-main'); badge('on'); }
+    if (m.type === 'state')   sync(m);
   };
   ws.onclose = () => {
-    badge(false);
-    if (!document.getElementById('scr-ctrl').classList.contains('on')) show('scr-err');
+    badge('off');
+    if (!document.getElementById('s-main').classList.contains('show')) show('s-err');
   };
-  ws.onerror = () => show('scr-err');
+  ws.onerror = () => show('s-err');
 }
 
-function updateState(s) {
-  const urls = s.urls || [], cur = urls[s.currentIndex || 0] || {};
-  document.getElementById('np-name').textContent = cur.name || cur.url || '—';
-  document.getElementById('np-url').textContent  = cur.url  || '—';
-  const chip = document.getElementById('status-chip');
-  const bp   = document.getElementById('btn-pause');
-  const br   = document.getElementById('btn-resume');
-  chip.className = 'status-chip ' + (s.active ? 'on' : 'off');
-  chip.innerHTML = `<svg width="7" height="7" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg> ${s.active ? 'Rotation active' : 'En pause'}`;
-  bp.style.display = s.active ? '' : 'none';
-  br.style.display = s.active ? 'none' : '';
-  if (!s.active) br.style.marginTop = '0';
+function sync(s) {
+  const urls = s.urls || [], c = urls[s.currentIndex || 0] || {};
+  document.getElementById('np-n').textContent = c.name || c.url || '—';
+  document.getElementById('np-u').textContent = c.url  || '—';
+  const sb  = document.getElementById('sbadge');
+  const sbt = document.getElementById('sbtxt');
+  const bp  = document.getElementById('bpause');
+  const br  = document.getElementById('bresume');
+  if (s.active) {
+    sb.className = 'status-badge on';
+    sbt.textContent = 'Rotation active';
+    bp.style.display = ''; br.style.display = 'none';
+  } else {
+    sb.className = 'status-badge off';
+    sbt.textContent = 'En pause';
+    bp.style.display = 'none'; br.style.display = '';
+  }
 }
 
-function cmd(action, extra = {}) {
-  if (ws?.readyState === 1) ws.send(JSON.stringify({ type:'command', action, ...extra }));
+function cmd(action, extra) {
+  if (ws?.readyState === 1)
+    ws.send(JSON.stringify({ type: 'command', action, ...extra }));
 }
 
 function sendUrl() {
-  const u = document.getElementById('url-in').value.trim();
+  const u = document.getElementById('urlin').value.trim();
   if (!u) return;
   cmd('open_url', { url: u });
-  document.getElementById('url-in').value = '';
+  document.getElementById('urlin').value = '';
 }
 
-function preset(url) { cmd('open_url', { url }); }
+function go(url) { cmd('open_url', { url }); }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('url-in').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendUrl();
-  });
+  document.getElementById('urlin')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
 });
 
-init();
+boot();
 </script>
 </body>
 </html>

@@ -339,6 +339,23 @@ async function sendStateToRemote() {
   }));
 }
 
+function transformUrl(url) {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.replace(/^m\./, '').replace(/^www\./, '');
+    let videoId = null;
+    if (h === 'youtu.be') {
+      videoId = u.pathname.slice(1).split('/')[0];
+    } else if (h === 'youtube.com') {
+      if (u.pathname === '/watch') videoId = u.searchParams.get('v');
+      else if (u.pathname.startsWith('/shorts/')) videoId = u.pathname.split('/')[2];
+      else if (u.pathname.startsWith('/embed/')) return url;
+    }
+    if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+  } catch {}
+  return url;
+}
+
 async function handleRemoteCommand(cmd) {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
@@ -368,7 +385,7 @@ async function handleRemoteCommand(cmd) {
       if (cmd.url && config.windowId) {
         try {
           if (config.remoteTabId) { try { await chrome.tabs.remove(config.remoteTabId); } catch {} }
-          const tab = await chrome.tabs.create({ windowId: config.windowId, url: cmd.url, active: true });
+          const tab = await chrome.tabs.create({ windowId: config.windowId, url: transformUrl(cmd.url), active: true });
           config.remoteTabId = tab.id; config.active = false; config.remotePaused = true;
           chrome.alarms.clear('wt-rotate');
           await chrome.storage.local.set({ config });

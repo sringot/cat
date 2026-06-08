@@ -181,25 +181,6 @@ body {
 .url-bar-btn:hover  { background: #222; }
 .url-bar-btn:active { background: #444; transform: scale(.98); }
 
-/* ── PRESETS ────────────────────────────────────────────── */
-.presets {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.ps {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 7px;
-  background: #F5F5F7; border: 1.5px solid var(--bdr);
-  border-radius: 14px; padding: 16px 8px 14px;
-  cursor: pointer; font-family: 'Poppins', sans-serif;
-  transition: all .15s;
-}
-.ps:hover  { border-color: #222; background: var(--white); }
-.ps:active { transform: scale(.95); }
-.ps-ico  { font-size: 26px; line-height: 1; }
-.ps-name { font-size: 11px; font-weight: 600; color: var(--t1); }
-
 /* ── BUTTONS ────────────────────────────────────────────── */
 .btn {
   display: flex; align-items: center; justify-content: center;
@@ -305,39 +286,6 @@ body {
       </div>
     </div>
 
-    <!-- Presets -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Raccourcis</div>
-        <div class="presets">
-          <button class="ps" onclick="go('https://youtube.com')">
-            <span class="ps-ico">▶️</span>
-            <span class="ps-name">YouTube</span>
-          </button>
-          <button class="ps" onclick="go('https://netflix.com')">
-            <span class="ps-ico">🎬</span>
-            <span class="ps-name">Netflix</span>
-          </button>
-          <button class="ps" onclick="go('https://open.spotify.com')">
-            <span class="ps-ico">🎵</span>
-            <span class="ps-name">Spotify</span>
-          </button>
-          <button class="ps" onclick="go('https://twitch.tv')">
-            <span class="ps-ico">🟣</span>
-            <span class="ps-name">Twitch</span>
-          </button>
-          <button class="ps" onclick="go('https://disneyplus.com')">
-            <span class="ps-ico">✨</span>
-            <span class="ps-name">Disney+</span>
-          </button>
-          <button class="ps" onclick="go('https://primevideo.com')">
-            <span class="ps-ico">🎭</span>
-            <span class="ps-name">Prime</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- Controls -->
     <div class="card">
       <div class="card-p">
@@ -388,7 +336,10 @@ function badge(state) { // 'on' | 'off' | 'wait'
   t.textContent = state === 'on' ? 'Connecté' : state === 'off' ? 'Déconnecté' : 'Connexion…';
 }
 
+let reconnectTimer = null;
+
 function connect() {
+  clearTimeout(reconnectTimer);
   badge('wait');
   ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
@@ -400,8 +351,9 @@ function connect() {
   ws.onclose = () => {
     badge('off');
     if (!document.getElementById('s-main').classList.contains('show')) show('s-err');
+    reconnectTimer = setTimeout(connect, 3000);
   };
-  ws.onerror = () => show('s-err');
+  ws.onerror = () => {};
 }
 
 function sync(s) {

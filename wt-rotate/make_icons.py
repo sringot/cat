@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate wt-rotate extension icons (no external dependencies)."""
+"""Generate wt-rotate extension icons — bold rotation arrows, black on transparent."""
 import struct, zlib, math, os
 
 def make_png(size, pixel_fn):
@@ -19,19 +19,6 @@ def make_png(size, pixel_fn):
             + chunk(b'IEND', b''))
 
 
-def lerp(a, b, t):
-    return int(a + (b - a) * t)
-
-def aa_circle(dist, r, width=1.4):
-    """Return alpha [0-255] for an anti-aliased circle edge."""
-    d = dist - r
-    if d < -width / 2:
-        return 255
-    if d > width / 2:
-        return 0
-    return int(255 * (0.5 - d / width))
-
-
 def draw(x, y, size):
     s  = float(size)
     cx = cy = s / 2.0
@@ -39,87 +26,59 @@ def draw(x, y, size):
     py = y + 0.5
     dx = px - cx
     dy = py - cy
-    dist   = math.sqrt(dx * dx + dy * dy)
-    angle  = math.atan2(dy, dx)   # -π … π
+    dist      = math.sqrt(dx * dx + dy * dy)
+    angle_deg = math.degrees(math.atan2(dy, dx)) % 360  # 0-360, 0=right, CW
 
-    # --- geometry (relative to size) ---
-    R_BG   = s * 0.48   # background circle radius
-    R_OUT  = s * 0.375  # ring outer
-    R_IN   = s * 0.215  # ring inner
-    R_MID  = (R_OUT + R_IN) / 2.0
+    R_OUT = s * 0.44
+    R_IN  = s * 0.24
+    R_MID = (R_OUT + R_IN) / 2.0
+    AA_W  = max(0.8, s * 0.016)
 
-    BG = [15, 52, 96]      # #0f3460
-    FG = [255, 255, 255]   # white
+    # Two arcs — gaps at 0° (3 o'clock) and 180° (9 o'clock), ±10° each
+    # ARC1 (top half): 190° → 350°, going CW through 270° (12 o'clock)
+    # ARC2 (bottom half): 10° → 170°, going CW through 90° (6 o'clock)
+    ARC1_S, ARC1_E = 190.0, 350.0
+    ARC2_S, ARC2_E = 10.0,  170.0
 
-    # Outside the icon → transparent
-    bg_alpha = aa_circle(dist, R_BG)
-    if bg_alpha == 0:
-        return [0, 0, 0, 0]
+    def in_arc(deg, a, b):
+        return a <= deg <= b
 
-    # --- arc: 300° ring, gap at the top (clockwise arrow) ---
-    # Gap: from -π/2 - 30° to -π/2 + 30°  (i.e. top ± 30°)
-    GAP_CENTER = -math.pi / 2.0
-    GAP_HALF   = math.pi / 6.0    # 30°
+    in_arc1 = in_arc(angle_deg, ARC1_S, ARC1_E)
+    in_arc2 = in_arc(angle_deg, ARC2_S, ARC2_E)
 
-    def angle_diff(a, b):
-        d = abs(a - b) % (2 * math.pi)
-        return d if d <= math.pi else 2 * math.pi - d
-
-    in_ring  = R_IN <= dist <= R_OUT
-    in_gap   = angle_diff(angle, GAP_CENTER) < GAP_HALF
-
+    # Ring alpha with smooth AA at inner/outer edges
     ring_alpha = 0
-    if in_ring and not in_gap:
-        ring_alpha = 255
-
-    # Anti-alias the ring edges (outer & inner)
-    if not in_gap:
-        ring_alpha = max(ring_alpha, aa_circle(dist, R_OUT) - aa_circle(dist, R_OUT))
-        outer_aa = aa_circle(dist, R_OUT, 1.8)
-        inner_aa = aa_circle(dist, R_IN,  1.8)
-        ring_alpha = max(0, min(255, outer_aa - (255 - inner_aa) if dist < R_MID else outer_aa))
-        if R_IN < dist < R_OUT and not in_gap:
+    if in_arc1 or in_arc2:
+        if R_IN <= dist <= R_OUT:
             ring_alpha = 255
+        elif dist < R_IN:
+            ring_alpha = int(255 * max(0.0, (dist - (R_IN - AA_W)) / AA_W))
+        else:
+            ring_alpha = int(255 * max(0.0, (R_OUT + AA_W - dist) / AA_W))
 
-    # --- arrowhead ---
-    # Clockwise end of the arc = GAP_CENTER - GAP_HALF (left side of gap)
-    arrow_tip_a = GAP_CENTER - GAP_HALF     # ≈ -120° → bottom-left area
-    TANG = arrow_tip_a - math.pi / 2.0      # tangent at that point, pointing "into" the gap
+    # Arrowhead triangles at each arc end (CW tangent direction)
+    def in_triangle(v1, v2, v3):
+        def cross2d(ax, ay, bx, by):
+            return (px - bx) * (ay - by) - (ax - bx) * (py - by)
+        d1 = cross2d(v1[0], v1[1], v2[0], v2[1])
+        d2 = cross2d(v2[0], v2[1], v3[0], v3[1])
+        d3 = cross2d(v3[0], v3[1], v1[0], v1[1])
+        neg = d1 < 0 or d2 < 0 or d3 < 0
+        pos = d1 > 0 or d2 > 0 or d3 > 0
+        return not (neg and pos)
 
-    v1x = cx + R_OUT * math.cos(arrow_tip_a)
-    v1y = cy + R_OUT * math.sin(arrow_tip_a)
-    v2x = cx + R_IN  * math.cos(arrow_tip_a)
-    v2y = cy + R_IN  * math.sin(arrow_tip_a)
-    ARR = s * 0.19
-    v3x = cx + R_MID * math.cos(arrow_tip_a) + ARR * math.cos(TANG)
-    v3y = cy + R_MID * math.sin(arrow_tip_a) + ARR * math.sin(TANG)
+    def arrow_fill(end_deg):
+        tr   = math.radians(end_deg)
+        tang = tr + math.pi / 2         # CW tangent
+        ARR  = (R_OUT - R_IN) * 1.15   # arrowhead length
+        v1 = (cx + R_OUT * math.cos(tr), cy + R_OUT * math.sin(tr))
+        v2 = (cx + R_IN  * math.cos(tr), cy + R_IN  * math.sin(tr))
+        v3 = (cx + R_MID * math.cos(tr) + ARR * math.cos(tang),
+              cy + R_MID * math.sin(tr) + ARR * math.sin(tang))
+        return 255 if in_triangle(v1, v2, v3) else 0
 
-    def sign(ax, ay, bx, by):
-        return (px - bx) * (ay - by) - (ax - bx) * (py - by)
-
-    d1 = sign(v1x, v1y, v2x, v2y)
-    d2 = sign(v2x, v2y, v3x, v3y)
-    d3 = sign(v3x, v3y, v1x, v1y)
-    in_arrow = not ((d1 < 0 or d2 < 0 or d3 < 0) and (d1 > 0 or d2 > 0 or d3 > 0))
-
-    if in_arrow:
-        ring_alpha = 255
-
-    # --- compose: BG + FG (ring/arrow) ---
-    if ring_alpha == 0:
-        # pure background color
-        r = lerp(0, BG[0], bg_alpha / 255.0)
-        g = lerp(0, BG[1], bg_alpha / 255.0)
-        b = lerp(0, BG[2], bg_alpha / 255.0)
-        return [r, g, b, bg_alpha]
-    else:
-        # blend FG over BG, then blend over transparent
-        t = ring_alpha / 255.0
-        rgb = [lerp(BG[i], FG[i], t) for i in range(3)]
-        r2 = lerp(0, rgb[0], bg_alpha / 255.0)
-        g2 = lerp(0, rgb[1], bg_alpha / 255.0)
-        b2 = lerp(0, rgb[2], bg_alpha / 255.0)
-        return [r2, g2, b2, bg_alpha]
+    final_alpha = max(ring_alpha, arrow_fill(ARC1_E), arrow_fill(ARC2_E))
+    return [0, 0, 0, final_alpha]
 
 
 os.makedirs('icons', exist_ok=True)

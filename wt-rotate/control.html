@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>wt-rotate remote</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #13151E; color: #E2E8F0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .card {
+    background: #1C1F2E; border: 1px solid #2A2D3E;
+    border-radius: 18px; padding: 28px 22px;
+    width: 100%; max-width: 380px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+  }
+  .logo-circle {
+    width: 38px; height: 38px; background: #1D6FF3;
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .logo-circle svg { width: 22px; height: 22px; }
+  .logo-name { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo-sub  { font-size: 11px; color: #64748B; margin-top: 1px; }
+
+  /* ── Inputs ── */
+  input[type=text], input[type=url] {
+    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 10px;
+    color: #E2E8F0; font-size: 15px; padding: 13px 14px; width: 100%;
+    outline: none; transition: border-color .15s;
+  }
+  input:focus { border-color: #3D80EF; }
+  #pin-input {
+    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 10px;
+    color: #E2E8F0; font-size: 28px; font-weight: 700; letter-spacing: 10px;
+    text-align: center; padding: 16px 14px; width: 100%;
+    outline: none; transition: border-color .15s;
+  }
+  #pin-input:focus { border-color: #3D80EF; }
+
+  /* ── Buttons ── */
+  .btn {
+    border: none; border-radius: 12px; cursor: pointer;
+    font-size: 15px; font-weight: 700; padding: 15px 18px;
+    transition: opacity .15s, transform .08s; width: 100%; margin-top: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; pointer-events: none; }
+  .btn-blue    { background: #3D80EF; color: #fff; }
+  .btn-blue:hover  { background: #2563EB; }
+  .btn-green   { background: #22C55E; color: #fff; }
+  .btn-green:hover { background: #16A34A; }
+  .btn-red     { background: #EF4444; color: #fff; }
+  .btn-red:hover   { background: #DC2626; }
+  .btn-ghost   { background: #2A2D3E; color: #E2E8F0; }
+  .btn-ghost:hover { background: #343747; }
+  .btn-outline-red {
+    background: transparent; color: #EF4444;
+    border: 1px solid #EF4444;
+  }
+  .btn-outline-red:hover { background: #1a0a0a; }
+  .btn-sm {
+    padding: 11px 14px; font-size: 13px; border-radius: 10px; flex: 1;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 18px; font-size: 13px; color: #64748B;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-green  { background: #22C55E; }
+  .dot-red    { background: #EF4444; }
+  .dot-yellow { background: #EAB308; box-shadow: 0 0 6px #EAB308; }
+
+  /* ── Current display ── */
+  .current-card {
+    background: #0D0F1A; border: 1px solid #2A2D3E; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 18px;
+  }
+  .current-label { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+  .current-name  { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+  .current-url   { font-size: 11px; color: #64748B; word-break: break-all; font-family: monospace; }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-on  { background: #0D2918; color: #4ADE80; border: 1px solid #166534; }
+  .badge-off { background: #1a0a0a; color: #EF4444; border: 1px solid #7f1d1d; }
+
+  /* ── Row of 2 buttons ── */
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ── Separator ── */
+  hr { border: none; border-top: 1px solid #2A2D3E; margin: 18px 0; }
+
+  .section-label {
+    font-size: 10px; font-weight: 700; color: #64748B;
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
+  }
+
+  /* ── Error / info ── */
+  .error-msg {
+    color: #EF4444; font-size: 13px; text-align: center;
+    margin-top: 10px; display: none;
+  }
+  .hint {
+    font-size: 12px; color: #64748B; text-align: center; margin-top: 10px;
+  }
+
+  /* ── Connecting spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #2A2D3E; border-top-color: #3D80EF;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo">
+    <div class="logo-circle">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M5 7.5L8.5 17L12 10L15.5 17L19 7.5"
+              stroke="#fff" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">wt-rotate</div>
+      <div class="logo-sub">Contrôle à distance</div>
+    </div>
+  </div>
+
+  <!-- PIN screen -->
+  <div id="screen-pin" class="screen active">
+    <div class="section-label">PIN affiché dans l'extension</div>
+    <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*"
+           placeholder="0000" maxlength="4" autocomplete="off">
+    <button class="btn btn-blue" id="btn-connect">
+      <div id="connect-spinner" class="spinner" style="display:none"></div>
+      <span id="btn-connect-label">Se connecter</span>
+    </button>
+    <div id="pin-error" class="error-msg"></div>
+    <div class="hint">Le PIN change à chaque démarrage du serveur</div>
+  </div>
+
+  <!-- Control screen -->
+  <div id="screen-ctrl" class="screen">
+    <div class="status-bar">
+      <div class="dot dot-green" id="ws-dot"></div>
+      <span>Connecté</span>
+      <span id="rotation-badge" style="margin-left:auto"></span>
+    </div>
+
+    <div class="current-card">
+      <div class="current-label">En cours d'affichage</div>
+      <div class="current-name" id="cur-name">—</div>
+      <div class="current-url"  id="cur-url">—</div>
+    </div>
+
+    <!-- Pause / Resume -->
+    <button class="btn btn-red"   id="btn-pause"  onclick="cmd('pause')">⏸ Pause la rotation</button>
+    <button class="btn btn-green" id="btn-resume" onclick="cmd('resume')" style="display:none">▶ Reprendre la rotation</button>
+
+    <hr>
+
+    <!-- Custom URL -->
+    <div class="section-label">Afficher une URL dans la salle</div>
+    <input type="url" id="custom-url" placeholder="https://youtube.com" autocomplete="off">
+    <button class="btn btn-ghost" onclick="openCustomUrl()">📺 Afficher sur le kiosque</button>
+
+    <hr>
+
+    <!-- Prev / Next -->
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="cmd('prev')">⏮ Préc.</button>
+      <button class="btn btn-ghost btn-sm" onclick="cmd('next')">Suiv. ⏭</button>
+    </div>
+
+    <hr>
+
+    <!-- Release -->
+    <button class="btn btn-outline-red" onclick="releaseControl()">
+      Libérer le contrôle
+    </button>
+  </div>
+
+  <!-- Disconnected screen -->
+  <div id="screen-dc" class="screen">
+    <div class="status-bar">
+      <div class="dot dot-red"></div>
+      <span>Déconnecté du serveur</span>
+    </div>
+    <button class="btn btn-blue" onclick="window.location.reload()">↺ Recharger</button>
+  </div>
+
+</div>
+
+<script>
+let ws = null;
+let wsIp   = null;
+let wsPort = 8765;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const urlPin = params.get('pin');
+  if (urlPin) document.getElementById('pin-input').value = urlPin;
+
+  try {
+    const res  = await fetch('/info');
+    const info = await res.json();
+    wsIp   = info.ip;
+    wsPort = info.ws_port || 8765;
+  } catch {
+    wsIp = window.location.hostname;
+  }
+
+  // Auto-connect if PIN in URL
+  if (urlPin) connectWithPin(urlPin);
+}
+
+function show(id) {
+  ['screen-pin','screen-ctrl','screen-dc'].forEach(s => {
+    document.getElementById(s).classList.toggle('active', s === id);
+  });
+}
+
+// ── Connection ────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-connect').addEventListener('click', () => {
+  const pin = document.getElementById('pin-input').value.trim();
+  connectWithPin(pin);
+});
+
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-connect').click();
+});
+
+function connectWithPin(pin) {
+  if (!pin) return;
+  setConnecting(true);
+  clearError();
+
+  ws = new WebSocket(`ws://${wsIp}:${wsPort}`);
+
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'mobile', pin }));
+
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    setConnecting(false);
+    if (msg.type === 'error') { showError(msg.msg); ws.close(); return; }
+    if (msg.type === 'auth_ok') { show('screen-ctrl'); return; }
+    if (msg.type === 'state')   { updateState(msg); }
+  };
+
+  ws.onclose = () => {
+    setConnecting(false);
+    if (document.getElementById('screen-ctrl').classList.contains('active')) {
+      show('screen-dc');
+    }
+  };
+
+  ws.onerror = () => {
+    setConnecting(false);
+    showError('Impossible de joindre le serveur');
+  };
+}
+
+function setConnecting(on) {
+  document.getElementById('connect-spinner').style.display    = on ? '' : 'none';
+  document.getElementById('btn-connect-label').style.display  = on ? 'none' : '';
+  document.getElementById('btn-connect').disabled = on;
+}
+function showError(msg) {
+  const el = document.getElementById('pin-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('pin-error').style.display = 'none';
+}
+
+// ── State update ──────────────────────────────────────────────────────────────
+
+function updateState(s) {
+  const urls = s.urls || [];
+  const idx  = s.currentIndex || 0;
+  const cur  = urls[idx] || {};
+
+  document.getElementById('cur-name').textContent = cur.name || cur.url || '—';
+  document.getElementById('cur-url').textContent  = cur.url  || '—';
+
+  const badge   = document.getElementById('rotation-badge');
+  const btnPause  = document.getElementById('btn-pause');
+  const btnResume = document.getElementById('btn-resume');
+
+  if (s.active) {
+    badge.innerHTML = '<span class="badge badge-on">Actif</span>';
+    btnPause.style.display  = '';
+    btnResume.style.display = 'none';
+  } else {
+    badge.innerHTML = '<span class="badge badge-off">En pause</span>';
+    btnPause.style.display  = 'none';
+    btnResume.style.display = '';
+  }
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────────
+
+function cmd(action, extra = {}) {
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'command', action, ...extra }));
+  }
+}
+
+function openCustomUrl() {
+  const url = document.getElementById('custom-url').value.trim();
+  if (!url) return;
+  cmd('open_url', { url });
+  document.getElementById('custom-url').value = '';
+}
+
+function releaseControl() {
+  cmd('release');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -275,6 +275,29 @@
     .btn-cfg:hover { border-color: var(--blue); color: var(--blue); }
     .btn-cfg-danger:hover { border-color: var(--red); color: var(--red); }
 
+    /* ── Remote ── */
+    .remote-status {
+      display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+    }
+    .remote-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: background .3s;
+    }
+    .remote-dot-on  { background: #22C55E; box-shadow: 0 0 5px #22C55E66; }
+    .remote-dot-off { background: #3D4559; }
+    .remote-url-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 10px; font-size: 11px;
+      font-family: 'Consolas', monospace; color: var(--text);
+      word-break: break-all; margin-bottom: 8px;
+    }
+    .remote-pin-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .remote-pin {
+      font-size: 20px; font-weight: 700; letter-spacing: 6px;
+      color: var(--blue); font-family: 'Consolas', monospace;
+    }
+
     /* ── Debug ── */
     #debug-toggle {
       width: 100%; background: none;
@@ -395,6 +418,27 @@
         <button id="btn-reset"  class="btn-cfg btn-cfg-danger">↺ Réinitialiser</button>
       </div>
       <input type="file" id="import-file" accept=".json" class="hidden">
+    </div>
+
+    <!-- Remote Control -->
+    <div class="setting-card">
+      <div class="setting-card-title">Contrôle à distance</div>
+      <div class="remote-status">
+        <span class="remote-dot remote-dot-off" id="remote-dot"></span>
+        <span id="remote-status-txt" style="font-size:12px;color:var(--muted)">Serveur non détecté</span>
+      </div>
+      <div id="remote-online" class="hidden">
+        <div class="setting-desc" style="margin-bottom:6px">URL mobile :</div>
+        <div class="remote-url-box" id="remote-url-box">—</div>
+        <div class="remote-pin-row">
+          <span class="setting-desc">PIN :</span>
+          <span class="remote-pin" id="remote-pin">—</span>
+        </div>
+        <button id="btn-copy-remote" class="btn-cfg">📋 Copier l'URL</button>
+      </div>
+      <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">
+        Lancez <code style="color:var(--blue)">start_remote.bat</code> sur le NUC
+      </div>
     </div>
 
     <!-- Debug -->

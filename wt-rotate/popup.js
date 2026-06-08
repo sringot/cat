@@ -97,6 +97,7 @@ function renderAll() {
   intervalN.value = config.interval;
   renderSchedule();
   updateStatusUI();
+  refreshRemoteInfo();
 }
 
 // ── URL list ──────────────────────────────────────────────────────────────────
@@ -395,6 +396,47 @@ async function refreshDebugLogs() {
     debugBox.scrollTop = debugBox.scrollHeight;
   } catch { debugLog.textContent = '(erreur)'; }
 }
+
+// ── Remote info ───────────────────────────────────────────────────────────────
+
+async function refreshRemoteInfo() {
+  try {
+    const data = await chrome.storage.local.get('remoteInfo');
+    const info = data?.remoteInfo;
+    const dot    = $('remote-dot');
+    const online = $('remote-online');
+    const offlineHint = $('remote-offline-hint');
+    const statusTxt   = $('remote-status-txt');
+
+    if (info?.connected && info?.ip) {
+      const url = `http://${info.ip}:${info.http_port}/?pin=${info.pin}`;
+      dot.className = 'remote-dot remote-dot-on';
+      statusTxt.textContent = 'Serveur connecté';
+      statusTxt.style.color = 'var(--green-txt)';
+      $('remote-url-box').textContent = url;
+      $('remote-pin').textContent = info.pin;
+      online.classList.remove('hidden');
+      offlineHint.classList.add('hidden');
+    } else {
+      dot.className = 'remote-dot remote-dot-off';
+      statusTxt.textContent = 'Serveur non détecté';
+      statusTxt.style.color = '';
+      online.classList.add('hidden');
+      offlineHint.classList.remove('hidden');
+    }
+  } catch {}
+}
+
+$('btn-copy-remote').addEventListener('click', async () => {
+  const url = $('remote-url-box').textContent;
+  if (!url || url === '—') return;
+  try {
+    await navigator.clipboard.writeText(url);
+    const btn = $('btn-copy-remote');
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => { btn.textContent = '📋 Copier l\'URL'; }, 1500);
+  } catch {}
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

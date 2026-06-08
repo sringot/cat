@@ -3,37 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <title>wee rotate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --blue:       #3D80EF;
-      --blue-dark:  #2563EB;
-      --bg:         #1C1F2E;
-      --surface:    #13151E;
-      --border:     #2A2D3E;
-      --text:       #E2E8F0;
-      --muted:      #64748B;
-      --red:        #EF4444;
-      --red-dark:   #DC2626;
-      --green-bg:   #0D2918;
-      --green-bd:   #166534;
-      --green-txt:  #4ADE80;
-      --r:          8px;
+      --black:     #0D0D0D;
+      --white:     #FFFFFF;
+      --bg:        #F5F5F7;
+      --surface:   #FFFFFF;
+      --border:    #E5E5EA;
+      --text:      #0D0D0D;
+      --muted:     #6E6E73;
+      --faint:     #AEAEB2;
+      --blue:      #0066FF;
+      --red:       #FF3B30;
+      --red-dark:  #D93025;
+      --green-bg:  #F0FFF5;
+      --green-bd:  #86EFAC;
+      --green-txt: #166534;
+      --r:         10px;
+      --sh:        0 1px 1px rgba(0,0,0,.03), 0 3px 10px rgba(0,0,0,.06);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       width: 380px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 13px;
       color: var(--text);
-      background: var(--surface);
-      color-scheme: dark;
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
     }
 
     /* ── Header ── */
     .header {
-      background: var(--bg);
+      background: var(--white);
       border-bottom: 1px solid var(--border);
       padding: 11px 16px;
       display: flex;
@@ -46,11 +52,10 @@
       gap: 8px;
       font-size: 14px;
       font-weight: 700;
+      letter-spacing: -0.3px;
       color: var(--text);
-      letter-spacing: -0.2px;
     }
-    .logo svg { width: 24px; height: 24px; flex-shrink: 0; }
-    .logo .accent { color: var(--blue); }
+    .logo svg { width: 26px; height: 26px; flex-shrink: 0; }
 
     .badge {
       padding: 3px 9px;
@@ -62,17 +67,17 @@
       flex-shrink: 0;
     }
     .badge-active  { background: var(--green-bg); color: var(--green-txt); border: 1px solid var(--green-bd); }
-    .badge-stopped { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    .badge-stopped { background: var(--bg); color: var(--faint); border: 1px solid var(--border); }
 
     /* ── Progress bar ── */
     #progress-wrap { height: 3px; background: var(--border); overflow: hidden; }
     #progress-wrap.hidden { display: none; }
-    #progress-bar  { height: 100%; background: var(--blue); width: 100%; }
+    #progress-bar  { height: 100%; background: var(--black); width: 100%; }
 
     /* ── Tabs ── */
     .tabs {
       display: flex;
-      background: var(--bg);
+      background: var(--white);
       border-bottom: 1px solid var(--border);
       padding: 0 16px;
     }
@@ -80,12 +85,13 @@
       padding: 9px 14px;
       background: none; border: none;
       border-bottom: 2px solid transparent;
+      font-family: 'Poppins', sans-serif;
       font-size: 12px; font-weight: 600;
       color: var(--muted); cursor: pointer;
       margin-bottom: -1px;
       transition: color .15s, border-color .15s;
     }
-    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
     .tab-btn:hover:not(.active) { color: var(--text); }
 
     /* ── Tab panes ── */
@@ -100,18 +106,19 @@
       grid-template-columns: 18px 1fr auto;
       align-items: center;
       gap: 0 8px;
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: var(--white);
+      border: 1.5px solid var(--border);
       border-radius: var(--r);
-      padding: 8px 10px;
+      padding: 9px 11px;
+      box-shadow: var(--sh);
       transition: border-color .15s;
     }
-    .url-row:focus-within { border-color: var(--blue); }
+    .url-row:focus-within { border-color: var(--black); }
     .url-row.active-url   { border-color: var(--green-bd); background: var(--green-bg); }
-    .url-row.drag-over    { border-color: var(--blue); background: #1a2840; }
+    .url-row.drag-over    { border-color: var(--black); background: #F8F8FB; }
 
     .drag-handle {
-      color: #3D4559; cursor: grab; font-size: 14px;
+      color: var(--faint); cursor: grab; font-size: 14px;
       user-select: none; align-self: center;
     }
     .drag-handle:active { cursor: grabbing; }
@@ -120,16 +127,17 @@
 
     .name-input {
       border: none; outline: none; background: transparent;
+      font-family: 'Poppins', sans-serif;
       font-size: 12px; font-weight: 600; color: var(--text); width: 100%;
     }
-    .name-input::placeholder { color: #3D4559; font-weight: 400; }
+    .name-input::placeholder { color: var(--faint); font-weight: 400; }
 
     .url-input {
       border: none; outline: none; background: transparent;
       font-size: 11px; font-family: 'Consolas', 'Fira Mono', monospace;
       color: var(--muted); width: 100%;
     }
-    .url-input::placeholder { color: #3D4559; }
+    .url-input::placeholder { color: var(--faint); }
 
     .url-actions {
       display: flex; flex-direction: column;
@@ -138,7 +146,7 @@
 
     .btn-del {
       background: none; border: none; cursor: pointer;
-      color: #3D4559; padding: 1px 2px;
+      color: var(--faint); padding: 1px 2px;
       font-size: 12px; line-height: 1; border-radius: 3px;
       transition: color .15s;
     }
@@ -146,80 +154,85 @@
 
     .url-interval-wrap { display: flex; align-items: center; gap: 2px; }
     .url-interval {
-      width: 38px; border: 1px solid var(--border); border-radius: 4px;
+      width: 38px; border: 1px solid var(--border); border-radius: 5px;
       padding: 2px 4px; font-size: 10px; text-align: center;
-      color: var(--muted); outline: none;
-      background: var(--surface); transition: border-color .15s;
+      color: var(--muted); outline: none; font-family: 'Poppins', sans-serif;
+      background: var(--bg); transition: border-color .15s;
     }
-    .url-interval:focus { border-color: var(--blue); }
-    .url-interval.custom { border-color: var(--blue); color: var(--blue); font-weight: 600; }
-    .interval-s { font-size: 9px; color: #3D4559; }
+    .url-interval:focus { border-color: var(--black); }
+    .url-interval.custom { border-color: var(--black); color: var(--black); font-weight: 700; }
+    .interval-s { font-size: 9px; color: var(--faint); }
 
     /* ── Add button ── */
     .btn-add {
-      width: 100%; padding: 8px;
+      width: 100%; padding: 9px;
       background: none; border: 1.5px dashed var(--border);
       border-radius: var(--r); cursor: pointer;
-      color: var(--muted); font-size: 12px; font-weight: 600;
+      color: var(--muted); font-family: 'Poppins', sans-serif;
+      font-size: 12px; font-weight: 600;
       transition: all .15s;
     }
-    .btn-add:hover { border-color: var(--blue); color: var(--blue); background: #1a2840; }
+    .btn-add:hover { border-color: var(--black); color: var(--black); background: var(--white); }
 
-    .empty-hint { text-align: center; color: #3D4559; font-size: 12px; padding: 18px 0; }
+    .empty-hint { text-align: center; color: var(--faint); font-size: 12px; padding: 20px 0; }
 
     /* ── Action buttons ── */
     .actions { display: flex; gap: 8px; margin-top: 12px; }
 
     .btn {
       display: flex; align-items: center; justify-content: center;
-      gap: 5px; padding: 9px 16px;
+      gap: 5px; padding: 10px 16px;
       border: none; border-radius: var(--r);
-      cursor: pointer; font-size: 12px; font-weight: 700;
-      transition: all .15s; white-space: nowrap;
+      cursor: pointer; font-family: 'Poppins', sans-serif;
+      font-size: 12px; font-weight: 700;
+      transition: all .13s; white-space: nowrap;
     }
-    .btn-primary { background: var(--blue);  color: #fff; flex: 1; }
-    .btn-primary:hover { background: var(--blue-dark); }
-    .btn-danger  { background: var(--red);   color: #fff; flex: 1; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--black); color: #fff; flex: 1; }
+    .btn-primary:hover { background: #222; }
+    .btn-danger  { background: var(--red); color: #fff; flex: 1; }
     .btn-danger:hover  { background: var(--red-dark); }
-    .btn-ghost   { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover   { background: var(--surface); border-color: #4B5563; }
+    .btn-ghost   { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
+    .btn-ghost:hover   { border-color: var(--black); }
 
     .hidden { display: none !important; }
 
     /* ── Setting cards ── */
     .setting-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: var(--white);
+      border: 1.5px solid var(--border);
       border-radius: var(--r);
-      padding: 12px 14px;
+      padding: 13px 14px;
       margin-bottom: 10px;
+      box-shadow: var(--sh);
     }
     .setting-card-title {
       font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: var(--muted); margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--faint); margin-bottom: 11px;
     }
     .setting-row {
       display: flex; align-items: center;
       justify-content: space-between; gap: 12px;
     }
-    .setting-label { font-size: 12px; font-weight: 500; }
+    .setting-label { font-size: 12px; font-weight: 600; color: var(--text); }
     .setting-desc  { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
     .interval-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    input[type="range"] { width: 90px; accent-color: var(--blue); cursor: pointer; }
+    input[type="range"] { width: 90px; accent-color: var(--black); cursor: pointer; }
     .interval-num {
       width: 52px; padding: 4px 6px;
-      border: 1px solid var(--border); border-radius: 5px;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      font-family: 'Poppins', sans-serif;
       font-size: 12px; text-align: center; outline: none;
-      background: var(--surface); color: var(--text);
+      background: var(--bg); color: var(--text);
       transition: border-color .15s;
     }
-    .interval-num:focus { border-color: var(--blue); }
+    .interval-num:focus { border-color: var(--black); }
     .interval-unit { font-size: 11px; color: var(--muted); }
 
     /* ── Toggle switch ── */
-    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; cursor: pointer; }
+    .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; cursor: pointer; }
     .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-track {
       position: absolute; inset: 0;
@@ -228,13 +241,14 @@
     }
     .toggle-thumb {
       position: absolute;
-      width: 14px; height: 14px;
+      width: 16px; height: 16px;
       top: 3px; left: 3px;
       background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
       transition: transform .2s;
       pointer-events: none;
     }
-    .toggle input:checked ~ .toggle-track { background: var(--blue); }
+    .toggle input:checked ~ .toggle-track { background: var(--black); }
     .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
 
     /* ── Schedule details ── */
@@ -242,37 +256,40 @@
 
     .time-row {
       display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: var(--muted);
+      font-size: 12px; color: var(--muted); font-weight: 500;
     }
     input[type="time"] {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 5px; padding: 4px 8px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 6px; padding: 4px 8px;
+      font-family: 'Poppins', sans-serif;
       font-size: 12px; color: var(--text); outline: none; cursor: pointer;
       transition: border-color .15s;
     }
-    input[type="time"]:focus { border-color: var(--blue); }
+    input[type="time"]:focus { border-color: var(--black); }
 
     .days-row { display: flex; gap: 4px; }
     .day-btn {
       width: 30px; height: 28px;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: var(--surface); color: var(--muted);
+      border: 1.5px solid var(--border); border-radius: 7px;
+      background: var(--bg); color: var(--muted);
+      font-family: 'Poppins', sans-serif;
       font-size: 10px; font-weight: 700; cursor: pointer;
       transition: all .15s;
     }
-    .day-btn.on  { background: var(--blue); border-color: var(--blue); color: #fff; }
-    .day-btn:hover:not(.on) { border-color: var(--blue); color: var(--blue); }
+    .day-btn.on  { background: var(--black); border-color: var(--black); color: #fff; }
+    .day-btn:hover:not(.on) { border-color: var(--black); color: var(--black); }
 
     /* ── Config actions ── */
     .config-btns { display: flex; gap: 8px; }
     .btn-cfg {
       flex: 1; padding: 7px 8px;
-      border: 1px solid var(--border); border-radius: var(--r);
-      background: var(--surface); color: var(--text);
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      background: var(--bg); color: var(--text);
+      font-family: 'Poppins', sans-serif;
       font-size: 11px; font-weight: 600; cursor: pointer;
       transition: all .15s;
     }
-    .btn-cfg:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-cfg:hover { border-color: var(--black); color: var(--black); background: var(--white); }
     .btn-cfg-danger:hover { border-color: var(--red); color: var(--red); }
 
     /* ── Remote ── */
@@ -282,35 +299,29 @@
     .remote-dot {
       width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: background .3s;
     }
-    .remote-dot-on  { background: #22C55E; box-shadow: 0 0 5px #22C55E66; }
-    .remote-dot-off { background: #3D4559; }
+    .remote-dot-on  { background: #30D158; box-shadow: 0 0 5px rgba(48,209,88,.4); }
+    .remote-dot-off { background: var(--faint); }
     .remote-url-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 6px; padding: 7px 10px; font-size: 11px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 7px; padding: 7px 10px; font-size: 11px;
       font-family: 'Consolas', monospace; color: var(--text);
       word-break: break-all; margin-bottom: 8px;
-    }
-    .remote-pin-row {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-    }
-    .remote-pin {
-      font-size: 20px; font-weight: 700; letter-spacing: 6px;
-      color: var(--blue); font-family: 'Consolas', monospace;
     }
 
     /* ── Debug ── */
     #debug-toggle {
-      width: 100%; background: none;
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 6px 10px; font-size: 10px; font-weight: 700;
+      width: 100%; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: 7px;
+      padding: 7px 10px; font-family: 'Poppins', sans-serif;
+      font-size: 10px; font-weight: 700;
       color: var(--muted); cursor: pointer;
       text-align: left; text-transform: uppercase; letter-spacing: 1px;
       transition: all .15s;
     }
-    #debug-toggle:hover { border-color: var(--blue); color: var(--blue); }
+    #debug-toggle:hover { border-color: var(--black); color: var(--black); }
     #debug-box {
       display: none; margin-top: 6px;
-      background: #0D1117; border-radius: 6px;
+      background: #0D1117; border-radius: 7px;
       padding: 8px; max-height: 140px; overflow-y: auto;
     }
     #debug-box.open { display: block; }
@@ -321,6 +332,7 @@
     #debug-clear {
       margin-top: 6px; font-size: 10px;
       background: none; border: none; color: var(--red); cursor: pointer; padding: 0;
+      font-family: 'Poppins', sans-serif;
     }
   </style>
 </head>
@@ -328,11 +340,13 @@
 
   <div class="header">
     <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="12" fill="#1D6FF3"/>
-        <path d="M6.5 8L9.2 16L12 10.5L14.8 16L17.5 8" stroke="white" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="13" fill="#0D0D0D"/>
+        <path d="M7 9l3.2 8.5 2.8-6 2.8 6L19 9"
+              stroke="white" stroke-width="2.1"
+              stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      wee<span class="accent">rotate</span>
+      wee&nbsp;<span style="color:var(--muted);font-weight:500">rotate</span>
     </div>
     <span id="badge" class="badge badge-stopped">Arrêté</span>
   </div>
@@ -433,7 +447,7 @@
         <button id="btn-copy-remote" class="btn-cfg" style="margin-top:8px">📋 Copier l'URL</button>
       </div>
       <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">
-        Lancez <code style="color:var(--blue)">start_remote.bat</code> sur le NUC
+        Lancez <code style="color:var(--black);font-weight:700">start_remote.bat</code> sur le NUC
       </div>
     </div>
 

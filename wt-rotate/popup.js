@@ -442,27 +442,29 @@ async function refreshRemoteInfo() {
       $('remote-url-box').textContent = url;
       online.classList.remove('hidden');
       offlineHint.classList.add('hidden');
-      // Inject SVG directly into the container div — most reliable in extension context
       const qrDiv = $('remote-qr');
       if (qrDiv && !qrDiv.dataset.loaded) {
         try {
           const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);
           if (resp.ok) {
             const svgText = await resp.text();
-            const parser  = new DOMParser();
-            const svgDoc  = parser.parseFromString(svgText, 'image/svg+xml');
-            const svgEl   = svgDoc.documentElement;
-            if (svgEl.tagName.toLowerCase() === 'svg') {
+            qrDiv.innerHTML = svgText;
+            const svgEl = qrDiv.querySelector('svg');
+            if (svgEl) {
               const w = svgEl.getAttribute('width'), h = svgEl.getAttribute('height');
               if (w && h && !svgEl.getAttribute('viewBox'))
                 svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
               svgEl.removeAttribute('width'); svgEl.removeAttribute('height');
-              qrDiv.innerHTML = '';
-              qrDiv.appendChild(document.importNode(svgEl, true));
               qrDiv.dataset.loaded = '1';
             }
+          } else {
+            qrDiv.innerHTML = '<div style="font-size:10px;color:#aaa;padding:12px;text-align:center">pip install qrcode</div>';
+            qrDiv.dataset.loaded = '1';
           }
-        } catch {}
+        } catch {
+          qrDiv.innerHTML = '<div style="font-size:10px;color:#aaa;padding:12px;text-align:center">QR indisponible</div>';
+          qrDiv.dataset.loaded = '1';
+        }
       }
     } else {
       dot.className = 'remote-dot remote-dot-off';

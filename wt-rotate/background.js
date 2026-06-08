@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null,
+  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false
 };
@@ -12,6 +12,12 @@ function migrateConfig(raw) {
   c.urls = (c.urls || []).map(u =>
     typeof u === 'string' ? { url: u, name: '', interval: null } : u
   );
+  // Migrate from old single tabId to tabIds array
+  if (c.tabId !== undefined) {
+    if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
+    delete c.tabId;
+  }
+  if (!Array.isArray(c.tabIds)) c.tabIds = [];
   return c;
 }
 
@@ -41,10 +47,23 @@ chrome.runtime.onStartup.addListener(async () => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   if (config.active) {
-    const activeUrls = config.urls.filter(u => u?.url?.trim());
-    const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
-    await setNextAlarm(cur?.interval || config.interval);
-    await log('onStartup — relance alarme');
+    // Verify tabs still exist after browser restart
+    let allTabsValid = config.tabIds.length > 0;
+    for (const tid of config.tabIds) {
+      try { await chrome.tabs.get(tid); } catch { allTabsValid = false; break; }
+    }
+    if (allTabsValid) {
+      const activeUrls = config.urls.filter(u => u?.url?.trim());
+      const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
+      await setNextAlarm(cur?.interval || config.interval);
+      await log('onStartup — relance alarme');
+    } else {
+      config.active   = false;
+      config.tabIds   = [];
+      config.windowId = null;
+      await chrome.storage.local.set({ config });
+      await log('onStartup — onglets perdus, arrêt');
+    }
   }
 });
 
@@ -56,10 +75,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
-  if (config.tabId === tabId) {
+  if (config.tabIds.includes(tabId)) {
     await log('onglet fermé — arrêt');
-    config.active = false;
-    config.tabId = null;
+    config.active   = false;
+    config.tabIds   = [];
     config.windowId = null;
     chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });
@@ -99,7 +118,6 @@ async function checkSchedule() {
   config.lastScheduleState = nowIn;
 
   if (nowIn && !wasIn) {
-    // Vient d'entrer dans la plage → démarrage auto
     const activeUrls = config.urls.filter(u => u?.url?.trim());
     if (activeUrls.length > 0 && !config.active) {
       await autoStartRotation(config);
@@ -107,7 +125,6 @@ async function checkSchedule() {
       return;
     }
   } else if (!nowIn && wasIn && config.active) {
-    // Vient de sortir de la plage → arrêt auto
     config.active = false;
     chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });
@@ -127,11 +144,19 @@ async function autoStartRotation(config) {
   try {
     if (!winExists) {
       const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
-      config.tabId    = win.tabs[0].id;
+      config.tabIds   = [win.tabs[0].id];
       config.windowId = win.id;
+      for (let i = 1; i < activeUrls.length; i++) {
+        const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i].url, active: false });
+        config.tabIds.push(tab.id);
+      }
     } else {
-      if (config.tabId) {
-        try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
+      // Close stale tabs and recreate
+      for (const tid of config.tabIds) { try { await chrome.tabs.remove(tid); } catch {} }
+      config.tabIds = [];
+      for (let i = 0; i < activeUrls.length; i++) {
+        const tab = await chrome.tabs.create({ windowId: config.windowId, url: activeUrls[i].url, active: i === 0 });
+        config.tabIds.push(tab.id);
       }
       await chrome.windows.update(config.windowId, { state: 'fullscreen' });
     }
@@ -165,8 +190,8 @@ async function rotateToNext() {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
 
-  if (!config.active) { await log('inactif — abandon'); return; }
-  if (!config.tabId)  { await log('tabId null — abandon'); return; }
+  if (!config.active)          { await log('inactif — abandon'); return; }
+  if (!config.tabIds.length)   { await log('tabIds vide — abandon'); return; }
 
   if (config.scheduleEnabled && !isInSchedule(config)) {
     await log('hors plage horaire — arrêt');
@@ -183,8 +208,18 @@ async function rotateToNext() {
   const entry    = activeUrls[next];
   const interval = entry.interval || config.interval;
 
+  if (next >= config.tabIds.length) {
+    await log('tabIds désynchronisé — arrêt');
+    config.active   = false;
+    config.tabIds   = [];
+    config.windowId = null;
+    chrome.alarms.clear('wt-rotate');
+    await chrome.storage.local.set({ config });
+    return;
+  }
+
   try {
-    await chrome.tabs.update(config.tabId, { url: entry.url });
+    await chrome.tabs.update(config.tabIds[next], { active: true });
     config.currentIndex    = next;
     config.lastAlarmTime   = Date.now();
     config.currentAlarmSec = interval;
@@ -193,8 +228,8 @@ async function rotateToNext() {
     await log('OK → ' + (entry.name || entry.url.slice(0, 50)));
   } catch (err) {
     await log('tabs.update ERR: ' + err.message);
-    config.active = false;
-    config.tabId = null;
+    config.active   = false;
+    config.tabIds   = [];
     config.windowId = null;
     chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });

@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  urls: [], interval: 30, currentIndex: 0, active: false, tabId: null, windowId: null,
+  urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false
 };
@@ -68,6 +68,12 @@ function migrateConfig(raw) {
   c.urls = (c.urls || []).map(u =>
     typeof u === 'string' ? { url: u, name: '', interval: null } : u
   );
+  // Migrate from old single tabId to tabIds array
+  if (c.tabId !== undefined) {
+    if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
+    delete c.tabId;
+  }
+  if (!Array.isArray(c.tabIds)) c.tabIds = [];
   return c;
 }
 
@@ -231,15 +237,27 @@ async function startRotation() {
     if (config.windowId) {
       try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
     }
+
     if (!winExists) {
       const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
       if (!win?.tabs?.[0]?.id) { alert("Impossible d'ouvrir la fenêtre."); return; }
-      config.tabId    = win.tabs[0].id;
+      config.tabIds   = [win.tabs[0].id];
       config.windowId = win.id;
+      for (let i = 1; i < activeUrls.length; i++) {
+        const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i].url, active: false });
+        config.tabIds.push(tab.id);
+      }
     } else {
-      if (config.tabId) try { await chrome.tabs.update(config.tabId, { url: activeUrls[0].url }); } catch {}
+      // Window exists — close stale tabs and recreate for the current URL list
+      for (const tid of config.tabIds || []) { try { await chrome.tabs.remove(tid); } catch {} }
+      config.tabIds = [];
+      for (let i = 0; i < activeUrls.length; i++) {
+        const tab = await chrome.tabs.create({ windowId: config.windowId, url: activeUrls[i].url, active: i === 0 });
+        config.tabIds.push(tab.id);
+      }
       await chrome.windows.update(config.windowId, { state: 'fullscreen' });
     }
+
     config.currentIndex    = 0;
     config.active          = true;
     config.lastAlarmTime   = Date.now();
@@ -263,9 +281,11 @@ btnStop.addEventListener('click', async () => {
 
 btnNext.addEventListener('click', async () => {
   const activeUrls = config.urls.filter(u => u?.url?.trim());
-  if (!config.tabId || !activeUrls.length) return;
+  if (!config.tabIds?.length || !activeUrls.length) return;
   const next = (config.currentIndex + 1) % activeUrls.length;
-  try { await chrome.tabs.update(config.tabId, { url: activeUrls[next].url }); } catch {}
+  if (next < config.tabIds.length) {
+    try { await chrome.tabs.update(config.tabIds[next], { active: true }); } catch {}
+  }
   config.currentIndex    = next;
   config.lastAlarmTime   = Date.now();
   config.currentAlarmSec = activeUrls[next].interval || config.interval;

@@ -409,11 +409,13 @@ async function refreshRemoteInfo() {
     const statusTxt   = $('remote-status-txt');
 
     if (info?.connected && info?.ip) {
-      const url = `http://${info.ip}:${info.http_port}/?pin=${info.pin}`;
+      const url = `http://${info.ip}:${info.http_port}/`;
       dot.className = 'remote-dot remote-dot-on';
       statusTxt.textContent = 'Serveur connecté';
       statusTxt.style.color = 'var(--green-txt)';
       $('remote-url-box').textContent = url;
+      const qrImg = $('remote-qr');
+      if (qrImg) qrImg.src = `http://localhost:${info.http_port}/qr.svg?_=${Date.now()}`;
       online.classList.remove('hidden');
       offlineHint.classList.add('hidden');
     } else {

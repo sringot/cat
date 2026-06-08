@@ -153,6 +153,8 @@ body {
 .status-badge.on  .sb-dot { background: var(--green); }
 .status-badge.off { background: var(--rbg); color: var(--red); }
 .status-badge.off .sb-dot { background: var(--red); }
+.status-badge.ext { background: #FFF3E0; color: #E65100; }
+.status-badge.ext .sb-dot { background: #FF9800; }
 
 /* ── URL BAR ────────────────────────────────────────────── */
 .url-bar {
@@ -301,9 +303,9 @@ body {
     </div>
 
     <!-- Release -->
-    <div class="card" style="margin-bottom:0">
+    <div class="card" id="card-release" style="display:none;margin-bottom:0">
       <div class="card-p">
-        <button class="btn btn-line-r" onclick="cmd('release')">
+        <button class="btn btn-line-r" id="brelease" onclick="cmd('release')">
           Libérer le contrôle
         </button>
       </div>
@@ -358,20 +360,33 @@ function connect() {
 
 function sync(s) {
   const urls = s.urls || [], c = urls[s.currentIndex || 0] || {};
-  document.getElementById('np-n').textContent = c.name || c.url || '—';
-  document.getElementById('np-u').textContent = c.url  || '—';
-  const sb  = document.getElementById('sbadge');
-  const sbt = document.getElementById('sbtxt');
-  const bp  = document.getElementById('bpause');
-  const br  = document.getElementById('bresume');
-  if (s.active) {
+  const npn  = document.getElementById('np-n');
+  const npu  = document.getElementById('np-u');
+  const sb   = document.getElementById('sbadge');
+  const sbt  = document.getElementById('sbtxt');
+  const bp   = document.getElementById('bpause');
+  const br   = document.getElementById('bresume');
+  const crel = document.getElementById('card-release');
+
+  if (s.remotePaused && s.remoteUrl) {
+    // External URL open from remote
+    npn.textContent = s.remoteUrl;
+    npu.textContent = s.remoteUrl;
+    sb.className = 'status-badge ext';
+    sbt.textContent = 'URL externe';
+    bp.style.display = 'none'; br.style.display = ''; crel.style.display = '';
+  } else if (s.active) {
+    npn.textContent = c.name || c.url || '—';
+    npu.textContent = c.url || '—';
     sb.className = 'status-badge on';
     sbt.textContent = 'Rotation active';
-    bp.style.display = ''; br.style.display = 'none';
+    bp.style.display = ''; br.style.display = 'none'; crel.style.display = 'none';
   } else {
+    npn.textContent = c.name || c.url || '—';
+    npu.textContent = c.url || '—';
     sb.className = 'status-badge off';
     sbt.textContent = 'En pause';
-    bp.style.display = 'none'; br.style.display = '';
+    bp.style.display = 'none'; br.style.display = ''; crel.style.display = 'none';
   }
 }
 

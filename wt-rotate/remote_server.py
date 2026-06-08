@@ -10,11 +10,11 @@ from pathlib import Path
 PORT_WS   = 8765
 PORT_HTTP = 8766
 
-local_ip = "127.0.0.1"
-ext_ws   = None
-mob_ws   = None
-state    = {}
-qr_cache = None   # Cached QR SVG bytes
+local_ip    = "127.0.0.1"
+ext_ws      = None
+mob_clients = set()
+state       = {}
+qr_cache    = None   # Cached QR SVG bytes
 
 # ── QR code generation ────────────────────────────────────────────────────────
 
@@ -54,7 +54,8 @@ class Handler(BaseHTTPRequestHandler):
         else:
             try:
                 body = (Path(__file__).parent / 'control.html').read_bytes()
-                self._send(200, 'text/html; charset=utf-8', body)
+                self._send(200, 'text/html; charset=utf-8', body,
+                           extra=[('Cache-Control', 'no-store')])
             except FileNotFoundError:
                 self._send(404, 'text/plain', b'control.html introuvable')
 
@@ -74,7 +75,7 @@ def run_http():
 # ── WebSocket server ──────────────────────────────────────────────────────────
 
 async def handle(ws):
-    global ext_ws, mob_ws, state
+    global ext_ws, mob_clients, state
     try:
         raw = await asyncio.wait_for(ws.recv(), timeout=10)
         msg = json.loads(raw)
@@ -92,9 +93,11 @@ async def handle(ws):
                 d = json.loads(raw)
                 if d.get('type') == 'state':
                     state = d
-                    if mob_ws:
-                        try: await mob_ws.send(raw)
-                        except: pass
+                    dead = set()
+                    for m in mob_clients:
+                        try: await m.send(raw)
+                        except: dead.add(m)
+                    mob_clients -= dead
         except Exception:
             pass
         finally:
@@ -102,8 +105,8 @@ async def handle(ws):
             print('[-] Extension déconnectée')
 
     elif msg.get('type') == 'mobile':
-        mob_ws = ws
-        print('[+] Mobile connecté')
+        mob_clients.add(ws)
+        print(f'[+] Mobile connecté ({len(mob_clients)} actif(s))')
         await ws.send(json.dumps({'type': 'auth_ok'}))
         if state:
             await ws.send(json.dumps({**state, 'type': 'state'}))
@@ -116,8 +119,8 @@ async def handle(ws):
         except Exception:
             pass
         finally:
-            mob_ws = None
-            print('[-] Mobile déconnecté')
+            mob_clients.discard(ws)
+            print(f'[-] Mobile déconnecté ({len(mob_clients)} actif(s))')
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 

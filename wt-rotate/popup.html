@@ -82,7 +82,7 @@
       padding: 0 16px;
     }
     .tab-btn {
-      padding: 9px 14px;
+      padding: 9px 12px;
       background: none; border: none;
       border-bottom: 2px solid transparent;
       font-family: 'Poppins', sans-serif;
@@ -292,7 +292,7 @@
     .btn-cfg:hover { border-color: var(--black); color: var(--black); background: var(--white); }
     .btn-cfg-danger:hover { border-color: var(--red); color: var(--red); }
 
-    /* ── Remote ── */
+    /* ── Remote tab ── */
     .remote-status {
       display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
     }
@@ -301,12 +301,35 @@
     }
     .remote-dot-on  { background: #30D158; box-shadow: 0 0 5px rgba(48,209,88,.4); }
     .remote-dot-off { background: var(--faint); }
+
+    .remote-qr-wrap {
+      text-align: center; padding: 12px 0 8px;
+    }
+    .remote-qr-wrap img {
+      width: 148px; height: 148px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      display: block; margin: 0 auto;
+    }
+    .remote-qr-hint {
+      text-align: center; font-size: 10px;
+      color: var(--muted); margin: 6px 0 12px;
+    }
     .remote-url-box {
       background: var(--bg); border: 1.5px solid var(--border);
       border-radius: 7px; padding: 7px 10px; font-size: 11px;
       font-family: 'Consolas', monospace; color: var(--text);
-      word-break: break-all; margin-bottom: 8px;
+      word-break: break-all;
     }
+    .btn-copy {
+      width: 100%; margin-top: 8px;
+      padding: 9px; border: 1.5px solid var(--border);
+      border-radius: var(--r); background: var(--bg);
+      color: var(--text); font-family: 'Poppins', sans-serif;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-copy:hover { border-color: var(--black); color: var(--black); background: var(--white); }
 
     /* ── Debug ── */
     #debug-toggle {
@@ -358,6 +381,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="rotation">Rotation</button>
     <button class="tab-btn" data-tab="settings">Paramètres</button>
+    <button class="tab-btn" data-tab="remote">Remote</button>
   </div>
 
   <!-- Tab Rotation -->
@@ -434,23 +458,6 @@
       <input type="file" id="import-file" accept=".json" class="hidden">
     </div>
 
-    <!-- Remote Control -->
-    <div class="setting-card">
-      <div class="setting-card-title">Contrôle à distance</div>
-      <div class="remote-status">
-        <span class="remote-dot remote-dot-off" id="remote-dot"></span>
-        <span id="remote-status-txt" style="font-size:12px;color:var(--muted)">Serveur non détecté</span>
-      </div>
-      <div id="remote-online" class="hidden">
-        <div class="setting-desc" style="margin-bottom:6px">URL mobile :</div>
-        <div class="remote-url-box" id="remote-url-box">—</div>
-        <button id="btn-copy-remote" class="btn-cfg" style="margin-top:8px">📋 Copier l'URL</button>
-      </div>
-      <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">
-        Lancez <code style="color:var(--black);font-weight:700">start_remote.bat</code> sur le NUC
-      </div>
-    </div>
-
     <!-- Debug -->
     <div class="setting-card">
       <div class="setting-card-title">Debug</div>
@@ -458,6 +465,33 @@
       <div id="debug-box">
         <div id="debug-log">(aucun log)</div>
         <button id="debug-clear">Effacer les logs</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tab Remote -->
+  <div id="tab-remote" class="tab-pane">
+
+    <div class="setting-card">
+      <div class="setting-card-title">Contrôle à distance</div>
+      <div class="remote-status">
+        <span class="remote-dot remote-dot-off" id="remote-dot"></span>
+        <span id="remote-status-txt" style="font-size:12px;color:var(--muted)">Serveur non détecté</span>
+      </div>
+
+      <div id="remote-online" class="hidden">
+        <div class="remote-qr-wrap">
+          <img id="remote-qr" src="" alt="">
+        </div>
+        <div class="remote-qr-hint">Scannez pour contrôler depuis votre téléphone</div>
+        <div class="remote-url-box" id="remote-url-box">—</div>
+        <button id="btn-copy-remote" class="btn-copy">📋 Copier l'URL</button>
+      </div>
+
+      <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">
+        Lancez <code style="color:var(--black);font-weight:700">start_remote.bat</code>
+        sur le NUC pour activer le contrôle mobile
       </div>
     </div>
 

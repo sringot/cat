@@ -336,9 +336,14 @@ async function sendStateToRemote() {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   const activeUrls = config.urls.filter(u => u?.url?.trim());
+  let remoteUrl = null;
+  if (config.remoteTabId) {
+    try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
+  }
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
+    remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
     interval: config.interval
@@ -378,7 +383,13 @@ async function injectYouTubeMaximize(tabId) {
           '#page-manager{margin-top:0!important}',
         ].join('');
         document.head.appendChild(s);
-        setTimeout(() => document.querySelector('.ytp-size-button')?.click(), 900);
+        let tries = 0;
+        const tryTheater = () => {
+          const btn = document.querySelector('.ytp-size-button');
+          if (btn) { btn.click(); return; }
+          if (++tries < 5) setTimeout(tryTheater, 800);
+        };
+        setTimeout(tryTheater, 600);
       }
     });
   } catch {}

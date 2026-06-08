@@ -43,7 +43,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, 'application/json', body,
                        extra=[('Access-Control-Allow-Origin', '*')])
 
-        elif self.path == '/qr.svg':
+        elif self.path.split('?')[0] == '/qr.svg':
             if qr_cache:
                 self._send(200, 'image/svg+xml', qr_cache,
                            extra=[('Access-Control-Allow-Origin', '*'),

@@ -379,24 +379,58 @@ async function injectYouTubeMaximize(tabId) {
           s.id = 'wt-yt-style';
           s.textContent = [
             'body{overflow:hidden!important}',
-            '#masthead-container{display:none!important}',
+            '#masthead-container,ytd-miniguide-renderer{display:none!important}',
             'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
             '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
+            '.ytp-chrome-top,.ytp-title,.ytp-gradient-top{opacity:0!important;pointer-events:none!important}',
           ].join('');
           document.head.appendChild(s);
         }
-        // Directly force the video element to fill the viewport — bypasses YouTube's dynamic sizing
+
         function maximize() {
-          const v = document.querySelector('video.html5-main-video') || document.querySelector('video');
-          if (!v) return false;
-          [['position','fixed'],['top','0'],['left','0'],['width','100vw'],
-           ['height','100vh'],['z-index','99999'],['background','#000'],['object-fit','contain']
-          ].forEach(([p, val]) => v.style.setProperty(p, val, 'important'));
+          // Target the YouTube player container directly (same element YouTube uses for its own fullscreen)
+          const player = document.querySelector('.html5-video-player') ||
+                         document.getElementById('movie_player');
+          if (!player) return false;
+
+          // Clear stacking context blockers on every ancestor — transform/filter/contain/perspective
+          // prevent position:fixed from being viewport-relative
+          let el = player.parentElement;
+          while (el && el !== document.documentElement) {
+            el.style.setProperty('transform',   'none', 'important');
+            el.style.setProperty('filter',      'none', 'important');
+            el.style.setProperty('contain',     'none', 'important');
+            el.style.setProperty('perspective', 'none', 'important');
+            el = el.parentElement;
+          }
+
+          // Make the player fill the entire viewport
+          [['position','fixed'],['top','0'],['left','0'],
+           ['width','100vw'],['height','100vh'],
+           ['z-index','2147483647'],['background','#000'],['overflow','hidden']
+          ].forEach(([p, v]) => player.style.setProperty(p, v, 'important'));
+
+          // Make the inner video container + video element fill the player
+          player.querySelectorAll('.html5-video-container, video').forEach(el => {
+            [['position','absolute'],['top','0'],['left','0'],
+             ['width','100%'],['height','100%'],
+             ['max-width','none'],['max-height','none'],
+             ['object-fit','contain'],['margin','0'],['padding','0']
+            ].forEach(([p, v]) => el.style.setProperty(p, v, 'important'));
+            el.removeAttribute('width'); el.removeAttribute('height');
+          });
+
           return true;
         }
+
+        // Initial attempts with backoff
         let t = 0;
-        const run = () => { if (!maximize() && ++t < 10) setTimeout(run, 400); };
+        const run = () => { if (!maximize() && ++t < 15) setTimeout(run, 400); };
         run();
+
+        // Re-apply for 2 minutes in case YouTube resets styles dynamically
+        const reapply = setInterval(maximize, 3000);
+        setTimeout(() => clearInterval(reapply), 120000);
       }
     });
   } catch {}

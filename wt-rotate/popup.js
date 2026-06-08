@@ -446,7 +446,7 @@ async function refreshRemoteInfo() {
       const qrDiv = $('remote-qr');
       if (qrDiv && !qrDiv.dataset.loaded) {
         try {
-          const resp = await fetch(`http://localhost:${info.http_port}/qr.svg?_=${Date.now()}`);
+          const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);
           if (resp.ok) {
             const svgText = await resp.text();
             const parser  = new DOMParser();

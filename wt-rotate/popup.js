@@ -1,7 +1,8 @@
 const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
-  scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false
+  scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
+  canvaRefreshMin: 5
 };
 
 let config        = null;
@@ -24,6 +25,7 @@ const scheduleEnabledCb = $('schedule-enabled');
 const scheduleDetails   = $('schedule-details');
 const scheduleStart     = $('schedule-start');
 const scheduleEnd       = $('schedule-end');
+const canvaRefreshInput = $('canva-refresh');
 const debugToggle    = $('debug-toggle');
 const debugBox       = $('debug-box');
 const debugLog       = $('debug-log');
@@ -95,6 +97,7 @@ function renderAll() {
   renderUrls();
   slider.value    = Math.min(config.interval, 300);
   intervalN.value = config.interval;
+  canvaRefreshInput.value = config.canvaRefreshMin || 5;
   renderSchedule();
   updateStatusUI();
   refreshRemoteInfo();
@@ -341,6 +344,12 @@ scheduleEnabledCb.addEventListener('change', () => {
 scheduleStart.addEventListener('change', () => { config.scheduleStart = scheduleStart.value; saveConfig(); });
 scheduleEnd.addEventListener('change',   () => { config.scheduleEnd   = scheduleEnd.value;   saveConfig(); });
 
+canvaRefreshInput.addEventListener('change', () => {
+  config.canvaRefreshMin = Math.max(1, Math.min(60, parseInt(canvaRefreshInput.value) || 5));
+  canvaRefreshInput.value = config.canvaRefreshMin;
+  saveConfig();
+});
+
 // ── Import / Export ───────────────────────────────────────────────────────────
 
 $('btn-export').addEventListener('click', async () => {
@@ -414,10 +423,20 @@ async function refreshRemoteInfo() {
       statusTxt.textContent = 'Serveur connecté';
       statusTxt.style.color = 'var(--green-txt)';
       $('remote-url-box').textContent = url;
-      const qrImg = $('remote-qr');
-      if (qrImg) qrImg.src = `http://localhost:${info.http_port}/qr.svg?_=${Date.now()}`;
       online.classList.remove('hidden');
       offlineHint.classList.add('hidden');
+      // Fetch QR as data URL to avoid cross-origin img issues in extension context
+      const qrImg = $('remote-qr');
+      if (qrImg && !qrImg.dataset.loaded) {
+        try {
+          const resp = await fetch(`http://localhost:${info.http_port}/qr.svg?_=${Date.now()}`);
+          if (resp.ok) {
+            const svg = await resp.text();
+            qrImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            qrImg.dataset.loaded = '1';
+          }
+        } catch {}
+      }
     } else {
       dot.className = 'remote-dot remote-dot-off';
       statusTxt.textContent = 'Serveur non détecté';

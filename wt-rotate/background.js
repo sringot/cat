@@ -2,7 +2,8 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  remotePaused: false, remoteTabId: null
+  remotePaused: false, remoteTabId: null,
+  canvaRefreshMin: 5
 };
 
 const MAX_LOGS = 60;
@@ -68,7 +69,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-rotate')   await rotateToNext();
-  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); }
+  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await refreshCanvaTabsIfNeeded(); }
 });
 
 chrome.tabs.onRemoved.addListener(async tabId => {
@@ -377,19 +378,16 @@ async function injectYouTubeMaximize(tabId) {
         const s = document.createElement('style');
         s.id = 'wt-yt-style';
         s.textContent = [
+          'body{overflow:hidden!important}',
           '#masthead-container{display:none!important}',
+          'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
           '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
-          'ytd-watch-flexy[is-two-columns_] #primary{max-width:100%!important}',
-          '#page-manager{margin-top:0!important}',
+          // Force the player container to fill the entire viewport
+          'ytd-watch-flexy:not([fullscreen]) #player-container-outer{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:99999!important;background:#000!important;overflow:hidden!important}',
+          'ytd-watch-flexy:not([fullscreen]) #player-container-inner,ytd-watch-flexy:not([fullscreen]) #player,ytd-watch-flexy:not([fullscreen]) #movie_player{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}',
+          'ytd-watch-flexy:not([fullscreen]) video{width:100%!important;height:100%!important;object-fit:contain!important}',
         ].join('');
         document.head.appendChild(s);
-        let tries = 0;
-        const tryTheater = () => {
-          const btn = document.querySelector('.ytp-size-button');
-          if (btn) { btn.click(); return; }
-          if (++tries < 5) setTimeout(tryTheater, 800);
-        };
-        setTimeout(tryTheater, 600);
       }
     });
   } catch {}
@@ -460,6 +458,33 @@ async function handleRemoteCommand(cmd) {
     }
   }
   await sendStateToRemote();
+}
+
+// ── Canva auto-refresh ────────────────────────────────────────────────────────
+
+async function refreshCanvaTabsIfNeeded() {
+  const data = await chrome.storage.local.get(['config', 'canvaRefreshTimes']);
+  const config = migrateConfig(data.config);
+  if (!config.active || !config.tabIds.length) return;
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  const times  = data.canvaRefreshTimes || {};
+  const minMs  = (config.canvaRefreshMin || 5) * 60 * 1000;
+  const now    = Date.now();
+  let changed  = false;
+  for (let i = 0; i < config.tabIds.length; i++) {
+    if (i === config.currentIndex) continue;
+    if (!activeUrls[i]?.url?.includes('canva.com')) continue;
+    const tabId = config.tabIds[i];
+    if (now - (times[tabId] || 0) >= minMs) {
+      try {
+        await chrome.tabs.reload(tabId);
+        times[tabId] = now;
+        changed = true;
+        await log('canva refresh — tab ' + tabId);
+      } catch {}
+    }
+  }
+  if (changed) await chrome.storage.local.set({ canvaRefreshTimes: times });
 }
 
 // ── Log ───────────────────────────────────────────────────────────────────────

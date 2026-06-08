@@ -93,8 +93,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   const data = await chrome.storage.local.get(['config', 'remoteInfo']);
   const config = migrateConfig(data.config);
   const info = data.remoteInfo;
-  if (!config.tabIds.includes(tabId) || !info?.connected) return;
-  await injectOverlay(tabId, info);
+  const isKiosk  = config.tabIds.includes(tabId);
+  const isRemote = config.remoteTabId === tabId;
+  if (!isKiosk && !isRemote) return;
+  if (isKiosk && info?.connected) await injectOverlay(tabId, info);
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (/youtube\.com\/watch/.test(tab.url || '')) await injectYouTubeMaximize(tabId);
+  } catch {}
 });
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
@@ -349,11 +355,33 @@ function transformUrl(url) {
     } else if (h === 'youtube.com') {
       if (u.pathname === '/watch') videoId = u.searchParams.get('v');
       else if (u.pathname.startsWith('/shorts/')) videoId = u.pathname.split('/')[2];
-      else if (u.pathname.startsWith('/embed/')) return url;
+      else if (u.pathname.startsWith('/embed/')) videoId = u.pathname.split('/')[2];
     }
-    if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    // Use regular watch URL — embed fails with error 153 for many videos
+    if (videoId) return `https://www.youtube.com/watch?v=${videoId}`;
   } catch {}
   return url;
+}
+
+async function injectYouTubeMaximize(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        if (document.getElementById('wt-yt-style')) return;
+        const s = document.createElement('style');
+        s.id = 'wt-yt-style';
+        s.textContent = [
+          '#masthead-container{display:none!important}',
+          '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
+          'ytd-watch-flexy[is-two-columns_] #primary{max-width:100%!important}',
+          '#page-manager{margin-top:0!important}',
+        ].join('');
+        document.head.appendChild(s);
+        setTimeout(() => document.querySelector('.ytp-size-button')?.click(), 900);
+      }
+    });
+  } catch {}
 }
 
 async function handleRemoteCommand(cmd) {

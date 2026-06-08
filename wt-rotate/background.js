@@ -374,20 +374,29 @@ async function injectYouTubeMaximize(tabId) {
     await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        if (document.getElementById('wt-yt-style')) return;
-        const s = document.createElement('style');
-        s.id = 'wt-yt-style';
-        s.textContent = [
-          'body{overflow:hidden!important}',
-          '#masthead-container{display:none!important}',
-          'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
-          '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
-          // Force the player container to fill the entire viewport
-          'ytd-watch-flexy:not([fullscreen]) #player-container-outer{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:99999!important;background:#000!important;overflow:hidden!important}',
-          'ytd-watch-flexy:not([fullscreen]) #player-container-inner,ytd-watch-flexy:not([fullscreen]) #player,ytd-watch-flexy:not([fullscreen]) #movie_player{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}',
-          'ytd-watch-flexy:not([fullscreen]) video{width:100%!important;height:100%!important;object-fit:contain!important}',
-        ].join('');
-        document.head.appendChild(s);
+        if (!document.getElementById('wt-yt-style')) {
+          const s = document.createElement('style');
+          s.id = 'wt-yt-style';
+          s.textContent = [
+            'body{overflow:hidden!important}',
+            '#masthead-container{display:none!important}',
+            'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
+            '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
+          ].join('');
+          document.head.appendChild(s);
+        }
+        // Directly force the video element to fill the viewport — bypasses YouTube's dynamic sizing
+        function maximize() {
+          const v = document.querySelector('video.html5-main-video') || document.querySelector('video');
+          if (!v) return false;
+          [['position','fixed'],['top','0'],['left','0'],['width','100vw'],
+           ['height','100vh'],['z-index','99999'],['background','#000'],['object-fit','contain']
+          ].forEach(([p, val]) => v.style.setProperty(p, val, 'important'));
+          return true;
+        }
+        let t = 0;
+        const run = () => { if (!maximize() && ++t < 10) setTimeout(run, 400); };
+        run();
       }
     });
   } catch {}

@@ -22,7 +22,7 @@ def make_qr_svg(url):
     try:
         import qrcode
         import qrcode.image.svg
-        factory = qrcode.image.svg.SvgImage
+        factory = qrcode.image.svg.SvgPathImage
         img = qrcode.make(url, image_factory=factory, border=2)
         buf = io.BytesIO()
         img.save(buf)

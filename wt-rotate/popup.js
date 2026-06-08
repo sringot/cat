@@ -127,16 +127,20 @@ function renderUrls() {
       <div class="url-actions">
         <button class="btn-del" title="Supprimer">✕</button>
         <div class="url-interval-wrap">
-          <input class="url-interval${entry.interval ? ' custom' : ''}" type="number"
-                 value="${entry.interval || ''}" placeholder="${config.interval}"
-                 min="5" max="86400" title="Durée spécifique (s)">
-          <span class="interval-s">s</span>
+          <button class="url-dur-toggle${entry.interval ? ' on' : ''}" title="Durée personnalisée">⏱</button>
+          <input class="url-interval" type="number"
+                 value="${entry.interval || config.interval}"
+                 min="5" max="86400"
+                 style="display:${entry.interval ? '' : 'none'}">
+          <span class="interval-s" style="display:${entry.interval ? '' : 'none'}">s</span>
         </div>
       </div>
     `;
-    const nameInp = row.querySelector('.name-input');
-    const urlInp  = row.querySelector('.url-input');
-    const intInp  = row.querySelector('.url-interval');
+    const nameInp   = row.querySelector('.name-input');
+    const urlInp    = row.querySelector('.url-input');
+    const toggleBtn = row.querySelector('.url-dur-toggle');
+    const intInp    = row.querySelector('.url-interval');
+    const intS      = row.querySelector('.interval-s');
 
     nameInp.addEventListener('input', () => { config.urls[i].name = nameInp.value; saveConfig(); });
     nameInp.addEventListener('blur',  () => { config.urls[i].name = nameInp.value.trim(); nameInp.value = config.urls[i].name; saveConfig(); });
@@ -146,11 +150,24 @@ function renderUrls() {
     urlInp.addEventListener('blur',  () => { config.urls[i].url = urlInp.value.trim(); urlInp.value = config.urls[i].url; saveConfig(); });
     urlInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.blur(); });
 
+    toggleBtn.addEventListener('click', () => {
+      if (config.urls[i].interval) {
+        config.urls[i].interval = null;
+        toggleBtn.classList.remove('on');
+        intInp.style.display = 'none'; intS.style.display = 'none';
+      } else {
+        config.urls[i].interval = config.interval;
+        intInp.value = config.interval;
+        toggleBtn.classList.add('on');
+        intInp.style.display = ''; intS.style.display = '';
+      }
+      saveConfig();
+    });
+
     intInp.addEventListener('change', () => {
       const val = parseInt(intInp.value);
       config.urls[i].interval = val >= 5 ? val : null;
-      intInp.value = config.urls[i].interval || '';
-      intInp.classList.toggle('custom', !!config.urls[i].interval);
+      intInp.value = config.urls[i].interval || config.interval;
       saveConfig();
     });
 
@@ -425,15 +442,25 @@ async function refreshRemoteInfo() {
       $('remote-url-box').textContent = url;
       online.classList.remove('hidden');
       offlineHint.classList.add('hidden');
-      // Fetch QR as data URL to avoid cross-origin img issues in extension context
-      const qrImg = $('remote-qr');
-      if (qrImg && !qrImg.dataset.loaded) {
+      // Inject SVG directly into the container div — most reliable in extension context
+      const qrDiv = $('remote-qr');
+      if (qrDiv && !qrDiv.dataset.loaded) {
         try {
           const resp = await fetch(`http://localhost:${info.http_port}/qr.svg?_=${Date.now()}`);
           if (resp.ok) {
-            const svg = await resp.text();
-            qrImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-            qrImg.dataset.loaded = '1';
+            const svgText = await resp.text();
+            const parser  = new DOMParser();
+            const svgDoc  = parser.parseFromString(svgText, 'image/svg+xml');
+            const svgEl   = svgDoc.documentElement;
+            if (svgEl.tagName.toLowerCase() === 'svg') {
+              const w = svgEl.getAttribute('width'), h = svgEl.getAttribute('height');
+              if (w && h && !svgEl.getAttribute('viewBox'))
+                svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+              svgEl.removeAttribute('width'); svgEl.removeAttribute('height');
+              qrDiv.innerHTML = '';
+              qrDiv.appendChild(document.importNode(svgEl, true));
+              qrDiv.dataset.loaded = '1';
+            }
           }
         } catch {}
       }

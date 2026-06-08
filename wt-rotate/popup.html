@@ -152,15 +152,24 @@
     }
     .btn-del:hover { color: var(--red); }
 
-    .url-interval-wrap { display: flex; align-items: center; gap: 2px; }
+    .url-interval-wrap { display: flex; align-items: center; gap: 4px; }
+    .url-dur-toggle {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--faint); font-size: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s; flex-shrink: 0; padding: 0;
+    }
+    .url-dur-toggle.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .url-dur-toggle:hover:not(.on) { border-color: var(--black); color: var(--black); }
     .url-interval {
       width: 38px; border: 1px solid var(--border); border-radius: 5px;
       padding: 2px 4px; font-size: 10px; text-align: center;
-      color: var(--muted); outline: none; font-family: 'Poppins', sans-serif;
+      color: var(--text); font-weight: 700; outline: none;
+      font-family: 'Poppins', sans-serif;
       background: var(--bg); transition: border-color .15s;
     }
     .url-interval:focus { border-color: var(--black); }
-    .url-interval.custom { border-color: var(--black); color: var(--black); font-weight: 700; }
     .interval-s { font-size: 9px; color: var(--faint); }
 
     /* ── Add button ── */
@@ -305,12 +314,15 @@
     .remote-qr-wrap {
       text-align: center; padding: 12px 0 8px;
     }
-    .remote-qr-wrap img {
+    .remote-qr-img {
       width: 148px; height: 148px;
       border-radius: 10px;
       border: 1.5px solid var(--border);
-      display: block; margin: 0 auto;
+      margin: 0 auto; overflow: hidden;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
     }
+    .remote-qr-img svg { display: block; width: 100%; height: 100%; }
     .remote-qr-hint {
       text-align: center; font-size: 10px;
       color: var(--muted); margin: 6px 0 12px;
@@ -497,7 +509,7 @@
 
       <div id="remote-online" class="hidden">
         <div class="remote-qr-wrap">
-          <img id="remote-qr" src="" alt="">
+          <div id="remote-qr" class="remote-qr-img"></div>
         </div>
         <div class="remote-qr-hint">Scannez pour contrôler depuis votre téléphone</div>
         <div class="remote-url-box" id="remote-url-box">—</div>

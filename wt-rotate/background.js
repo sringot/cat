@@ -383,6 +383,9 @@ async function injectYouTubeMaximize(tabId) {
             'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
             '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
             '.ytp-chrome-top,.ytp-title,.ytp-gradient-top{opacity:0!important;pointer-events:none!important}',
+            'ytd-watch-metadata,#above-the-fold,ytd-above-the-fold-renderer,#actions,#owner,ytd-video-owner-renderer{display:none!important}',
+            '.ytp-chrome-bottom,.ytp-gradient-bottom,.ytp-ce-element,.ytp-endscreen-element,.ytp-cards-teaser{display:none!important}',
+            '#panels,ytd-engagement-panel-section-list-renderer{display:none!important}',
           ].join('');
           document.head.appendChild(s);
         }
@@ -451,9 +454,9 @@ async function handleRemoteCommand(cmd) {
       if (config.remoteTabId) {
         try { await chrome.tabs.remove(config.remoteTabId); } catch {}
         config.remoteTabId = null;
-        if (config.tabIds.length) {
-          try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
-        }
+      }
+      if (config.tabIds.length) {
+        try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
       }
       config.active = true; config.remotePaused = false;
       config.lastAlarmTime = Date.now();

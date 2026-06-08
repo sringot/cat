@@ -7,8 +7,6 @@
 <meta name="theme-color" content="#ffffff">
 <title>wt · remote</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
   -webkit-tap-highlight-color: transparent;
@@ -35,7 +33,7 @@ html { -webkit-font-smoothing: antialiased; }
 body {
   background: var(--bg);
   color: var(--t1);
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
   padding-bottom: max(32px, env(safe-area-inset-bottom));
 }
@@ -167,7 +165,7 @@ body {
 .url-bar input {
   flex: 1; min-width: 0;
   background: transparent; border: none; outline: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: inherit;
   font-size: 14px; font-weight: 400; color: var(--t1);
   padding: 15px 16px;
 }
@@ -175,7 +173,7 @@ body {
 .url-bar-btn {
   background: var(--black); border: none; cursor: pointer;
   padding: 0 20px; color: #fff;
-  font-family: 'Poppins', sans-serif;
+  font-family: inherit;
   font-size: 13px; font-weight: 700;
   white-space: nowrap; transition: background .15s;
   border-radius: 0 12px 12px 0;
@@ -187,7 +185,7 @@ body {
 .btn {
   display: flex; align-items: center; justify-content: center;
   gap: 8px; width: 100%; border: none; cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: inherit;
   font-size: 15px; font-weight: 700; letter-spacing: -.2px;
   padding: 17px 20px; border-radius: 14px;
   transition: all .13s;

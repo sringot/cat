@@ -9,6 +9,8 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="/app.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>wt · remote</title>
 <style>
 *, *::before, *::after {
@@ -29,7 +31,11 @@
   --gbg:    #F0FFF5;
   --red:    #FF3B30;
   --rbg:    #FFF1F0;
+  --blue:   #007AFF;
+  --bluebg: #EFF6FF;
+  --orange: #FF9500;
   --sh:     0 1px 1px rgba(0,0,0,.03), 0 4px 16px rgba(0,0,0,.06);
+  --nav-h:  76px;
 }
 
 html { -webkit-font-smoothing: antialiased; }
@@ -37,81 +43,143 @@ html { -webkit-font-smoothing: antialiased; }
 body {
   background: var(--bg);
   color: var(--t1);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
 }
 
-/* ── HEADER ────────────────────────────────────────────── */
-.nav {
-  position: sticky; top: 0; z-index: 99;
-  background: rgba(245,245,247,.88);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  padding: 13px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+/* ── SPLASH ───────────────────────────────────────────────── */
+#splash {
+  position: fixed; inset: 0; z-index: 9000;
+  background: #fff;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  transition: opacity .3s, visibility .3s;
 }
-.nav-brand {
-  display: flex; align-items: center; gap: 10px;
-}
-.brand-icon {
-  width: 32px; height: 32px; background: var(--black);
-  border-radius: 8px;
+#splash.hide { opacity: 0; visibility: hidden; }
+.splash-logo {
+  width: 56px; height: 56px; background: var(--black);
+  border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
 }
-.brand-icon svg { width: 17px; height: 17px; }
-.brand-name {
-  font-size: 15px; font-weight: 700; letter-spacing: -.4px;
-  color: var(--t1);
-}
-.brand-name span { color: var(--t2); font-weight: 500; }
-
-.pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px; border-radius: 20px;
-  font-size: 11px; font-weight: 600; letter-spacing: -.1px;
-}
-.pill-dot { width: 6px; height: 6px; border-radius: 50%; }
-.pill.on  { background: var(--gbg); color: #1D7A3A; }
-.pill.on  .pill-dot { background: var(--green); }
-.pill.off { background: var(--rbg); color: var(--red); }
-.pill.off .pill-dot { background: var(--red); }
-.pill.wait { background: #F5F5F7; color: var(--t2); }
-.pill.wait .pill-dot { background: var(--t3); }
-
-/* ── SCREENS ────────────────────────────────────────────── */
-.screen { display: none; }
-.screen.show { display: flex; }
-
-#s-load, #s-err {
-  flex-direction: column;
-  align-items: center; justify-content: center;
-  min-height: 72vh;
-  gap: 14px; padding: 40px 28px; text-align: center;
-}
-.loader {
-  width: 38px; height: 38px;
-  border: 3px solid var(--bdr);
+.splash-logo svg { width: 30px; height: 30px; }
+.splash-name { font-size: 17px; font-weight: 700; letter-spacing: -.4px; }
+.splash-sub  { font-size: 13px; color: var(--t2); margin-top: -8px; }
+.splash-loader {
+  width: 32px; height: 32px;
+  border: 2.5px solid var(--bdr);
   border-top-color: var(--black);
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.err-icon  { font-size: 48px; }
+
+/* ── ERROR ────────────────────────────────────────────────── */
+#err-screen {
+  display: none;
+  position: fixed; inset: 0; z-index: 8000;
+  background: var(--bg);
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 40px 28px; text-align: center;
+}
+#err-screen.show { display: flex; }
+.err-icon-wrap {
+  width: 68px; height: 68px; background: var(--rbg);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.err-icon-wrap svg { width: 32px; height: 32px; color: var(--red); }
 .err-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
 .err-body  { font-size: 14px; color: var(--t2); line-height: 1.6; max-width: 300px; }
 
-#s-main { flex-direction: column; }
+/* ── HEADER ───────────────────────────────────────────────── */
+.app-header {
+  position: sticky; top: 0; z-index: 99;
+  background: rgba(245,245,247,.9);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo {
+  width: 30px; height: 30px; background: var(--black);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-logo svg { width: 16px; height: 16px; }
+.brand-label { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+.brand-label span { color: var(--t2); font-weight: 500; }
 
-/* ── LAYOUT ─────────────────────────────────────────────── */
+.conn-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: -.1px;
+  transition: background .2s, color .2s;
+}
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; transition: background .2s; }
+.conn-pill.on  { background: var(--gbg); color: #1D7A3A; }
+.conn-pill.on  .conn-dot { background: var(--green); }
+.conn-pill.off { background: var(--rbg); color: var(--red); }
+.conn-pill.off .conn-dot { background: var(--red); animation: pulse 1.4s ease infinite; }
+.conn-pill.wait { background: #F5F5F7; color: var(--t2); }
+.conn-pill.wait .conn-dot { background: var(--t3); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ── BOTTOM NAV ───────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%);
+  z-index: 200;
+  background: rgba(28,28,30,.88);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border-radius: 28px;
+  padding: 10px 6px;
+  display: flex; gap: 2px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.22), 0 1px 4px rgba(0,0,0,.18);
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; padding: 6px 16px; border-radius: 20px;
+  background: none; border: none; cursor: pointer;
+  transition: background .18s;
+  min-width: 62px;
+}
+.nav-btn svg { width: 20px; height: 20px; color: rgba(255,255,255,.45); transition: color .18s; }
+.nav-btn span {
+  font-family: 'Poppins', sans-serif;
+  font-size: 9.5px; font-weight: 600;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .2px;
+  transition: color .18s;
+}
+.nav-btn.active { background: rgba(255,255,255,.12); }
+.nav-btn.active svg  { color: #fff; }
+.nav-btn.active span { color: #fff; }
+.nav-btn:active { background: rgba(255,255,255,.08); }
+
+/* ── TABS ─────────────────────────────────────────────────── */
+.tab { display: none; }
+.tab.show {
+  display: flex; flex-direction: column;
+  animation: tabIn .22s ease both;
+}
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── STACK / CARDS ────────────────────────────────────────── */
 .stack {
   display: flex; flex-direction: column; gap: 12px;
   padding: 16px 16px 0;
-  max-width: 520px; margin: 0 auto;
+  max-width: 520px; margin: 0 auto; width: 100%;
 }
-
-/* ── CARD ───────────────────────────────────────────────── */
 .card {
   background: var(--card);
   border-radius: 18px;
@@ -119,32 +187,14 @@ body {
   overflow: hidden;
 }
 .card-p { padding: 20px; }
-
 .sect-lbl {
   font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 1.4px;
   color: var(--t2); margin-bottom: 14px;
 }
+.div { border: none; border-top: 1px solid var(--bdr); margin: 14px 0; }
 
-/* ── NOW PLAYING ────────────────────────────────────────── */
-.np-top {
-  display: flex; align-items: flex-start;
-  justify-content: space-between; gap: 12px;
-  margin-bottom: 6px;
-}
-.np-name {
-  font-size: 20px; font-weight: 800;
-  letter-spacing: -.5px; line-height: 1.2;
-  flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.np-url {
-  font-size: 11px; color: var(--t2);
-  font-family: 'SF Mono','Consolas','Courier New',monospace;
-  margin-bottom: 14px; word-break: break-all;
-  line-height: 1.5;
-}
+/* ── STATUS BADGE ─────────────────────────────────────────── */
 .status-badge {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 13px; border-radius: 20px;
@@ -158,10 +208,114 @@ body {
 .status-badge.ext { background: #FFF3E0; color: #E65100; }
 .status-badge.ext .sb-dot { background: #FF9800; }
 
-/* ── URL BAR ────────────────────────────────────────────── */
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%; border: none; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px; font-weight: 600; letter-spacing: -.2px;
+  padding: 16px 20px; border-radius: 14px;
+  transition: all .13s;
+}
+.btn:active { transform: scale(.97); opacity: .85; }
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+.btn-k    { background: var(--black); color: #fff; }
+.btn-g    { background: var(--green); color: #fff; }
+.btn-r    { background: var(--red);   color: #fff; }
+.btn-blue { background: var(--blue);  color: #fff; }
+.btn-line { background: #fff; color: var(--t1); border: 1.5px solid var(--bdr); }
+.btn-line-r { background: #fff; color: var(--red); border: 1.5px solid #FFCDD2; border-radius: 14px; }
+.btn-sm { padding: 13px 10px; font-size: 13px; border-radius: 12px; flex: 1; }
+.row2 { display: flex; gap: 8px; }
+
+/* ── TRANSPORT CONTROLS ───────────────────────────────────── */
+.transport {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 4px;
+}
+.tbtn {
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; border-radius: 50%;
+  transition: all .13s; background: var(--bg);
+  flex-shrink: 0;
+}
+.tbn-sm { width: 46px; height: 46px; }
+.tbn-lg { width: 56px; height: 56px; background: var(--black); }
+.tbn-lg svg { color: #fff; }
+.tbn-sm svg { width: 20px; height: 20px; color: var(--t1); }
+.tbn-lg svg { width: 22px; height: 22px; }
+.tbn-sm:active, .tbn-lg:active { transform: scale(.93); opacity: .8; }
+
+/* ── NOW PLAYING ──────────────────────────────────────────── */
+.np-site {
+  font-size: 11px; font-weight: 600; color: var(--t2);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.np-name {
+  font-size: 21px; font-weight: 800;
+  letter-spacing: -.5px; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  margin-bottom: 4px;
+}
+.np-url {
+  font-size: 11px; color: var(--t3);
+  font-family: 'SF Mono','Consolas','Courier New',monospace;
+  word-break: break-all; line-height: 1.5;
+  margin-bottom: 14px;
+}
+.np-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ── COUNTDOWN ────────────────────────────────────────────── */
+.np-timer { margin-top: 16px; }
+.np-progress-wrap {
+  height: 3px; background: var(--bdr); border-radius: 2px;
+  overflow: hidden; margin-bottom: 7px;
+}
+.np-progress-fill {
+  height: 100%; background: var(--black); border-radius: 2px;
+  transition: width 1s linear; will-change: width; width: 0%;
+}
+.np-time-row { display: flex; justify-content: space-between; align-items: center; }
+.np-time-label { font-size: 11px; color: var(--t2); font-weight: 500; }
+.np-countdown {
+  font-size: 12px; color: var(--t1); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── VOLUME ───────────────────────────────────────────────── */
+.vol-row { display: flex; align-items: center; gap: 10px; }
+.vol-icon { display: flex; align-items: center; }
+.vol-icon svg { width: 20px; height: 20px; color: var(--t2); }
+.vol-pct {
+  font-size: 12px; font-weight: 700; color: var(--t1);
+  min-width: 38px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vol-slider {
+  flex: 1; height: 5px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  border-radius: 3px; outline: none; border: none; background: transparent;
+  background: linear-gradient(to right, var(--black) var(--vp,100%), var(--bdr) var(--vp,100%));
+}
+.vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px; background: var(--black);
+  border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+  transition: transform .12s;
+}
+.vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
+.vol-slider::-moz-range-thumb {
+  width: 20px; height: 20px; background: var(--black);
+  border-radius: 50%; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+}
+
+/* ── URL BAR ──────────────────────────────────────────────── */
 .url-bar {
   display: flex; align-items: stretch;
-  background: #F5F5F7; border-radius: 14px;
+  background: var(--bg); border-radius: 14px;
   border: 1.5px solid var(--bdr);
   overflow: hidden; transition: border-color .15s;
 }
@@ -169,297 +323,765 @@ body {
 .url-bar input {
   flex: 1; min-width: 0;
   background: transparent; border: none; outline: none;
-  font-family: inherit;
+  font-family: 'Poppins', sans-serif;
   font-size: 14px; font-weight: 400; color: var(--t1);
-  padding: 15px 16px;
+  padding: 14px 16px;
 }
 .url-bar input::placeholder { color: var(--t3); }
 .url-bar-btn {
   background: var(--black); border: none; cursor: pointer;
-  padding: 0 20px; color: #fff;
-  font-family: inherit;
+  padding: 0 18px; color: #fff;
+  font-family: 'Poppins', sans-serif;
   font-size: 13px; font-weight: 700;
-  white-space: nowrap; transition: background .15s;
+  white-space: nowrap;
   border-radius: 0 12px 12px 0;
+  display: flex; align-items: center;
+  transition: background .15s;
 }
-.url-bar-btn:hover  { background: #222; }
-.url-bar-btn:active { background: #444; transform: scale(.98); }
+.url-bar-btn:active { background: #444; }
 
-/* ── BUTTONS ────────────────────────────────────────────── */
-.btn {
+/* ── PLAYLIST ─────────────────────────────────────────────── */
+.pl-add-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.pl-add-input {
+  flex: 1; background: var(--bg); border: 1.5px solid var(--bdr);
+  border-radius: 12px; padding: 12px 14px;
+  font-family: 'Poppins', sans-serif; font-size: 14px; color: var(--t1);
+  outline: none; transition: border-color .15s;
+}
+.pl-add-input:focus { border-color: var(--black); background: #fff; }
+.pl-add-input::placeholder { color: var(--t3); }
+
+.pl-add-name {
+  background: var(--bg); border: 1.5px solid var(--bdr);
+  border-radius: 12px; padding: 10px 14px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1);
+  outline: none; transition: border-color .15s; width: 100%; margin-bottom: 8px;
+}
+.pl-add-name:focus { border-color: var(--black); background: #fff; }
+.pl-add-name::placeholder { color: var(--t3); }
+
+.pl-add-btn {
+  background: var(--black); border: none; cursor: pointer;
+  padding: 12px 18px; border-radius: 12px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 6px;
+  transition: background .13s;
+  white-space: nowrap;
+}
+.pl-add-btn svg { width: 16px; height: 16px; }
+.pl-add-btn:active { background: #333; }
+
+.pl-list { display: flex; flex-direction: column; gap: 8px; }
+.pl-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border-radius: 13px;
+  padding: 12px 14px;
+  animation: rowIn .2s ease both;
+}
+@keyframes rowIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.pl-item.active-item { background: #F0F8FF; border: 1.5px solid #BFDBFE; }
+.pl-drag {
+  display: flex; align-items: center; cursor: grab; color: var(--t3);
+  touch-action: none;
+}
+.pl-drag svg { width: 16px; height: 16px; }
+.pl-item-body { flex: 1; min-width: 0; }
+.pl-item-name {
+  font-size: 13px; font-weight: 600; color: var(--t1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pl-item-url {
+  font-size: 11px; color: var(--t3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: 'SF Mono','Consolas',monospace;
+  margin-top: 2px;
+}
+.pl-item-actions { display: flex; gap: 4px; }
+.pl-icon-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: none; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  gap: 8px; width: 100%; border: none; cursor: pointer;
-  font-family: inherit;
-  font-size: 15px; font-weight: 700; letter-spacing: -.2px;
-  padding: 17px 20px; border-radius: 14px;
-  transition: all .13s;
+  transition: background .13s;
 }
-.btn:active { transform: scale(.97); }
-
-.btn-k    { background: var(--black); color: #fff; }
-.btn-k:hover   { background: #222; }
-.btn-g    { background: var(--green); color: #fff; }
-.btn-g:hover   { background: #25b84e; }
-.btn-r    { background: var(--red);   color: #fff; }
-.btn-r:hover   { background: #e0332a; }
-.btn-line { background: #fff; color: var(--t1); border: 1.5px solid var(--bdr); }
-.btn-line:hover { border-color: #222; }
-.btn-line-r {
-  background: #fff; color: var(--red);
-  border: 1.5px solid #FFCDD2; border-radius: 14px;
+.pl-icon-btn svg { width: 14px; height: 14px; }
+.pl-icon-btn.del { color: var(--red); }
+.pl-icon-btn.del:active { background: var(--rbg); }
+.pl-icon-btn.edit { color: var(--t2); }
+.pl-icon-btn.edit:active { background: var(--bdr); }
+.pl-edit-form {
+  background: #fff; border: 1.5px solid var(--bdr);
+  border-radius: 13px; padding: 12px;
+  margin-top: -4px; margin-bottom: 4px;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.btn-line-r:hover { background: var(--rbg); border-color: var(--red); }
-
-.btn-sm { padding: 13px 14px; font-size: 13px; border-radius: 12px; flex: 1; }
-.row2 { display: flex; gap: 8px; }
-
-/* ── SEP ────────────────────────────────────────────────── */
-.div  { border: none; border-top: 1px solid var(--bdr); margin: 14px 0; }
-
-/* ── INSTALL BANNER ──────────────────────────────────────── */
-.install-banner {
-  display: none;
-  background: #EFF6FF; color: #1D4ED8;
-  border: 1px solid #BFDBFE;
-  border-radius: 14px; padding: 13px 16px;
-  font-size: 13px; font-weight: 600;
-  text-align: center; line-height: 1.6;
+.pl-edit-form input {
+  background: var(--bg); border: 1.5px solid var(--bdr);
+  border-radius: 10px; padding: 10px 12px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1);
+  outline: none; width: 100%;
+  transition: border-color .15s;
 }
-.install-banner.show { display: block; }
+.pl-edit-form input:focus { border-color: var(--black); background: #fff; }
+.pl-edit-btns { display: flex; gap: 8px; }
+.pl-edit-save {
+  flex: 1; background: var(--black); color: #fff;
+  border: none; border-radius: 10px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
+  padding: 10px; cursor: pointer;
+}
+.pl-edit-cancel {
+  flex: 1; background: var(--bg); color: var(--t2);
+  border: 1.5px solid var(--bdr); border-radius: 10px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 10px; cursor: pointer;
+}
+.pl-empty {
+  text-align: center; padding: 32px 16px;
+  color: var(--t3); font-size: 13px; font-weight: 500;
+}
+.pl-empty svg { width: 36px; height: 36px; margin-bottom: 10px; display: block; margin: 0 auto 10px; }
 
-/* ── EXT BANNER ─────────────────────────────────────────── */
+/* ── SETTINGS ─────────────────────────────────────────────── */
+.sett-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--bdr);
+}
+.sett-row:last-of-type { border-bottom: none; }
+.sett-lbl { font-size: 14px; font-weight: 500; color: var(--t1); }
+.sett-sub { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.sett-val {
+  display: flex; align-items: center; gap: 8px;
+}
+.sett-input {
+  width: 72px; background: var(--bg); border: 1.5px solid var(--bdr);
+  border-radius: 10px; padding: 8px 10px; text-align: center;
+  font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: var(--t1);
+  outline: none; transition: border-color .15s;
+}
+.sett-input:focus { border-color: var(--black); background: #fff; }
+.sett-unit { font-size: 12px; color: var(--t2); font-weight: 500; }
+
+/* Toggle switch */
+.toggle {
+  position: relative; width: 44px; height: 26px;
+  cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--bdr); border-radius: 13px;
+  transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+/* Day pills */
+.day-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+.day-pill {
+  padding: 5px 11px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  background: var(--bg); color: var(--t2);
+  border: 1.5px solid var(--bdr); cursor: pointer;
+  transition: all .15s;
+  font-family: 'Poppins', sans-serif;
+}
+.day-pill.sel { background: var(--black); color: #fff; border-color: var(--black); }
+
+.time-inputs { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.time-input {
+  background: var(--bg); border: 1.5px solid var(--bdr);
+  border-radius: 10px; padding: 9px 12px;
+  font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: var(--t1);
+  outline: none; transition: border-color .15s; width: 96px;
+}
+.time-input:focus { border-color: var(--black); background: #fff; }
+.time-sep { font-size: 14px; color: var(--t2); font-weight: 600; }
+.sett-save-btn {
+  width: 100%; background: var(--black); color: #fff;
+  border: none; border-radius: 14px; padding: 16px;
+  font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 4px;
+  transition: background .13s;
+}
+.sett-save-btn:active { background: #333; transform: scale(.98); }
+
+/* ── GUIDE ────────────────────────────────────────────────── */
+.guide-step {
+  display: flex; gap: 14px; padding: 10px 0;
+  border-bottom: 1px solid var(--bdr);
+}
+.guide-step:last-child { border-bottom: none; }
+.guide-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--black); color: #fff;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.guide-body { flex: 1; }
+.guide-title { font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 3px; }
+.guide-desc  { font-size: 12px; color: var(--t2); line-height: 1.6; }
+
+/* ── DEBUG ────────────────────────────────────────────────── */
+.debug-log {
+  background: #0D0D0D; border-radius: 12px; padding: 14px;
+  font-family: 'SF Mono','Consolas','Courier New',monospace;
+  font-size: 11px; color: #A0FFA0;
+  max-height: 240px; overflow-y: auto;
+  line-height: 1.7;
+  white-space: pre-wrap; word-break: break-all;
+}
+.debug-log-empty { color: #555; }
+.debug-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+.debug-btn {
+  padding: 9px 16px; border-radius: 10px; border: 1.5px solid var(--bdr);
+  background: var(--bg); font-family: 'Poppins', sans-serif;
+  font-size: 12px; font-weight: 600; color: var(--t1); cursor: pointer;
+  transition: background .13s;
+}
+.debug-btn:active { background: #e0e0e4; }
+
+/* ── DISCOVER ─────────────────────────────────────────────── */
+.disc-section-title {
+  font-size: 16px; font-weight: 800; letter-spacing: -.3px;
+  padding: 20px 16px 8px;
+  max-width: 520px; margin: 0 auto; width: 100%;
+}
+.disc-grid {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 0 16px;
+  max-width: 520px; margin: 0 auto; width: 100%;
+}
+.disc-card {
+  background: var(--card); border-radius: 16px;
+  box-shadow: var(--sh); overflow: hidden;
+  animation: cardIn .22s ease both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.disc-thumb {
+  width: 100%; aspect-ratio: 16/9;
+  background: #000;
+  display: block; object-fit: cover;
+}
+.disc-thumb-placeholder {
+  width: 100%; aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.disc-thumb-placeholder svg { width: 40px; height: 40px; color: rgba(255,255,255,.2); }
+.disc-body { padding: 14px; }
+.disc-title { font-size: 14px; font-weight: 700; color: var(--t1); line-height: 1.4; margin-bottom: 6px; }
+.disc-meta  { font-size: 11px; color: var(--t2); margin-bottom: 10px; }
+.disc-url   {
+  font-size: 11px; color: var(--t3);
+  font-family: 'SF Mono','Consolas',monospace;
+  word-break: break-all; line-height: 1.5; margin-bottom: 10px;
+}
+.disc-actions { display: flex; gap: 8px; }
+.disc-copy-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 14px; border-radius: 10px;
+  background: var(--bg); border: 1.5px solid var(--bdr);
+  font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--t1);
+  cursor: pointer; transition: all .13s;
+}
+.disc-copy-btn svg { width: 14px; height: 14px; }
+.disc-copy-btn:active { background: #e0e0e4; }
+.disc-send-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 14px; border-radius: 10px;
+  background: var(--black); border: none; color: #fff;
+  font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .13s;
+}
+.disc-send-btn svg { width: 14px; height: 14px; }
+.disc-send-btn:active { background: #333; }
+
+/* ── EXT BANNER ───────────────────────────────────────────── */
 .ext-banner {
   display: none;
   background: #FFF3E0; color: #B45309;
   border: 1px solid #FDE68A;
-  border-radius: 14px; padding: 13px 16px;
+  border-radius: 14px; padding: 12px 16px;
   font-size: 13px; font-weight: 600;
   text-align: center; line-height: 1.5;
+  margin: 8px 16px 0;
+  max-width: 520px; margin-left: auto; margin-right: auto; width: calc(100% - 32px);
 }
 .ext-banner.show { display: block; }
+.ext-banner-wrap { padding: 8px 16px 0; max-width: 520px; margin: 0 auto; width: 100%; }
 
-/* ── TOAST ──────────────────────────────────────────────── */
+/* ── INSTALL BANNER ───────────────────────────────────────── */
+.install-banner {
+  display: none;
+  background: var(--bluebg); color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: 14px; padding: 12px 16px;
+  font-size: 13px; font-weight: 600;
+  text-align: center; line-height: 1.6;
+}
+.install-banner.show { display: flex; align-items: center; gap: 10px; }
+.install-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ── TOAST ────────────────────────────────────────────────── */
 .toast {
-  position: fixed; bottom: 28px; left: 50%;
-  transform: translateX(-50%) translateY(60px);
+  position: fixed; bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
   background: #1C1C1E; color: #fff;
-  padding: 11px 22px; border-radius: 22px;
+  padding: 10px 20px; border-radius: 22px;
   font-size: 13px; font-weight: 600;
   opacity: 0; z-index: 9999;
   transition: transform .22s, opacity .22s;
   white-space: nowrap; pointer-events: none;
+  max-width: calc(100vw - 40px); text-align: center; white-space: normal;
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-/* ── CARD ANIMATIONS ─────────────────────────────────────── */
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-#s-main .stack > .card:nth-child(1) { animation: cardIn .24s .00s ease both; }
-#s-main .stack > .card:nth-child(2) { animation: cardIn .24s .06s ease both; }
-#s-main .stack > .card:nth-child(3) { animation: cardIn .24s .12s ease both; }
-#s-main .stack > .card:nth-child(4) { animation: cardIn .24s .18s ease both; }
-#s-main .stack > .card:nth-child(5) { animation: cardIn .24s .24s ease both; }
-
-/* ── COUNTDOWN TIMER ─────────────────────────────────────── */
-.np-timer { margin-top: 14px; }
-.np-progress-wrap {
-  height: 4px; background: var(--bdr); border-radius: 2px;
-  overflow: hidden; margin-bottom: 6px;
-}
-.np-progress-fill {
-  height: 100%; background: var(--black); border-radius: 2px;
-  transition: width 1s linear; will-change: width; width: 0%;
-}
-.np-time-row {
-  display: flex; justify-content: space-between; align-items: center;
-}
-.np-time-label { font-size: 11px; color: var(--t2); font-weight: 500; }
-.np-countdown {
-  font-size: 12px; color: var(--t1); font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── VOLUME SLIDER ───────────────────────────────────────── */
-.vol-row { display: flex; align-items: center; gap: 12px; }
-.vol-icon { font-size: 20px; line-height: 1; }
-.vol-pct {
-  font-size: 13px; font-weight: 700; color: var(--t1);
-  min-width: 42px; text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.vol-slider {
-  flex: 1; height: 6px; cursor: pointer;
-  -webkit-appearance: none; appearance: none;
-  border-radius: 3px; outline: none; border: none; background: transparent;
-  background: linear-gradient(to right, var(--black) var(--vp, 100%), var(--bdr) var(--vp, 100%));
-}
-.vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px; height: 22px; background: var(--black);
-  border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.22);
-  transition: transform .12s;
-}
-.vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
-.vol-slider::-moz-range-thumb {
-  width: 22px; height: 22px; background: var(--black);
-  border-radius: 50%; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.22);
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<div class="nav">
-  <div class="nav-brand">
-    <div class="brand-icon">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7"
-              stroke="white" stroke-width="2.3"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <div class="brand-name">wt<span> remote</span></div>
+<!-- Splash -->
+<div id="splash">
+  <div class="splash-logo">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
   </div>
-  <div class="pill wait" id="cpill">
-    <div class="pill-dot"></div>
-    <span id="ctxt">Connexion…</span>
-  </div>
-</div>
-
-<!-- Loading -->
-<div id="s-load" class="screen show">
-  <div class="loader"></div>
-  <p style="font-size:14px;color:var(--t2);font-family:Poppins,sans-serif">
-    Connexion au serveur…
-  </p>
+  <div class="splash-name">wt remote</div>
+  <div class="splash-sub">Connexion…</div>
+  <div class="splash-loader" style="margin-top:8px"></div>
 </div>
 
 <!-- Error -->
-<div id="s-err" class="screen">
-  <div class="err-icon">📡</div>
-  <div class="err-title">Serveur introuvable</div>
-  <div class="err-body">
-    Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être
-    sur le même réseau Wi-Fi.
+<div id="err-screen">
+  <div class="err-icon-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 6s2.25-2 5-2 4.5 2 7.5 2S18.75 4 21 4"/>
+      <path d="M1 12s2.25-2 5-2 4.5 2 7.5 2 5.25-2 7.5-2"/>
+      <path d="M1 18s2.25-2 5-2 4.5 2 7.5 2 5.25-2 7.5-2"/>
+    </svg>
   </div>
-  <button class="btn btn-k" style="max-width:240px;margin-top:10px" onclick="location.reload()">
-    ↺ &nbsp;Réessayer
+  <div class="err-title">Serveur introuvable</div>
+  <div class="err-body">Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être sur le même réseau Wi-Fi.</div>
+  <button class="btn btn-k" style="max-width:240px;margin-top:8px" onclick="location.reload()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+    Réessayer
   </button>
 </div>
 
-<!-- Control -->
-<div id="s-main" class="screen">
-  <div class="stack">
+<!-- App -->
+<div id="app" style="display:none">
 
-    <!-- iOS install hint (hidden once installed as PWA) -->
-    <div id="install-banner" class="install-banner">
-      📲 Installer l'appli : bouton <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong>
-    </div>
-
-    <!-- Extension offline banner -->
-    <div id="ext-banner" class="ext-banner">
-      ⚠ Extension hors ligne — reconnexion en cours…
-    </div>
-
-    <!-- Now playing -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">En cours d'affichage</div>
-        <div class="np-top">
-          <div class="np-name" id="np-n">—</div>
-        </div>
-        <div class="np-url" id="np-u">—</div>
-        <span class="status-badge on" id="sbadge">
-          <span class="sb-dot"></span>
-          <span id="sbtxt">Rotation active</span>
-        </span>
-        <div class="np-timer" id="np-timer" style="display:none">
-          <div class="np-progress-wrap">
-            <div class="np-progress-fill" id="np-progress-fill"></div>
-          </div>
-          <div class="np-time-row">
-            <span class="np-time-label">Prochain</span>
-            <span class="np-countdown" id="np-countdown">—</span>
-          </div>
-        </div>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
+      <div class="brand-label">wt<span> remote</span></div>
     </div>
-
-    <!-- Send URL -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Afficher sur la TV</div>
-        <div class="url-bar">
-          <input id="urlin" type="url"
-                 placeholder="https://youtube.com/watch?v=…"
-                 autocomplete="off" autocorrect="off"
-                 autocapitalize="off" spellcheck="false">
-          <button class="url-bar-btn" onclick="sendUrl()">Envoyer</button>
-        </div>
-      </div>
+    <div class="conn-pill wait" id="cpill">
+      <div class="conn-dot"></div>
+      <span id="ctxt">Connexion…</span>
     </div>
+  </header>
 
-    <!-- Controls -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Contrôles</div>
-        <button class="btn btn-r"   id="bpause"  onclick="cmd('pause')">⏸&nbsp; Pause la rotation</button>
-        <button class="btn btn-g"   id="bresume" onclick="cmd('resume')" style="display:none">▶&nbsp; Reprendre la rotation</button>
-        <div class="div"></div>
-        <div class="row2">
-          <button class="btn btn-line btn-sm" onclick="cmd('prev')">⏮ &nbsp;Précédent</button>
-          <button class="btn btn-line btn-sm" onclick="cmd('next')">Suivant&nbsp; ⏭</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Volume -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Volume</div>
-        <div class="vol-row">
-          <span class="vol-icon" id="vol-icon">🔊</span>
-          <input type="range" class="vol-slider" id="vol-slider"
-                 min="0" max="100" value="100">
-          <span class="vol-pct" id="vol-pct">100%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Release -->
-    <div class="card" id="card-release" style="display:none;margin-bottom:0">
-      <div class="card-p">
-        <button class="btn btn-line-r" id="brelease" onclick="cmd('release')">
-          Libérer le contrôle
-        </button>
-      </div>
-    </div>
-
+  <!-- Ext banner -->
+  <div class="ext-banner-wrap">
+    <div class="ext-banner" id="ext-banner">Extension hors ligne — reconnexion en cours…</div>
   </div>
-</div>
+
+  <!-- ══ TAB: ÉCRAN ══════════════════════════════════════════ -->
+  <div class="tab show" id="tab-ecran">
+    <div class="stack">
+
+      <div id="install-banner" class="install-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Installer : <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong></span>
+      </div>
+
+      <!-- Now playing -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">En cours d'affichage</div>
+          <div class="np-site" id="np-site">—</div>
+          <div class="np-name" id="np-n">—</div>
+          <div class="np-url"  id="np-u">—</div>
+          <div class="np-meta-row">
+            <span class="status-badge on" id="sbadge">
+              <span class="sb-dot"></span>
+              <span id="sbtxt">Rotation active</span>
+            </span>
+          </div>
+          <div class="np-timer" id="np-timer" style="display:none">
+            <div class="np-progress-wrap">
+              <div class="np-progress-fill" id="np-progress-fill"></div>
+            </div>
+            <div class="np-time-row">
+              <span class="np-time-label">Prochain dans</span>
+              <span class="np-countdown" id="np-countdown">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transport controls -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Contrôles</div>
+          <div class="transport">
+            <button class="tbn-sm tbn-sm" onclick="cmd('prev')" title="Précédent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/>
+              </svg>
+            </button>
+            <button class="tbn-lg tbn-sm" id="bplay" onclick="togglePlay()" title="Pause / Reprendre">
+              <svg id="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+              </svg>
+            </button>
+            <button class="tbn-sm tbn-sm" onclick="cmd('next')" title="Suivant">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="4" x2="19" y2="20"/>
+              </svg>
+            </button>
+          </div>
+          <div class="div"></div>
+          <div class="row2">
+            <button class="btn btn-line btn-sm" id="brelease" onclick="cmd('release')" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M18.36 6.64A9 9 0 1 1 5.63 5.63"/><path d="M22 12A10 10 0 0 1 2 12"/></svg>
+              Libérer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Send URL -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Afficher sur la TV</div>
+          <div class="url-bar">
+            <input id="urlin" type="url" placeholder="https://youtube.com/watch?v=…"
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <button class="url-bar-btn" onclick="sendUrl()">Envoyer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volume -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Volume</div>
+          <div class="vol-row">
+            <span class="vol-icon" id="vol-icon">
+              <svg id="vol-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            </span>
+            <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="100">
+            <span class="vol-pct" id="vol-pct">100%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ TAB: PLAYLIST ═══════════════════════════════════════ -->
+  <div class="tab" id="tab-playlist">
+    <div class="stack">
+      <!-- Add URL -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Ajouter une URL</div>
+          <input class="pl-add-name" id="pl-add-name" type="text" placeholder="Nom (facultatif)" autocomplete="off">
+          <div class="pl-add-row">
+            <input class="pl-add-input" id="pl-add-url" type="url" placeholder="https://…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <button class="pl-add-btn" onclick="plAdd()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Ajouter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Playlist <span id="pl-count" style="color:var(--t3);font-weight:500"></span></div>
+          <div class="pl-list" id="pl-list">
+            <div class="pl-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>
+              </svg>
+              Aucune URL dans la playlist
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: DÉCOUVRIR ══════════════════════════════════════ -->
+  <div class="tab" id="tab-discover">
+    <div class="disc-section-title">Suggestions</div>
+    <div class="disc-grid" id="disc-grid">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- ══ TAB: RÉGLAGES ═══════════════════════════════════════ -->
+  <div class="tab" id="tab-settings">
+    <div class="stack">
+
+      <!-- Rotation -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Rotation</div>
+          <div class="sett-row">
+            <div>
+              <div class="sett-lbl">Intervalle</div>
+              <div class="sett-sub">Durée d'affichage par URL</div>
+            </div>
+            <div class="sett-val">
+              <input class="sett-input" id="s-interval" type="number" min="5" max="3600" value="30">
+              <span class="sett-unit">sec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Programmation</div>
+          <div class="sett-row">
+            <div>
+              <div class="sett-lbl">Activer la plage horaire</div>
+              <div class="sett-sub">Démarrage / arrêt automatique</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="s-sched-en" onchange="settSchedToggle()">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <div id="s-sched-detail" style="display:none">
+            <div class="sett-sub" style="margin-bottom:6px;margin-top:4px">Jours actifs</div>
+            <div class="day-pills" id="s-days">
+              <button class="day-pill sel" data-d="1">Lun</button>
+              <button class="day-pill sel" data-d="2">Mar</button>
+              <button class="day-pill sel" data-d="3">Mer</button>
+              <button class="day-pill sel" data-d="4">Jeu</button>
+              <button class="day-pill sel" data-d="5">Ven</button>
+              <button class="day-pill" data-d="6">Sam</button>
+              <button class="day-pill" data-d="0">Dim</button>
+            </div>
+            <div class="sett-sub" style="margin-bottom:6px;margin-top:14px">Plage horaire</div>
+            <div class="time-inputs">
+              <input class="time-input" id="s-start" type="time" value="08:00">
+              <span class="time-sep">→</span>
+              <input class="time-input" id="s-end"   type="time" value="18:00">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div style="padding: 0 0 4px">
+        <button class="sett-save-btn" onclick="settSave()">Enregistrer les réglages</button>
+      </div>
+
+      <!-- Guide -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Guide d'utilisation</div>
+          <div class="guide-step">
+            <div class="guide-num">1</div>
+            <div class="guide-body">
+              <div class="guide-title">Démarrer le serveur</div>
+              <div class="guide-desc">Sur le NUC, lancez <strong>start_remote.bat</strong>. Assurez-vous que le NUC et votre téléphone sont sur le même réseau Wi-Fi.</div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-num">2</div>
+            <div class="guide-body">
+              <div class="guide-title">Configurer la playlist</div>
+              <div class="guide-desc">Dans l'onglet <strong>Playlist</strong>, ajoutez les URLs à afficher. Glissez-déposez pour les réorganiser.</div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-num">3</div>
+            <div class="guide-body">
+              <div class="guide-title">Lancer la rotation</div>
+              <div class="guide-desc">Ouvrez l'extension Chrome sur le NUC et cliquez sur <strong>Démarrer</strong>. La rotation démarre automatiquement.</div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-num">4</div>
+            <div class="guide-body">
+              <div class="guide-title">Contrôler depuis le remote</div>
+              <div class="guide-desc">Utilisez l'onglet <strong>Écran</strong> pour pause, navigation et volume. L'onglet <strong>Playlist</strong> permet de modifier la liste en temps réel.</div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-num">5</div>
+            <div class="guide-body">
+              <div class="guide-title">Installer comme appli (iOS)</div>
+              <div class="guide-desc">Dans Safari, appuyez sur <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong> pour accéder rapidement au remote.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Debug</div>
+          <div class="debug-actions">
+            <button class="debug-btn" onclick="debugRefresh()">Actualiser</button>
+            <button class="debug-btn" onclick="debugClear()">Effacer</button>
+          </div>
+          <div class="debug-log" id="debug-log"><span class="debug-log-empty">Aucun log…</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="ecran" onclick="switchTab('ecran', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      <span>Écran</span>
+    </button>
+    <button class="nav-btn" data-tab="playlist" onclick="switchTab('playlist', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      <span>Playlist</span>
+    </button>
+    <button class="nav-btn" data-tab="discover" onclick="switchTab('discover', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span>Découvrir</span>
+    </button>
+    <button class="nav-btn" data-tab="settings" onclick="switchTab('settings', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span>Réglages</span>
+    </button>
+  </nav>
+
+</div><!-- #app -->
 
 <div id="toast" class="toast"></div>
 
 <script>
-let ws = null, ip = null, port = 8765;
+// ── Discover videos ─────────────────────────────────────────────────────────
+const DISCOVER_VIDEOS = [
+  { id: 'dQw4w9WgXcQ', title: 'Comment utiliser wee rotate', channel: 'Wee Technology', desc: 'Guide complet d\'utilisation de l\'extension de rotation d\'affichage.' },
+  { id: 'M7lc1UVf-VE', title: 'Digital Signage pour entreprise', channel: 'Affichage dynamique', desc: 'Les meilleures pratiques pour l\'affichage dynamique en entreprise.' },
+  { id: 'ysz5S6PUM-U', title: 'Canva pour l\'affichage digital', channel: 'Canva', desc: 'Créez des visuels professionnels pour vos écrans avec Canva.' },
+  { id: 'L_LUpnjgPso', title: 'YouTube en mode kiosque', channel: 'Tutoriels', desc: 'Configurer YouTube pour un affichage en boucle en mode kiosque.' },
+  { id: 'oHg5SJYRHA0', title: 'Optimiser votre affichage', channel: 'Productivité', desc: 'Conseils pour optimiser votre configuration d\'affichage dynamique.' },
+];
 
+// ── State ────────────────────────────────────────────────────────────────────
+let ws = null, ip = null, port = 8765;
+let _state = {};
+let _isPlaying = false;
+let reconnectTimer = null;
+let _cdInterval = null, _cdEnd = null, _cdTotal = 0;
+let _volTimer = null;
+let _plDragSrc = null;
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
 function boot() {
   ip   = location.hostname;
   port = parseInt(location.port) || 8765;
+  buildDiscover();
   connect();
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
+    document.getElementById('install-banner').classList.add('show');
+  }
 }
 
-function show(id) {
-  document.querySelectorAll('.screen').forEach(el =>
-    el.classList.toggle('show', el.id === id));
+// ── Connection ───────────────────────────────────────────────────────────────
+function connect() {
+  clearTimeout(reconnectTimer);
+  connPill('wait');
+  ws = new WebSocket(`ws://${ip}:${port}`);
+  ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
+  ws.onmessage = e => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    if (m.type === 'ping')       { ws.send(JSON.stringify({ type: 'pong' })); return; }
+    if (m.type === 'auth_ok')    { showApp(); connPill('on'); return; }
+    if (m.type === 'ext_status') { setExtBanner(!m.connected); return; }
+    if (m.type === 'cmd_error')  { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
+    if (m.type === 'state')      { sync(m); return; }
+  };
+  ws.onclose = () => {
+    connPill('off');
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+  ws.onerror = () => {};
 }
 
-function badge(state) { // 'on' | 'off' | 'wait'
+// ── UI helpers ───────────────────────────────────────────────────────────────
+function showApp() {
+  document.getElementById('splash').classList.add('hide');
+  document.getElementById('app').style.display = '';
+}
+
+function showErr() {
+  document.getElementById('splash').classList.add('hide');
+  document.getElementById('err-screen').classList.add('show');
+}
+
+function connPill(state) {
   const p = document.getElementById('cpill');
   const t = document.getElementById('ctxt');
-  p.className = 'pill ' + state;
-  t.textContent = { on: 'Connecté', off: 'Déconnecté', wait: 'Connexion…' }[state] || 'Connexion…';
+  p.className = 'conn-pill ' + state;
+  t.textContent = { on:'Connecté', off:'Déconnecté', wait:'Connexion…' }[state] || 'Connexion…';
+}
+
+function setExtBanner(show) {
+  document.getElementById('ext-banner').classList.toggle('show', show);
 }
 
 function showToast(msg) {
@@ -470,76 +1092,86 @@ function showToast(msg) {
   el._t = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-let reconnectTimer = null;
-
-function connect() {
-  clearTimeout(reconnectTimer);
-  badge('wait');
-  ws = new WebSocket(`ws://${ip}:${port}`);
-  ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
-  ws.onmessage = e => {
-    let m; try { m = JSON.parse(e.data); } catch(e) { return; }
-    if (m.type === 'ping')       { ws.send(JSON.stringify({ type: 'pong' })); return; }
-    if (m.type === 'auth_ok')    { show('s-main'); badge('on'); return; }
-    if (m.type === 'ext_status') {
-      document.getElementById('ext-banner').classList.toggle('show', !m.connected);
-      return;
-    }
-    if (m.type === 'cmd_error')  { showToast('⚠ Extension hors ligne — réessayez dans quelques secondes'); return; }
-    if (m.type === 'state')      sync(m);
-  };
-  ws.onclose = () => {
-    badge('off');
-    if (!document.getElementById('s-main').classList.contains('show')) show('s-err');
-    reconnectTimer = setTimeout(connect, 3000);
-  };
-  ws.onerror = () => {};
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('show'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('tab-' + name);
+  if (tab) {
+    tab.classList.remove('show');
+    void tab.offsetWidth;
+    tab.classList.add('show');
+  }
+  btn.classList.add('active');
+  if (name === 'settings') settLoad();
+  if (name === 'playlist')  renderPlaylist();
 }
 
+// ── Sync ─────────────────────────────────────────────────────────────────────
 function sync(s) {
+  _state = s;
   const urls = s.urls || [], c = urls[s.currentIndex || 0] || {};
-  const npn  = document.getElementById('np-n');
-  const npu  = document.getElementById('np-u');
-  const sb   = document.getElementById('sbadge');
-  const sbt  = document.getElementById('sbtxt');
-  const bp   = document.getElementById('bpause');
-  const br   = document.getElementById('bresume');
-  const crel = document.getElementById('card-release');
+
+  // Now playing
+  const site = c.url ? (() => { try { return new URL(c.url).hostname.replace(/^www\./,''); } catch { return ''; } })() : '';
+  document.getElementById('np-site').textContent = site || '—';
+  document.getElementById('np-n').textContent = c.name || c.url || '—';
+  document.getElementById('np-u').textContent  = c.url  || '—';
+
+  const sb  = document.getElementById('sbadge');
+  const sbt = document.getElementById('sbtxt');
+  const playIcon = document.getElementById('play-icon');
+  const brelease = document.getElementById('brelease');
 
   if (s.remotePaused && s.remoteUrl) {
-    npn.textContent = s.remoteUrl;
-    npu.textContent = s.remoteUrl;
-    sb.className = 'status-badge ext';
-    sbt.textContent = 'URL externe';
-    bp.style.display = 'none'; br.style.display = ''; crel.style.display = '';
+    document.getElementById('np-site').textContent = (() => { try { return new URL(s.remoteUrl).hostname.replace(/^www\./,''); } catch { return ''; } })();
+    document.getElementById('np-n').textContent = s.remoteUrl;
+    document.getElementById('np-u').textContent  = s.remoteUrl;
+    sb.className = 'status-badge ext'; sbt.textContent = 'URL externe';
+    setPlayIcon(false);
+    brelease.style.display = '';
     stopCountdown();
   } else if (s.active) {
-    npn.textContent = c.name || c.url || '—';
-    npu.textContent = c.url || '—';
-    sb.className = 'status-badge on';
-    sbt.textContent = 'Rotation active';
-    bp.style.display = ''; br.style.display = 'none'; crel.style.display = 'none';
+    sb.className = 'status-badge on'; sbt.textContent = 'Rotation active';
+    setPlayIcon(true);
+    brelease.style.display = 'none';
     if (s.remaining > 0 && s.total > 0) startCountdown(s.remaining, s.total);
+    else stopCountdown();
   } else {
-    npn.textContent = c.name || c.url || '—';
-    npu.textContent = c.url || '—';
-    sb.className = 'status-badge off';
-    sbt.textContent = 'En pause';
-    bp.style.display = 'none'; br.style.display = ''; crel.style.display = 'none';
+    sb.className = 'status-badge off'; sbt.textContent = 'En pause';
+    setPlayIcon(false);
+    brelease.style.display = 'none';
     stopCountdown();
   }
 
   // Volume
-  const vol = Math.round((s.volume ?? 1) * 100);
-  setVolUI(vol);
+  setVolUI(Math.round((s.volume ?? 1) * 100));
+
+  // Playlist tab (update if visible)
+  if (document.getElementById('tab-playlist').classList.contains('show')) renderPlaylist();
+
+  // Settings tab (update if visible)
+  if (document.getElementById('tab-settings').classList.contains('show')) settLoad();
 }
 
-// ── Countdown ─────────────────────────────────────────────
-let _cdInterval = null, _cdEnd = null, _cdTotal = 0;
+function setPlayIcon(playing) {
+  _isPlaying = playing;
+  const svg = document.getElementById('play-icon');
+  if (playing) {
+    svg.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+  } else {
+    svg.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  }
+}
 
+function togglePlay() {
+  cmd(_isPlaying ? 'pause' : 'resume');
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
 function startCountdown(remaining, total) {
   clearInterval(_cdInterval);
-  _cdEnd   = Date.now() + remaining * 1000;
+  _cdEnd = Date.now() + remaining * 1000;
   _cdTotal = total;
   document.getElementById('np-timer').style.display = '';
   tick();
@@ -555,35 +1187,32 @@ function tick() {
   document.getElementById('np-progress-fill').style.width = pct + '%';
   document.getElementById('np-countdown').textContent =
     left <= 0 ? '—' : left >= 60
-      ? Math.floor(left / 60) + 'min ' + String(Math.ceil(left % 60)).padStart(2, '0') + 's'
+      ? Math.floor(left/60) + 'min ' + String(Math.ceil(left%60)).padStart(2,'0') + 's'
       : Math.ceil(left) + 's';
   if (left <= 0) { clearInterval(_cdInterval); _cdInterval = null; }
 }
 
-// ── Volume ────────────────────────────────────────────────
-let _volTimer = null;
+// ── Volume ────────────────────────────────────────────────────────────────────
 function setVolUI(pct) {
   const sl = document.getElementById('vol-slider');
   if (!sl) return;
   sl.value = pct;
   sl.style.setProperty('--vp', pct + '%');
   document.getElementById('vol-pct').textContent = pct + '%';
-  document.getElementById('vol-icon').textContent = pct === 0 ? '🔇' : pct < 50 ? '🔉' : '🔊';
+  const svg = document.getElementById('vol-svg');
+  if (pct === 0) {
+    svg.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+  } else if (pct < 50) {
+    svg.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+  } else {
+    svg.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+  }
 }
-document.addEventListener('DOMContentLoaded', () => {
-  const sl = document.getElementById('vol-slider');
-  sl.addEventListener('input', () => {
-    setVolUI(parseInt(sl.value));
-    clearTimeout(_volTimer);
-    _volTimer = setTimeout(() => cmd('set_volume', { level: parseInt(sl.value) / 100 }), 150);
-  });
-});
 
+// ── Commands ──────────────────────────────────────────────────────────────────
 function cmd(action, extra) {
-  if (ws?.readyState === 1)
-    ws.send(JSON.stringify({ type: 'command', action, ...extra }));
-  else
-    showToast('Connexion perdue — reconnexion en cours…');
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type:'command', action, ...extra }));
+  else showToast('Connexion perdue — reconnexion en cours…');
 }
 
 function sendUrl() {
@@ -593,17 +1222,234 @@ function sendUrl() {
   document.getElementById('urlin').value = '';
 }
 
-function go(url) { cmd('open_url', { url }); }
+// ── Playlist ──────────────────────────────────────────────────────────────────
+function plAdd() {
+  const urlEl  = document.getElementById('pl-add-url');
+  const nameEl = document.getElementById('pl-add-name');
+  const u = urlEl.value.trim();
+  if (!u) { showToast('Entrez une URL valide'); return; }
+  cmd('add_url', { url: u, name: nameEl.value.trim() });
+  urlEl.value  = '';
+  nameEl.value = '';
+}
 
+function plDelete(idx) {
+  cmd('remove_url', { index: idx });
+}
+
+function plSaveEdit(idx, url, name) {
+  cmd('update_url', { index: idx, url, name });
+}
+
+function renderPlaylist() {
+  const urls = _state.urls || [];
+  const ci   = _state.currentIndex || 0;
+  const list = document.getElementById('pl-list');
+  const cnt  = document.getElementById('pl-count');
+  cnt.textContent = urls.length ? `(${urls.length})` : '';
+
+  if (!urls.length) {
+    list.innerHTML = `<div class="pl-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>
+      </svg>
+      Aucune URL dans la playlist
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  urls.forEach((item, i) => {
+    const isActive = (_state.active || _state.remotePaused) && i === ci;
+    const row = document.createElement('div');
+    row.className = 'pl-item' + (isActive ? ' active-item' : '');
+    row.dataset.idx = i;
+    row.draggable = true;
+    row.innerHTML = `
+      <div class="pl-drag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="9" y1="5" x2="9" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/></svg>
+      </div>
+      <div class="pl-item-body">
+        <div class="pl-item-name">${esc(item.name || item.url)}</div>
+        <div class="pl-item-url">${esc(item.url)}</div>
+      </div>
+      <div class="pl-item-actions">
+        <button class="pl-icon-btn edit" onclick="plShowEdit(${i})" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="pl-icon-btn del" onclick="plDelete(${i})" title="Supprimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>`;
+
+    row.addEventListener('dragstart', e => {
+      _plDragSrc = i;
+      e.dataTransfer.effectAllowed = 'move';
+      row.style.opacity = '.5';
+    });
+    row.addEventListener('dragend',  () => row.style.opacity = '');
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (_plDragSrc !== null && _plDragSrc !== i) {
+        cmd('reorder_url', { from: _plDragSrc, to: i });
+      }
+      _plDragSrc = null;
+    });
+
+    list.appendChild(row);
+  });
+}
+
+function plShowEdit(idx) {
+  // Remove any existing edit form
+  document.querySelectorAll('.pl-edit-form').forEach(f => f.remove());
+  const item = (_state.urls || [])[idx];
+  if (!item) return;
+  const rows = document.querySelectorAll('#pl-list .pl-item');
+  const row  = rows[idx];
+  if (!row) return;
+
+  const form = document.createElement('div');
+  form.className = 'pl-edit-form';
+  form.innerHTML = `
+    <input type="text" placeholder="Nom" value="${esc(item.name || '')}" id="edit-name-${idx}">
+    <input type="url"  placeholder="URL"  value="${esc(item.url  || '')}" id="edit-url-${idx}">
+    <div class="pl-edit-btns">
+      <button class="pl-edit-cancel" onclick="document.querySelectorAll('.pl-edit-form').forEach(f=>f.remove())">Annuler</button>
+      <button class="pl-edit-save" onclick="plSaveEdit(${idx}, document.getElementById('edit-url-${idx}').value.trim(), document.getElementById('edit-name-${idx}').value.trim()); document.querySelectorAll('.pl-edit-form').forEach(f=>f.remove())">Sauvegarder</button>
+    </div>`;
+  row.after(form);
+  form.querySelector(`#edit-url-${idx}`).focus();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Discover ──────────────────────────────────────────────────────────────────
+function buildDiscover() {
+  const grid = document.getElementById('disc-grid');
+  DISCOVER_VIDEOS.forEach((v, i) => {
+    const url = `https://www.youtube.com/watch?v=${v.id}`;
+    const thumb = `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`;
+    const card = document.createElement('div');
+    card.className = 'disc-card';
+    card.style.animationDelay = (i * 0.06) + 's';
+    card.innerHTML = `
+      <img class="disc-thumb" src="${thumb}" alt="${esc(v.title)}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="disc-thumb-placeholder" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </div>
+      <div class="disc-body">
+        <div class="disc-title">${esc(v.title)}</div>
+        <div class="disc-meta">${esc(v.channel)}</div>
+        <div class="disc-url">${esc(url)}</div>
+        <div class="disc-actions">
+          <button class="disc-copy-btn" onclick="copyUrl('${url}', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copier
+          </button>
+          <button class="disc-send-btn" onclick="cmd('open_url', { url: '${url}' })">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            Afficher sur la TV
+          </button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function copyUrl(url, btn) {
+  navigator.clipboard?.writeText(url).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copié !`;
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  }).catch(() => showToast('Copie non supportée sur ce navigateur'));
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function settLoad() {
+  const s = _state;
+  if (s.interval) document.getElementById('s-interval').value = s.interval;
+  if (s.scheduleEnabled !== undefined) {
+    document.getElementById('s-sched-en').checked = s.scheduleEnabled;
+    document.getElementById('s-sched-detail').style.display = s.scheduleEnabled ? '' : 'none';
+  }
+  if (s.scheduleStart) document.getElementById('s-start').value = s.scheduleStart;
+  if (s.scheduleEnd)   document.getElementById('s-end').value   = s.scheduleEnd;
+  if (s.scheduleDays) {
+    document.querySelectorAll('#s-days .day-pill').forEach(pill => {
+      const d = parseInt(pill.dataset.d);
+      pill.classList.toggle('sel', s.scheduleDays.includes(d));
+    });
+  }
+}
+
+function settSchedToggle() {
+  const en = document.getElementById('s-sched-en').checked;
+  document.getElementById('s-sched-detail').style.display = en ? '' : 'none';
+}
+
+function settSave() {
+  const interval = parseInt(document.getElementById('s-interval').value) || 30;
+  const scheduleEnabled = document.getElementById('s-sched-en').checked;
+  const scheduleStart   = document.getElementById('s-start').value;
+  const scheduleEnd     = document.getElementById('s-end').value;
+  const scheduleDays    = [...document.querySelectorAll('#s-days .day-pill.sel')].map(p => parseInt(p.dataset.d));
+  cmd('set_interval', { interval });
+  cmd('set_schedule', { scheduleEnabled, scheduleStart, scheduleEnd, scheduleDays });
+  showToast('Réglages enregistrés');
+}
+
+// ── Debug ─────────────────────────────────────────────────────────────────────
+function debugRefresh() {
+  cmd('get_logs');
+  showToast('Logs actualisés depuis l\'extension');
+}
+
+function debugClear() {
+  document.getElementById('debug-log').innerHTML = '<span class="debug-log-empty">Logs effacés</span>';
+}
+
+// ── Day pills ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('urlin')
-    .addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
+  document.querySelectorAll('#s-days .day-pill').forEach(pill => {
+    pill.addEventListener('click', () => pill.classList.toggle('sel'));
+  });
+
+  const sl = document.getElementById('vol-slider');
+  sl.addEventListener('input', () => {
+    setVolUI(parseInt(sl.value));
+    clearTimeout(_volTimer);
+    _volTimer = setTimeout(() => cmd('set_volume', { level: parseInt(sl.value) / 100 }), 150);
+  });
+
+  document.getElementById('urlin').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendUrl();
+  });
+  document.getElementById('pl-add-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') plAdd();
+  });
 });
 
-// Show install hint on iOS Safari (not when already in standalone/PWA mode)
-if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
-  document.getElementById('install-banner').classList.add('show');
-}
+// ── Error timeout ─────────────────────────────────────────────────────────────
+setTimeout(() => {
+  if (document.getElementById('splash').style.visibility !== 'hidden' &&
+      !document.getElementById('splash').classList.contains('hide')) {
+    showErr();
+  }
+}, 7000);
 
 boot();
 </script>

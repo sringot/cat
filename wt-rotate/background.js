@@ -272,9 +272,9 @@ async function injectOverlay(tabId, info) {
         ].join('!important;') + '!important';
         el.innerHTML = qrSrc
           ? `<img src="${qrSrc}" width="86" height="86" style="display:block;border-radius:4px">
-             <div style="font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.5px">📱 REMOTE</div>`
+             <div style="font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.3px">Accéder au remote</div>`
           : `<div style="font-size:9px;color:#333;padding:4px 6px;max-width:90px;word-break:break-all;font-weight:600">${ctrlUrl}</div>
-             <div style="font-size:9px;color:#555;font-weight:700">📱 REMOTE</div>`;
+             <div style="font-size:9px;color:#555;font-weight:700">Accéder au remote</div>`;
         el.addEventListener('mouseenter', () => el.style.opacity = '.6');
         el.addEventListener('mouseleave', () => el.style.opacity = '1');
         el.addEventListener('click', () => window.open(ctrlUrl, '_blank'));
@@ -382,7 +382,11 @@ async function sendStateToRemote() {
     interval: config.interval,
     volume: config.volume ?? 1.0,
     remaining: Math.round(_remaining * 10) / 10,
-    total: _total
+    total: _total,
+    scheduleEnabled: config.scheduleEnabled,
+    scheduleStart:   config.scheduleStart,
+    scheduleEnd:     config.scheduleEnd,
+    scheduleDays:    config.scheduleDays
   }));
 }
 
@@ -550,6 +554,68 @@ async function handleRemoteCommand(cmd) {
           await log('remote — ' + cmd.action);
         }
       } break;
+    }
+
+    case 'add_url': {
+      const url  = (cmd.url  || '').trim();
+      const name = (cmd.name || '').trim();
+      if (!url) break;
+      config.urls.push({ url, name, interval: null });
+      await chrome.storage.local.set({ config });
+      await log('remote — add_url: ' + url.slice(0, 60));
+      break;
+    }
+
+    case 'remove_url': {
+      const idx = parseInt(cmd.index);
+      if (isNaN(idx) || idx < 0 || idx >= config.urls.length) break;
+      config.urls.splice(idx, 1);
+      if (config.currentIndex >= config.urls.length) config.currentIndex = Math.max(0, config.urls.length - 1);
+      await chrome.storage.local.set({ config });
+      await log('remote — remove_url idx=' + idx);
+      break;
+    }
+
+    case 'update_url': {
+      const idx = parseInt(cmd.index);
+      if (isNaN(idx) || idx < 0 || idx >= config.urls.length) break;
+      if (cmd.url)  config.urls[idx].url  = cmd.url.trim();
+      if (cmd.name !== undefined) config.urls[idx].name = cmd.name.trim();
+      await chrome.storage.local.set({ config });
+      await log('remote — update_url idx=' + idx);
+      break;
+    }
+
+    case 'reorder_url': {
+      const from = parseInt(cmd.from), to = parseInt(cmd.to);
+      if (isNaN(from) || isNaN(to) || from < 0 || to < 0 ||
+          from >= config.urls.length || to >= config.urls.length || from === to) break;
+      const [item] = config.urls.splice(from, 1);
+      config.urls.splice(to, 0, item);
+      if (config.currentIndex === from) config.currentIndex = to;
+      await chrome.storage.local.set({ config });
+      await log('remote — reorder_url ' + from + '->' + to);
+      break;
+    }
+
+    case 'set_interval': {
+      const interval = parseInt(cmd.interval);
+      if (isNaN(interval) || interval < 5) break;
+      config.interval = interval;
+      await chrome.storage.local.set({ config });
+      if (config.active) await setNextAlarm(interval);
+      await log('remote — set_interval: ' + interval);
+      break;
+    }
+
+    case 'set_schedule': {
+      if (cmd.scheduleEnabled !== undefined) config.scheduleEnabled = !!cmd.scheduleEnabled;
+      if (cmd.scheduleStart)  config.scheduleStart  = cmd.scheduleStart;
+      if (cmd.scheduleEnd)    config.scheduleEnd    = cmd.scheduleEnd;
+      if (Array.isArray(cmd.scheduleDays)) config.scheduleDays = cmd.scheduleDays;
+      await chrome.storage.local.set({ config });
+      await log('remote — set_schedule');
+      break;
     }
   }
   await sendStateToRemote();

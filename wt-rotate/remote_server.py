@@ -72,7 +72,7 @@ async def keepalive_loop():
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 async def handle_ws(request):
-    global ext_ws, state
+    global ext_ws, state, mob_clients
     from aiohttp import web, WSMsgType
 
     ws = web.WebSocketResponse()

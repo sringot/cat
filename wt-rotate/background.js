@@ -40,7 +40,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   if (!data.config) await chrome.storage.local.set({ config: DEFAULT_CONFIG });
   chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
   await log('onInstalled');
-  connectRemote();
+  await ensureOffscreenDocument();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -64,12 +64,12 @@ chrome.runtime.onStartup.addListener(async () => {
       await log('onStartup — onglets perdus, arrêt');
     }
   }
-  connectRemote();
+  await ensureOffscreenDocument();
 });
 
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-rotate')   await rotateToNext();
-  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await refreshCanvaTabsIfNeeded(); }
+  if (alarm.name === 'wt-watchdog') { await checkSchedule(); await ensureOffscreenDocument(); await refreshCanvaTabsIfNeeded(); }
 });
 
 chrome.tabs.onRemoved.addListener(async tabId => {
@@ -103,6 +103,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  // Messages forwarded from the offscreen document (server → offscreen → SW)
+  if (msg.target === 'background') {
+    handleOffscreenMessage(msg);
+    return false;
+  }
   if (msg.action === 'startTimer') {
     log('startTimer interval=' + msg.interval);
     setNextAlarm(msg.interval);
@@ -290,50 +295,37 @@ async function injectOverlayAll() {
   }
 }
 
-// ── Remote WebSocket client ───────────────────────────────────────────────────
+// ── Offscreen document management ────────────────────────────────────────────
+// The WebSocket lives in the offscreen document, which is not subject to the
+// 30-second idle timeout that kills service workers. This prevents the
+// constant connect/disconnect cycling visible in the server log.
 
-let remoteWs             = null;
-let remoteReconnectTimer = null;
-
-function connectRemote() {
-  if (remoteWs?.readyState === WebSocket.OPEN ||
-      remoteWs?.readyState === WebSocket.CONNECTING) return;
-  clearTimeout(remoteReconnectTimer);
-  try { remoteWs = new WebSocket('ws://localhost:8765'); } catch { scheduleReconnect(); return; }
-
-  remoteWs.onopen = () => remoteWs.send(JSON.stringify({ type: 'extension' }));
-
-  remoteWs.onmessage = async evt => {
-    try {
-      const msg = JSON.parse(evt.data);
-      if (msg.type === 'ping') {
-        remoteWs.send(JSON.stringify({ type: 'pong' }));
-      } else if (msg.type === 'ack') {
-        await chrome.storage.local.set({
-          remoteInfo: { ip: msg.ip, http_port: msg.http_port, connected: true }
-        });
-        await sendStateToRemote();
-        await injectOverlayAll();
-      } else if (msg.type === 'command') {
-        await handleRemoteCommand(msg);
-      }
-    } catch {}
-  };
-
-  remoteWs.onclose = async () => {
-    await chrome.storage.local.set({ remoteInfo: { connected: false } });
-    scheduleReconnect();
-  };
-  remoteWs.onerror = () => scheduleReconnect();
+async function ensureOffscreenDocument() {
+  try {
+    if (await chrome.offscreen.hasDocument()) return;
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['BLOBS'],
+      justification: 'Maintains persistent WebSocket connection to the remote control server'
+    });
+  } catch {}
 }
 
-function scheduleReconnect() {
-  clearTimeout(remoteReconnectTimer);
-  remoteReconnectTimer = setTimeout(connectRemote, 5000);
+async function handleOffscreenMessage(msg) {
+  if (msg.type === 'ack') {
+    await chrome.storage.local.set({
+      remoteInfo: { ip: msg.ip, http_port: msg.http_port, connected: true }
+    });
+    await sendStateToRemote();
+    await injectOverlayAll();
+  } else if (msg.type === 'command') {
+    await handleRemoteCommand(msg);
+  } else if (msg.type === 'ws_disconnected') {
+    await chrome.storage.local.set({ remoteInfo: { connected: false } });
+  }
 }
 
 async function sendStateToRemote() {
-  if (remoteWs?.readyState !== WebSocket.OPEN) return;
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   const activeUrls = config.urls.filter(u => u?.url?.trim());
@@ -341,14 +333,17 @@ async function sendStateToRemote() {
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
-  remoteWs.send(JSON.stringify({
+  const stateMsg = JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
     interval: config.interval
-  }));
+  });
+  try {
+    await chrome.runtime.sendMessage({ target: 'offscreen', action: 'sendToServer', data: stateMsg });
+  } catch {}
 }
 
 function transformUrl(url) {
@@ -550,4 +545,5 @@ async function log(msg) {
   } catch {}
 }
 
-connectRemote();
+// Ensure the offscreen document (and its persistent WebSocket) exists on every SW start
+(async () => { await ensureOffscreenDocument(); })();

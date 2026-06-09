@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-wt-rotate Remote Control Server — HTTP + WebSocket on a single port (8765)
-pip install websockets qrcode
+wt-rotate Remote Control Server — HTTP + WebSocket sur le même port (8765)
+pip install aiohttp qrcode
 """
-import asyncio, json, socket, io, http
+import asyncio, json, socket, io
 from pathlib import Path
+from aiohttp import web, WSMsgType
 
-PORT = 8765   # Single port: HTTP GET → serves page/QR, WebSocket upgrade → relay
+PORT = 8765
 
-local_ip    = "127.0.0.1"
+local_ip    = '127.0.0.1'
 ext_ws      = None
 mob_clients = set()
 state       = {}
 qr_cache    = None
+html_cache  = None
 
 # ── QR code ───────────────────────────────────────────────────────────────────
 
@@ -25,85 +27,62 @@ def make_qr_svg(url):
     except Exception:
         return None
 
-# ── HTTP responses (shared by both API flavours) ──────────────────────────────
+# ── Gestionnaire principal (HTTP + WebSocket sur le même port) ────────────────
 
-def _http(path):
-    """Return (status, [(header, value)], body) for an HTTP request."""
-    clean = path.split('?')[0]
-    if clean == '/info':
+async def handle(request):
+    if request.headers.get('upgrade', '').lower() == 'websocket':
+        return await handle_ws(request)
+    return await handle_http(request)
+
+async def handle_http(request):
+    path = request.path.split('?')[0]
+
+    if path == '/info':
         body = json.dumps({'ip': local_ip, 'ws_port': PORT, 'http_port': PORT}).encode()
-        return http.HTTPStatus.OK, [
-            ('Content-Type', 'application/json'),
-            ('Access-Control-Allow-Origin', '*'),
-        ], body
-    if clean == '/qr.svg':
+        return web.Response(body=body, content_type='application/json',
+                            headers={'Access-Control-Allow-Origin': '*'})
+
+    if path == '/qr.svg':
         if qr_cache:
-            return http.HTTPStatus.OK, [
-                ('Content-Type', 'image/svg+xml'),
-                ('Access-Control-Allow-Origin', '*'),
-                ('Cache-Control', 'no-store'),
-            ], qr_cache
-        return http.HTTPStatus.SERVICE_UNAVAILABLE, [], b'pip install qrcode'
+            return web.Response(body=qr_cache, content_type='image/svg+xml',
+                                headers={'Cache-Control': 'no-store',
+                                         'Access-Control-Allow-Origin': '*'})
+        return web.Response(status=503, text='pip install qrcode')
+
+    if html_cache:
+        return web.Response(body=html_cache,
+                            headers={'Content-Type': 'text/html; charset=utf-8',
+                                     'Cache-Control': 'no-store'})
+    return web.Response(status=404, text='control.html introuvable')
+
+async def handle_ws(request):
+    global ext_ws, state
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
     try:
-        body = (Path(__file__).parent / 'control.html').read_bytes()
-        return http.HTTPStatus.OK, [
-            ('Content-Type', 'text/html; charset=utf-8'),
-            ('Cache-Control', 'no-store'),
-        ], body
-    except FileNotFoundError:
-        return http.HTTPStatus.NOT_FOUND, [], b'control.html introuvable'
-
-# ── process_request — compatible websockets 10-11 (legacy) AND 12+ (new) ─────
-#
-# websockets < 12  : process_request(path: str, headers: Headers)
-#                    → (HTTPStatus, [(k,v)], bytes) | None
-# websockets ≥ 12  : process_request(connection, request)
-#                    → Response | None
-#
-# We detect which API is available at import time and define accordingly.
-
-try:
-    from websockets.http11 import Response as _WsResponse          # websockets ≥ 12
-    from websockets.datastructures import Headers as _WsHeaders
-
-    async def process_request(connection, request):
-        if 'websocket' in request.headers.get('upgrade', '').lower():
-            return None   # Let the WebSocket handshake proceed
-        status, hdrs, body = _http(request.path)
-        ws_hdrs = _WsHeaders(hdrs + [('Content-Length', str(len(body)))])
-        return _WsResponse(status.value, status.phrase, ws_hdrs, body)
-
-except ImportError:
-    # Legacy API (websockets 10 / 11)
-    async def process_request(path, request_headers):               # type: ignore[misc]
-        if 'websocket' in request_headers.get('upgrade', '').lower():
-            return None
-        return _http(path)
-
-# ── WebSocket handler ─────────────────────────────────────────────────────────
-
-async def handle(ws):
-    global ext_ws, mob_clients, state
-    try:
-        raw = await asyncio.wait_for(ws.recv(), timeout=10)
-        msg = json.loads(raw)
+        msg_data = await asyncio.wait_for(ws.receive(), timeout=10)
+        if msg_data.type != WSMsgType.TEXT:
+            return ws
+        msg = json.loads(msg_data.data)
     except Exception:
-        return
+        return ws
 
     if msg.get('type') == 'extension':
         ext_ws = ws
         print('[+] Extension connectée')
-        await ws.send(json.dumps({'type': 'ack', 'ip': local_ip, 'http_port': PORT}))
+        await ws.send_str(json.dumps({'type': 'ack', 'ip': local_ip, 'http_port': PORT}))
         try:
-            async for raw in ws:
-                d = json.loads(raw)
-                if d.get('type') == 'state':
-                    state = d
-                    dead = set()
-                    for m in mob_clients:
-                        try: await m.send(raw)
-                        except: dead.add(m)
-                    mob_clients -= dead
+            async for msg_data in ws:
+                if msg_data.type == WSMsgType.TEXT:
+                    d = json.loads(msg_data.data)
+                    if d.get('type') == 'state':
+                        state = d
+                        dead = set()
+                        for m in list(mob_clients):
+                            try: await m.send_str(msg_data.data)
+                            except: dead.add(m)
+                        mob_clients -= dead
         except Exception:
             pass
         finally:
@@ -114,25 +93,29 @@ async def handle(ws):
     elif msg.get('type') == 'mobile':
         mob_clients.add(ws)
         print(f'[+] Mobile connecté ({len(mob_clients)} actif(s))')
-        await ws.send(json.dumps({'type': 'auth_ok'}))
+        await ws.send_str(json.dumps({'type': 'auth_ok'}))
         if state:
-            await ws.send(json.dumps({**state, 'type': 'state'}))
+            await ws.send_str(json.dumps({**state, 'type': 'state'}))
         try:
-            async for raw in ws:
-                d = json.loads(raw)
-                if d.get('type') == 'command' and ext_ws:
-                    try: await ext_ws.send(raw)
-                    except: pass
+            async for msg_data in ws:
+                if msg_data.type == WSMsgType.TEXT:
+                    d = json.loads(msg_data.data)
+                    if d.get('type') == 'command' and ext_ws:
+                        try: await ext_ws.send_str(msg_data.data)
+                        except: pass
         except Exception:
             pass
         finally:
             mob_clients.discard(ws)
             print(f'[-] Mobile déconnecté ({len(mob_clients)} actif(s))')
 
+    return ws
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
-    global local_ip, qr_cache
+    global local_ip, qr_cache, html_cache
+
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
@@ -144,6 +127,11 @@ async def main():
     control_url = f'http://{local_ip}:{PORT}/'
     qr_cache    = make_qr_svg(control_url)
 
+    try:
+        html_cache = (Path(__file__).parent / 'control.html').read_bytes()
+    except Exception:
+        html_cache = b'<h1>control.html introuvable</h1>'
+
     print('╔══════════════════════════════════════════╗')
     print('║    wt-rotate Remote Control Server       ║')
     print('╠══════════════════════════════════════════╣')
@@ -153,16 +141,21 @@ async def main():
     print('╚══════════════════════════════════════════╝')
     print('\nEn attente de connexions...\n')
 
-    import websockets
-    async with websockets.serve(handle, '0.0.0.0', PORT,
-                                process_request=process_request):
-        await asyncio.Future()
+    app = web.Application()
+    app.router.add_route('*', '/',              handle)
+    app.router.add_route('*', '/{path_info:.*}', handle)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    await asyncio.Future()
 
 if __name__ == '__main__':
     try:
-        import websockets
+        from aiohttp import web, WSMsgType
     except ImportError:
-        print('ERREUR : pip install websockets qrcode')
+        print('ERREUR : pip install aiohttp qrcode')
         input('Appuyez sur Entrée pour quitter...')
         raise SystemExit(1)
     try:

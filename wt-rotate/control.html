@@ -315,12 +315,9 @@ body {
 <script>
 let ws = null, ip = null, port = 8765;
 
-async function boot() {
-  try {
-    const d = await fetch('/info').then(r => r.json());
-    ip   = d.ip;
-    port = d.ws_port || 8765;
-  } catch { ip = location.hostname; }
+function boot() {
+  ip   = location.hostname;
+  port = parseInt(location.port) || 8765;
   connect();
 }
 
@@ -344,7 +341,7 @@ function connect() {
   ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
-    let m; try { m = JSON.parse(e.data); } catch { return; }
+    let m; try { m = JSON.parse(e.data); } catch(e) { return; }
     if (m.type === 'auth_ok') { show('s-main'); badge('on'); }
     if (m.type === 'state')   sync(m);
   };

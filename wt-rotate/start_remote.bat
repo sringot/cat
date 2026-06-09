@@ -15,7 +15,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Installation / verification des dependances...
-python -m pip install websockets qrcode --quiet
+python -m pip install aiohttp qrcode --quiet
 
 echo.
 echo Ouverture du port 8765 dans le pare-feu Windows...

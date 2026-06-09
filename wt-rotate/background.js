@@ -75,17 +75,15 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 chrome.tabs.onRemoved.addListener(async tabId => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
-  if (config.remoteTabId === tabId) {
-    config.remoteTabId = null;
-    await chrome.storage.local.set({ config });
-    return;
-  }
+  if (config.remoteTabId === tabId) config.remoteTabId = null;
   if (config.tabIds.includes(tabId)) {
     await log('onglet fermé — arrêt');
-    config.active = false; config.tabIds = []; config.windowId = null;
+    config.active = false; config.tabIds = []; config.windowId = null; config.remoteTabId = null;
     chrome.alarms.clear('wt-rotate');
     await chrome.storage.local.set({ config });
     await sendStateToRemote();
+  } else {
+    await chrome.storage.local.set({ config });
   }
 });
 
@@ -497,11 +495,13 @@ async function handleRemoteCommand(cmd) {
         const n = cmd.action === 'next'
           ? (config.currentIndex + 1) % urls.length
           : (config.currentIndex - 1 + urls.length) % urls.length;
-        if (n < config.tabIds.length) { try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch {} }
-        config.currentIndex = n; config.lastAlarmTime = Date.now();
-        await chrome.storage.local.set({ config });
-        if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
-        await log('remote — ' + cmd.action);
+        if (n < config.tabIds.length) {
+          try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch {}
+          config.currentIndex = n; config.lastAlarmTime = Date.now();
+          await chrome.storage.local.set({ config });
+          if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+          await log('remote — ' + cmd.action);
+        }
       } break;
     }
   }

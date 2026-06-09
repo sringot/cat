@@ -108,6 +108,7 @@ async def handle(ws):
             pass
         finally:
             ext_ws = None
+            state = {}
             print('[-] Extension déconnectée')
 
     elif msg.get('type') == 'mobile':

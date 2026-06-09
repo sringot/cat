@@ -53,6 +53,7 @@ function initTabs() {
 function initDayButtons() {
   document.querySelectorAll('.day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!config) return;
       const day  = parseInt(btn.dataset.day);
       const days = config.scheduleDays || [1, 2, 3, 4, 5];
       const idx  = days.indexOf(day);
@@ -475,6 +476,14 @@ async function refreshRemoteInfo() {
     }
   } catch {}
 }
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.remoteInfo) {
+    const qrDiv = $('remote-qr');
+    if (qrDiv) qrDiv.dataset.loaded = '';
+    refreshRemoteInfo();
+  }
+});
 
 $('btn-copy-remote').addEventListener('click', async () => {
   const url = $('remote-url-box').textContent;

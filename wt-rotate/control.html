@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- FILE: /home/user/cat/wt-rotate/control.html -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -45,7 +46,6 @@ body {
   color: var(--t1);
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
@@ -58,7 +58,7 @@ body {
   gap: 16px;
   transition: opacity .3s, visibility .3s;
 }
-#splash.hide { opacity: 0; visibility: hidden; }
+#splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
 .splash-logo {
   width: 56px; height: 56px; background: var(--black);
   border-radius: 14px;
@@ -73,28 +73,18 @@ body {
   border-top-color: var(--black);
   border-radius: 50%;
   animation: spin .7s linear infinite;
+  margin-top: 8px;
 }
+.splash-err { display: none; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 0 32px; }
+.splash-err.show { display: flex; }
+.splash-err-title { font-size: 20px; font-weight: 800; }
+.splash-err-body  { font-size: 13px; color: var(--t2); line-height: 1.6; }
 
-/* ── ERROR ────────────────────────────────────────────────── */
-#err-screen {
-  display: none;
-  position: fixed; inset: 0; z-index: 8000;
-  background: var(--bg);
-  flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 14px; padding: 40px 28px; text-align: center;
-}
-#err-screen.show { display: flex; }
-.err-icon-wrap {
-  width: 68px; height: 68px; background: var(--rbg);
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-}
-.err-icon-wrap svg { width: 32px; height: 32px; color: var(--red); }
-.err-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
-.err-body  { font-size: 14px; color: var(--t2); line-height: 1.6; max-width: 300px; }
+/* ── SCREENS ──────────────────────────────────────────────── */
+.screen { display: none; }
+.screen.show { display: block; }
 
-/* ── HEADER ───────────────────────────────────────────────── */
+/* ── SHARED HEADER ────────────────────────────────────────── */
 .app-header {
   position: sticky; top: 0; z-index: 99;
   background: rgba(245,245,247,.9);
@@ -102,32 +92,154 @@ body {
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid rgba(0,0,0,.06);
   padding: 14px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 12px;
 }
-.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-brand { display: flex; align-items: center; gap: 10px; flex: 1; }
 .brand-logo {
   width: 30px; height: 30px; background: var(--black);
-  border-radius: 8px;
+  border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
 .brand-logo svg { width: 16px; height: 16px; }
 .brand-label { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
 .brand-label span { color: var(--t2); font-weight: 500; }
 
+/* back button */
+.hdr-back {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--bg); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background .15s;
+}
+.hdr-back svg { width: 18px; height: 18px; color: var(--t1); }
+.hdr-back:active { background: var(--bdr); }
+
+/* TV name in control header */
+.hdr-tv-name {
+  flex: 1; min-width: 0;
+  font-size: 14px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 140px; text-align: center;
+}
+
+/* connection pill */
 .conn-pill {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 11px; border-radius: 20px;
   font-size: 11px; font-weight: 600; letter-spacing: -.1px;
-  transition: background .2s, color .2s;
+  transition: background .2s, color .2s; flex-shrink: 0;
 }
 .conn-dot { width: 6px; height: 6px; border-radius: 50%; transition: background .2s; }
-.conn-pill.on  { background: var(--gbg); color: #1D7A3A; }
-.conn-pill.on  .conn-dot { background: var(--green); }
-.conn-pill.off { background: var(--rbg); color: var(--red); }
-.conn-pill.off .conn-dot { background: var(--red); animation: pulse 1.4s ease infinite; }
+.conn-pill.on   { background: var(--gbg); color: #1D7A3A; }
+.conn-pill.on   .conn-dot { background: var(--green); }
+.conn-pill.off  { background: var(--rbg); color: var(--red); }
+.conn-pill.off  .conn-dot { background: var(--red); animation: pulse 1.4s ease infinite; }
 .conn-pill.wait { background: #F5F5F7; color: var(--t2); }
 .conn-pill.wait .conn-dot { background: var(--t3); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ── TV PICKER SCREEN ─────────────────────────────────────── */
+#screen-picker {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
+.picker-hero {
+  padding: 28px 20px 12px;
+  max-width: 520px; margin: 0 auto;
+}
+.picker-title {
+  font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1.1;
+  margin-bottom: 6px;
+}
+.picker-sub { font-size: 14px; color: var(--t2); }
+
+.tv-list {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px 20px;
+  max-width: 520px; margin: 0 auto;
+}
+
+.tv-card {
+  background: var(--card); border-radius: 20px;
+  box-shadow: var(--sh);
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: transform .13s, box-shadow .13s;
+  animation: cardIn .22s ease both;
+  text-decoration: none; color: inherit;
+  border: none; width: 100%; text-align: left; font-family: inherit;
+}
+.tv-card:active { transform: scale(.98); box-shadow: 0 1px 8px rgba(0,0,0,.08); }
+.tv-card.offline { opacity: 0.55; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tv-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tv-icon-wrap.online  { background: var(--blue); }
+.tv-icon-wrap.offline { background: var(--bdr); }
+.tv-icon-wrap svg { width: 26px; height: 26px; color: #fff; }
+
+.tv-info { flex: 1; min-width: 0; }
+.tv-card-name { font-size: 16px; font-weight: 700; color: var(--t1); }
+.tv-card-status {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 3px; font-size: 13px; font-weight: 500;
+}
+.tv-status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.tv-card-status.online .tv-status-dot  { background: var(--green); }
+.tv-card-status.online                  { color: #1D7A3A; }
+.tv-card-status.offline .tv-status-dot { background: var(--t3); }
+.tv-card-status.offline                 { color: var(--t2); }
+.tv-card-playing {
+  font-size: 11px; color: var(--t3); margin-top: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.tv-card-chevron { flex-shrink: 0; color: var(--t3); }
+.tv-card-chevron svg { width: 18px; height: 18px; display: block; }
+
+/* empty state */
+.tv-empty {
+  text-align: center; padding: 56px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.tv-empty-icon {
+  width: 72px; height: 72px; background: var(--bdr);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.tv-empty-icon svg { width: 36px; height: 36px; color: var(--t3); }
+.tv-empty-title { font-size: 18px; font-weight: 800; letter-spacing: -.4px; }
+.tv-empty-sub { font-size: 13px; color: var(--t2); line-height: 1.6; max-width: 280px; }
+
+/* ── CONTROL SCREEN ───────────────────────────────────────── */
+#screen-control {
+  padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
+}
+
+/* ── EXT BANNER ───────────────────────────────────────────── */
+.ext-banner {
+  display: none;
+  background: #FFF3E0; color: #B45309;
+  border: 1px solid #FDE68A;
+  border-radius: 14px; padding: 12px 16px;
+  font-size: 13px; font-weight: 600;
+  text-align: center; line-height: 1.5;
+}
+.ext-banner.show { display: block; }
+.ext-banner-wrap {
+  padding: 8px 16px 0;
+  max-width: 520px; margin: 0 auto; width: 100%;
+}
 
 /* ── BOTTOM NAV ───────────────────────────────────────────── */
 .bottom-nav {
@@ -147,16 +259,13 @@ body {
   display: flex; flex-direction: column; align-items: center;
   gap: 3px; padding: 6px 16px; border-radius: 20px;
   background: none; border: none; cursor: pointer;
-  transition: background .18s;
-  min-width: 62px;
+  transition: background .18s; min-width: 62px;
 }
 .nav-btn svg { width: 20px; height: 20px; color: rgba(255,255,255,.45); transition: color .18s; }
 .nav-btn span {
   font-family: 'Poppins', sans-serif;
   font-size: 9.5px; font-weight: 600;
-  color: rgba(255,255,255,.45);
-  letter-spacing: .2px;
-  transition: color .18s;
+  color: rgba(255,255,255,.45); letter-spacing: .2px; transition: color .18s;
 }
 .nav-btn.active { background: rgba(255,255,255,.12); }
 .nav-btn.active svg  { color: #fff; }
@@ -219,17 +328,15 @@ body {
 }
 .btn:active { transform: scale(.97); opacity: .85; }
 .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-
 .btn-k    { background: var(--black); color: #fff; }
 .btn-g    { background: var(--green); color: #fff; }
 .btn-r    { background: var(--red);   color: #fff; }
 .btn-blue { background: var(--blue);  color: #fff; }
 .btn-line { background: #fff; color: var(--t1); border: 1.5px solid var(--bdr); }
-.btn-line-r { background: #fff; color: var(--red); border: 1.5px solid #FFCDD2; border-radius: 14px; }
 .btn-sm { padding: 13px 10px; font-size: 13px; border-radius: 12px; flex: 1; }
 .row2 { display: flex; gap: 8px; }
 
-/* ── TRANSPORT CONTROLS ───────────────────────────────────── */
+/* ── TRANSPORT ────────────────────────────────────────────── */
 .transport {
   display: flex; align-items: center; justify-content: center;
   gap: 8px; margin-top: 4px;
@@ -237,8 +344,7 @@ body {
 .tbtn {
   display: flex; align-items: center; justify-content: center;
   border: none; cursor: pointer; border-radius: 50%;
-  transition: all .13s; background: var(--bg);
-  flex-shrink: 0;
+  transition: all .13s; background: var(--bg); flex-shrink: 0;
 }
 .tbn-sm { width: 46px; height: 46px; }
 .tbn-lg { width: 56px; height: 56px; background: var(--black); }
@@ -248,52 +354,26 @@ body {
 .tbn-sm:active, .tbn-lg:active { transform: scale(.93); opacity: .8; }
 
 /* ── NOW PLAYING ──────────────────────────────────────────── */
-.np-site {
-  font-size: 11px; font-weight: 600; color: var(--t2);
-  text-transform: uppercase; letter-spacing: 1px;
-  margin-bottom: 4px;
-}
+.np-site { font-size: 11px; font-weight: 600; color: var(--t2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
 .np-name {
-  font-size: 21px; font-weight: 800;
-  letter-spacing: -.5px; line-height: 1.2;
+  font-size: 21px; font-weight: 800; letter-spacing: -.5px; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   margin-bottom: 4px;
 }
-.np-url {
-  font-size: 11px; color: var(--t3);
-  font-family: 'SF Mono','Consolas','Courier New',monospace;
-  word-break: break-all; line-height: 1.5;
-  margin-bottom: 14px;
-}
+.np-url { font-size: 11px; color: var(--t3); font-family: 'SF Mono','Consolas','Courier New',monospace; word-break: break-all; line-height: 1.5; margin-bottom: 14px; }
 .np-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-
-/* ── COUNTDOWN ────────────────────────────────────────────── */
 .np-timer { margin-top: 16px; }
-.np-progress-wrap {
-  height: 3px; background: var(--bdr); border-radius: 2px;
-  overflow: hidden; margin-bottom: 7px;
-}
-.np-progress-fill {
-  height: 100%; background: var(--black); border-radius: 2px;
-  transition: width 1s linear; will-change: width; width: 0%;
-}
+.np-progress-wrap { height: 3px; background: var(--bdr); border-radius: 2px; overflow: hidden; margin-bottom: 7px; }
+.np-progress-fill { height: 100%; background: var(--black); border-radius: 2px; transition: width 1s linear; will-change: width; width: 0%; }
 .np-time-row { display: flex; justify-content: space-between; align-items: center; }
 .np-time-label { font-size: 11px; color: var(--t2); font-weight: 500; }
-.np-countdown {
-  font-size: 12px; color: var(--t1); font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
+.np-countdown  { font-size: 12px; color: var(--t1); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ── VOLUME ───────────────────────────────────────────────── */
 .vol-row { display: flex; align-items: center; gap: 10px; }
-.vol-icon { display: flex; align-items: center; }
-.vol-icon svg { width: 20px; height: 20px; color: var(--t2); }
-.vol-pct {
-  font-size: 12px; font-weight: 700; color: var(--t1);
-  min-width: 38px; text-align: right;
-  font-variant-numeric: tabular-nums;
-}
+.vol-icon svg { width: 20px; height: 20px; color: var(--t2); display: block; }
+.vol-pct { font-size: 12px; font-weight: 700; color: var(--t1); min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
 .vol-slider {
   flex: 1; height: 5px; cursor: pointer;
   -webkit-appearance: none; appearance: none;
@@ -303,40 +383,27 @@ body {
 .vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 20px; height: 20px; background: var(--black);
-  border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.22);
-  transition: transform .12s;
+  border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.22); transition: transform .12s;
 }
 .vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
-.vol-slider::-moz-range-thumb {
-  width: 20px; height: 20px; background: var(--black);
-  border-radius: 50%; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.22);
-}
+.vol-slider::-moz-range-thumb { width: 20px; height: 20px; background: var(--black); border-radius: 50%; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.22); }
 
 /* ── URL BAR ──────────────────────────────────────────────── */
 .url-bar {
   display: flex; align-items: stretch;
-  background: var(--bg); border-radius: 14px;
-  border: 1.5px solid var(--bdr);
+  background: var(--bg); border-radius: 14px; border: 1.5px solid var(--bdr);
   overflow: hidden; transition: border-color .15s;
 }
 .url-bar:focus-within { border-color: var(--black); background: #fff; }
 .url-bar input {
-  flex: 1; min-width: 0;
-  background: transparent; border: none; outline: none;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px; font-weight: 400; color: var(--t1);
-  padding: 14px 16px;
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 400; color: var(--t1); padding: 14px 16px;
 }
 .url-bar input::placeholder { color: var(--t3); }
 .url-bar-btn {
-  background: var(--black); border: none; cursor: pointer;
-  padding: 0 18px; color: #fff;
-  font-family: 'Poppins', sans-serif;
-  font-size: 13px; font-weight: 700;
-  white-space: nowrap;
-  border-radius: 0 12px 12px 0;
-  display: flex; align-items: center;
-  transition: background .15s;
+  background: var(--black); border: none; cursor: pointer; padding: 0 18px; color: #fff;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; white-space: nowrap;
+  border-radius: 0 12px 12px 0; display: flex; align-items: center; transition: background .15s;
 }
 .url-bar-btn:active { background: #444; }
 
@@ -350,7 +417,6 @@ body {
 }
 .pl-add-input:focus { border-color: var(--black); background: #fff; }
 .pl-add-input::placeholder { color: var(--t3); }
-
 .pl-add-name {
   background: var(--bg); border: 1.5px solid var(--bdr);
   border-radius: 12px; padding: 10px 14px;
@@ -359,103 +425,59 @@ body {
 }
 .pl-add-name:focus { border-color: var(--black); background: #fff; }
 .pl-add-name::placeholder { color: var(--t3); }
-
 .pl-add-btn {
   background: var(--black); border: none; cursor: pointer;
   padding: 12px 18px; border-radius: 12px;
   font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: #fff;
-  display: flex; align-items: center; gap: 6px;
-  transition: background .13s;
-  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; transition: background .13s; white-space: nowrap;
 }
 .pl-add-btn svg { width: 16px; height: 16px; }
 .pl-add-btn:active { background: #333; }
-
 .pl-list { display: flex; flex-direction: column; gap: 8px; }
 .pl-item {
   display: flex; align-items: center; gap: 10px;
-  background: var(--bg); border-radius: 13px;
-  padding: 12px 14px;
+  background: var(--bg); border-radius: 13px; padding: 12px 14px;
   animation: rowIn .2s ease both;
 }
-@keyframes rowIn {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+@keyframes rowIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 .pl-item.active-item { background: #F0F8FF; border: 1.5px solid #BFDBFE; }
-.pl-drag {
-  display: flex; align-items: center; cursor: grab; color: var(--t3);
-  touch-action: none;
-}
+.pl-item.drag-over   { border: 1.5px solid var(--black); background: #F5F5FF; }
+.pl-drag { display: flex; align-items: center; cursor: grab; color: var(--t3); touch-action: none; }
 .pl-drag svg { width: 16px; height: 16px; }
 .pl-item-body { flex: 1; min-width: 0; }
-.pl-item-name {
-  font-size: 13px; font-weight: 600; color: var(--t1);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.pl-item-url {
-  font-size: 11px; color: var(--t3);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: 'SF Mono','Consolas',monospace;
-  margin-top: 2px;
-}
+.pl-item-name { font-size: 13px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-item-url  { font-size: 11px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'SF Mono','Consolas',monospace; margin-top: 2px; }
 .pl-item-actions { display: flex; gap: 4px; }
-.pl-icon-btn {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .13s;
-}
+.pl-icon-btn { width: 30px; height: 30px; border-radius: 8px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .13s; }
 .pl-icon-btn svg { width: 14px; height: 14px; }
-.pl-icon-btn.del { color: var(--red); }
-.pl-icon-btn.del:active { background: var(--rbg); }
+.pl-icon-btn.del  { color: var(--red); }
+.pl-icon-btn.del:active  { background: var(--rbg); }
 .pl-icon-btn.edit { color: var(--t2); }
 .pl-icon-btn.edit:active { background: var(--bdr); }
 .pl-edit-form {
-  background: #fff; border: 1.5px solid var(--bdr);
-  border-radius: 13px; padding: 12px;
-  margin-top: -4px; margin-bottom: 4px;
-  display: flex; flex-direction: column; gap: 8px;
+  background: #fff; border: 1.5px solid var(--bdr); border-radius: 13px; padding: 12px;
+  margin-top: -4px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 8px;
 }
 .pl-edit-form input {
-  background: var(--bg); border: 1.5px solid var(--bdr);
-  border-radius: 10px; padding: 10px 12px;
-  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1);
-  outline: none; width: 100%;
-  transition: border-color .15s;
+  background: var(--bg); border: 1.5px solid var(--bdr); border-radius: 10px; padding: 10px 12px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1); outline: none; width: 100%; transition: border-color .15s;
 }
 .pl-edit-form input:focus { border-color: var(--black); background: #fff; }
 .pl-edit-btns { display: flex; gap: 8px; }
-.pl-edit-save {
-  flex: 1; background: var(--black); color: #fff;
-  border: none; border-radius: 10px;
-  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
-  padding: 10px; cursor: pointer;
-}
-.pl-edit-cancel {
-  flex: 1; background: var(--bg); color: var(--t2);
-  border: 1.5px solid var(--bdr); border-radius: 10px;
-  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600;
-  padding: 10px; cursor: pointer;
-}
-.pl-empty {
-  text-align: center; padding: 32px 16px;
-  color: var(--t3); font-size: 13px; font-weight: 500;
-}
-.pl-empty svg { width: 36px; height: 36px; margin-bottom: 10px; display: block; margin: 0 auto 10px; }
+.pl-edit-save   { flex: 1; background: var(--black); color: #fff; border: none; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; padding: 10px; cursor: pointer; }
+.pl-edit-cancel { flex: 1; background: var(--bg); color: var(--t2); border: 1.5px solid var(--bdr); border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; padding: 10px; cursor: pointer; }
+.pl-empty { text-align: center; padding: 32px 16px; color: var(--t3); font-size: 13px; font-weight: 500; }
+.pl-empty svg { width: 36px; height: 36px; display: block; margin: 0 auto 10px; }
 
 /* ── SETTINGS ─────────────────────────────────────────────── */
 .sett-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--bdr);
+  padding: 14px 0; border-bottom: 1px solid var(--bdr);
 }
 .sett-row:last-of-type { border-bottom: none; }
 .sett-lbl { font-size: 14px; font-weight: 500; color: var(--t1); }
 .sett-sub { font-size: 11px; color: var(--t2); margin-top: 2px; }
-.sett-val {
-  display: flex; align-items: center; gap: 8px;
-}
+.sett-val { display: flex; align-items: center; gap: 8px; }
 .sett-input {
   width: 72px; background: var(--bg); border: 1.5px solid var(--bdr);
   border-radius: 10px; padding: 8px 10px; text-align: center;
@@ -465,70 +487,76 @@ body {
 .sett-input:focus { border-color: var(--black); background: #fff; }
 .sett-unit { font-size: 12px; color: var(--t2); font-weight: 500; }
 
-/* Toggle switch */
-.toggle {
-  position: relative; width: 44px; height: 26px;
-  cursor: pointer;
-}
+.toggle { position: relative; width: 44px; height: 26px; cursor: pointer; }
 .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-track {
-  position: absolute; inset: 0;
-  background: var(--bdr); border-radius: 13px;
-  transition: background .2s;
-}
+.toggle-track { position: absolute; inset: 0; background: var(--bdr); border-radius: 13px; transition: background .2s; }
 .toggle input:checked + .toggle-track { background: var(--green); }
-.toggle-thumb {
-  position: absolute; top: 3px; left: 3px;
-  width: 20px; height: 20px;
-  background: #fff; border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,.2);
-  transition: transform .2s;
-}
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: transform .2s; }
 .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
 
-/* Day pills */
 .day-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
 .day-pill {
-  padding: 5px 11px; border-radius: 20px;
-  font-size: 12px; font-weight: 600;
-  background: var(--bg); color: var(--t2);
-  border: 1.5px solid var(--bdr); cursor: pointer;
-  transition: all .15s;
-  font-family: 'Poppins', sans-serif;
+  padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: var(--bg); color: var(--t2); border: 1.5px solid var(--bdr); cursor: pointer;
+  transition: all .15s; font-family: 'Poppins', sans-serif;
 }
 .day-pill.sel { background: var(--black); color: #fff; border-color: var(--black); }
 
 .time-inputs { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .time-input {
-  background: var(--bg); border: 1.5px solid var(--bdr);
-  border-radius: 10px; padding: 9px 12px;
+  background: var(--bg); border: 1.5px solid var(--bdr); border-radius: 10px; padding: 9px 12px;
   font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: var(--t1);
   outline: none; transition: border-color .15s; width: 96px;
 }
 .time-input:focus { border-color: var(--black); background: #fff; }
 .time-sep { font-size: 14px; color: var(--t2); font-weight: 600; }
 .sett-save-btn {
-  width: 100%; background: var(--black); color: #fff;
-  border: none; border-radius: 14px; padding: 16px;
-  font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700;
-  cursor: pointer; margin-top: 4px;
+  width: 100%; background: var(--black); color: #fff; border: none; border-radius: 14px; padding: 16px;
+  font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px;
   transition: background .13s;
 }
 .sett-save-btn:active { background: #333; transform: scale(.98); }
 
+/* Channel list in settings */
+.ch-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.ch-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border-radius: 12px; padding: 12px 14px;
+}
+.ch-item-body { flex: 1; min-width: 0; }
+.ch-item-name { font-size: 13px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-item-id   { font-size: 11px; color: var(--t3); font-family: 'SF Mono','Consolas',monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.ch-del-btn   { width: 30px; height: 30px; border-radius: 8px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--red); }
+.ch-del-btn:active { background: var(--rbg); }
+.ch-del-btn svg { width: 14px; height: 14px; }
+.ch-add-row { display: flex; gap: 8px; margin-top: 10px; }
+.ch-add-id {
+  flex: 1; background: var(--bg); border: 1.5px solid var(--bdr); border-radius: 12px; padding: 11px 14px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1);
+  outline: none; transition: border-color .15s;
+}
+.ch-add-id:focus { border-color: var(--black); background: #fff; }
+.ch-add-id::placeholder { color: var(--t3); font-size: 12px; }
+.ch-add-label {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--bdr); border-radius: 12px; padding: 10px 14px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; color: var(--t1);
+  outline: none; transition: border-color .15s; margin-bottom: 8px;
+}
+.ch-add-label:focus { border-color: var(--black); background: #fff; }
+.ch-add-label::placeholder { color: var(--t3); }
+.ch-add-btn {
+  background: var(--black); border: none; cursor: pointer; padding: 11px 16px; border-radius: 12px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: #fff;
+  white-space: nowrap; transition: background .13s;
+}
+.ch-add-btn:active { background: #333; }
+.ch-count-lbl { color: var(--t3); font-weight: 500; }
+.sett-desc { font-size: 12px; color: var(--t2); margin-bottom: 12px; line-height: 1.5; }
+
 /* ── GUIDE ────────────────────────────────────────────────── */
-.guide-step {
-  display: flex; gap: 14px; padding: 10px 0;
-  border-bottom: 1px solid var(--bdr);
-}
+.guide-step { display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--bdr); }
 .guide-step:last-child { border-bottom: none; }
-.guide-num {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--black); color: #fff;
-  font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+.guide-num { width: 28px; height: 28px; border-radius: 50%; background: var(--black); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .guide-body { flex: 1; }
 .guide-title { font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 3px; }
 .guide-desc  { font-size: 12px; color: var(--t2); line-height: 1.6; }
@@ -537,64 +565,42 @@ body {
 .debug-log {
   background: #0D0D0D; border-radius: 12px; padding: 14px;
   font-family: 'SF Mono','Consolas','Courier New',monospace;
-  font-size: 11px; color: #A0FFA0;
-  max-height: 240px; overflow-y: auto;
-  line-height: 1.7;
+  font-size: 11px; color: #A0FFA0; max-height: 240px; overflow-y: auto; line-height: 1.7;
   white-space: pre-wrap; word-break: break-all;
 }
 .debug-log-empty { color: #555; }
 .debug-actions { display: flex; gap: 8px; margin-bottom: 10px; }
 .debug-btn {
   padding: 9px 16px; border-radius: 10px; border: 1.5px solid var(--bdr);
-  background: var(--bg); font-family: 'Poppins', sans-serif;
-  font-size: 12px; font-weight: 600; color: var(--t1); cursor: pointer;
-  transition: background .13s;
+  background: var(--bg); font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--t1); cursor: pointer; transition: background .13s;
 }
 .debug-btn:active { background: #e0e0e4; }
 
 /* ── DISCOVER ─────────────────────────────────────────────── */
-.disc-section-title {
-  font-size: 16px; font-weight: 800; letter-spacing: -.3px;
-  padding: 20px 16px 8px;
-  max-width: 520px; margin: 0 auto; width: 100%;
+.disc-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 16px 8px; max-width: 520px; margin: 0 auto; width: 100%;
 }
-.disc-grid {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 0 16px;
-  max-width: 520px; margin: 0 auto; width: 100%;
+.disc-section-title { font-size: 16px; font-weight: 800; letter-spacing: -.3px; }
+.disc-refresh-btn {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--sh); color: var(--t2);
+  transition: transform .3s;
 }
-.disc-card {
-  background: var(--card); border-radius: 16px;
-  box-shadow: var(--sh); overflow: hidden;
-  animation: cardIn .22s ease both;
-}
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.disc-thumb {
-  width: 100%; aspect-ratio: 16/9;
-  background: #000;
-  display: block; object-fit: cover;
-}
-.disc-thumb-placeholder {
-  width: 100%; aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-  display: flex; align-items: center; justify-content: center;
-}
+.disc-refresh-btn svg { width: 16px; height: 16px; display: block; }
+.disc-refresh-btn.spinning { animation: spin .7s linear infinite; }
+.disc-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; max-width: 520px; margin: 0 auto; width: 100%; padding-bottom: 8px; }
+.disc-card { background: var(--card); border-radius: 16px; box-shadow: var(--sh); overflow: hidden; animation: cardIn .22s ease both; }
+.disc-thumb { width: 100%; aspect-ratio: 16/9; background: #000; display: block; object-fit: cover; }
+.disc-thumb-placeholder { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg,#1a1a1a 0%,#2a2a2a 100%); display: flex; align-items: center; justify-content: center; }
 .disc-thumb-placeholder svg { width: 40px; height: 40px; color: rgba(255,255,255,.2); }
 .disc-body { padding: 14px; }
-.disc-title { font-size: 14px; font-weight: 700; color: var(--t1); line-height: 1.4; margin-bottom: 6px; }
-.disc-meta  { font-size: 11px; color: var(--t2); margin-bottom: 10px; }
-.disc-url   {
-  font-size: 11px; color: var(--t3);
-  font-family: 'SF Mono','Consolas',monospace;
-  word-break: break-all; line-height: 1.5; margin-bottom: 10px;
-}
+.disc-title { font-size: 14px; font-weight: 700; color: var(--t1); line-height: 1.4; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.disc-meta  { font-size: 11px; color: var(--t2); margin-bottom: 8px; }
+.disc-url   { font-size: 11px; color: var(--t3); font-family: 'SF Mono','Consolas',monospace; word-break: break-all; line-height: 1.5; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .disc-actions { display: flex; gap: 8px; }
 .disc-copy-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 9px 14px; border-radius: 10px;
+  display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 10px;
   background: var(--bg); border: 1.5px solid var(--bdr);
   font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--t1);
   cursor: pointer; transition: all .13s;
@@ -603,35 +609,27 @@ body {
 .disc-copy-btn:active { background: #e0e0e4; }
 .disc-send-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 14px; border-radius: 10px;
-  background: var(--black); border: none; color: #fff;
-  font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700;
-  cursor: pointer; transition: all .13s;
+  padding: 9px 14px; border-radius: 10px; background: var(--black); border: none; color: #fff;
+  font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .13s;
 }
 .disc-send-btn svg { width: 14px; height: 14px; }
 .disc-send-btn:active { background: #333; }
-
-/* ── EXT BANNER ───────────────────────────────────────────── */
-.ext-banner {
-  display: none;
-  background: #FFF3E0; color: #B45309;
-  border: 1px solid #FDE68A;
-  border-radius: 14px; padding: 12px 16px;
-  font-size: 13px; font-weight: 600;
-  text-align: center; line-height: 1.5;
-  margin: 8px 16px 0;
-  max-width: 520px; margin-left: auto; margin-right: auto; width: calc(100% - 32px);
+.disc-skeleton {
+  background: var(--card); border-radius: 16px; box-shadow: var(--sh); overflow: hidden;
 }
-.ext-banner.show { display: block; }
-.ext-banner-wrap { padding: 8px 16px 0; max-width: 520px; margin: 0 auto; width: 100%; }
+.disc-skel-thumb { width: 100%; aspect-ratio: 16/9; background: linear-gradient(90deg, #e8e8ed 25%, #f5f5f7 50%, #e8e8ed 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.disc-skel-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.disc-skel-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #e8e8ed 25%, #f5f5f7 50%, #e8e8ed 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.disc-empty { text-align: center; padding: 48px 24px; color: var(--t3); font-size: 13px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.disc-empty svg { width: 36px; height: 36px; }
+.disc-error { text-align: center; padding: 32px 16px; color: var(--red); font-size: 13px; font-weight: 600; }
 
 /* ── INSTALL BANNER ───────────────────────────────────────── */
 .install-banner {
   display: none;
-  background: var(--bluebg); color: #1D4ED8;
-  border: 1px solid #BFDBFE;
-  border-radius: 14px; padding: 12px 16px;
-  font-size: 13px; font-weight: 600;
+  background: var(--bluebg); color: #1D4ED8; border: 1px solid #BFDBFE;
+  border-radius: 14px; padding: 12px 16px; font-size: 13px; font-weight: 600;
   text-align: center; line-height: 1.6;
 }
 .install-banner.show { display: flex; align-items: center; gap: 10px; }
@@ -640,14 +638,10 @@ body {
 /* ── TOAST ────────────────────────────────────────────────── */
 .toast {
   position: fixed; bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%) translateY(40px);
-  background: #1C1C1E; color: #fff;
-  padding: 10px 20px; border-radius: 22px;
-  font-size: 13px; font-weight: 600;
-  opacity: 0; z-index: 9999;
-  transition: transform .22s, opacity .22s;
-  white-space: nowrap; pointer-events: none;
+  left: 50%; transform: translateX(-50%) translateY(40px);
+  background: #1C1C1E; color: #fff; padding: 10px 20px; border-radius: 22px;
+  font-size: 13px; font-weight: 600; opacity: 0; z-index: 9999;
+  transition: transform .22s, opacity .22s; pointer-events: none;
   max-width: calc(100vw - 40px); text-align: center; white-space: normal;
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -657,7 +651,7 @@ body {
 </head>
 <body>
 
-<!-- Splash -->
+<!-- SPLASH -->
 <div id="splash">
   <div class="splash-logo">
     <svg viewBox="0 0 24 24" fill="none">
@@ -666,30 +660,19 @@ body {
   </div>
   <div class="splash-name">wt remote</div>
   <div class="splash-sub">Connexion…</div>
-  <div class="splash-loader" style="margin-top:8px"></div>
-</div>
-
-<!-- Error -->
-<div id="err-screen">
-  <div class="err-icon-wrap">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M1 6s2.25-2 5-2 4.5 2 7.5 2S18.75 4 21 4"/>
-      <path d="M1 12s2.25-2 5-2 4.5 2 7.5 2 5.25-2 7.5-2"/>
-      <path d="M1 18s2.25-2 5-2 4.5 2 7.5 2 5.25-2 7.5-2"/>
-    </svg>
+  <div class="splash-loader" id="splash-loader"></div>
+  <div class="splash-err" id="splash-err">
+    <div class="splash-err-title">Serveur introuvable</div>
+    <div class="splash-err-body">Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être sur le même réseau Wi-Fi.</div>
+    <button class="btn btn-k" style="max-width:220px;margin-top:8px" onclick="location.reload()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      Réessayer
+    </button>
   </div>
-  <div class="err-title">Serveur introuvable</div>
-  <div class="err-body">Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être sur le même réseau Wi-Fi.</div>
-  <button class="btn btn-k" style="max-width:240px;margin-top:8px" onclick="location.reload()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-    Réessayer
-  </button>
 </div>
 
-<!-- App -->
-<div id="app" style="display:none">
-
-  <!-- Header -->
+<!-- TV PICKER SCREEN -->
+<div id="screen-picker" class="screen">
   <header class="app-header">
     <div class="header-brand">
       <div class="brand-logo">
@@ -699,18 +682,40 @@ body {
       </div>
       <div class="brand-label">wt<span> remote</span></div>
     </div>
-    <div class="conn-pill wait" id="cpill">
+    <div class="conn-pill wait" id="picker-pill">
       <div class="conn-dot"></div>
-      <span id="ctxt">Connexion…</span>
+      <span id="picker-pill-txt">Connexion…</span>
     </div>
   </header>
 
-  <!-- Ext banner -->
+  <div class="picker-hero">
+    <div class="picker-title">Choisir une TV</div>
+    <div class="picker-sub">Sélectionnez l'écran à contrôler</div>
+  </div>
+
+  <div class="tv-list" id="tv-list"></div>
+</div>
+
+<!-- CONTROL SCREEN -->
+<div id="screen-control" class="screen">
+  <header class="app-header">
+    <button class="hdr-back" id="btn-back" onclick="backToPicker()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="hdr-tv-name" id="ctrl-tv-name">TV</div>
+    <div class="conn-pill wait" id="ctrl-pill">
+      <div class="conn-dot"></div>
+      <span id="ctrl-pill-txt">Connexion…</span>
+    </div>
+  </header>
+
   <div class="ext-banner-wrap">
     <div class="ext-banner" id="ext-banner">Extension hors ligne — reconnexion en cours…</div>
   </div>
 
-  <!-- ══ TAB: ÉCRAN ══════════════════════════════════════════ -->
+  <!-- TAB: ÉCRAN -->
   <div class="tab show" id="tab-ecran">
     <div class="stack">
 
@@ -719,7 +724,6 @@ body {
         <span>Installer : <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong></span>
       </div>
 
-      <!-- Now playing -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">En cours d'affichage</div>
@@ -744,22 +748,21 @@ body {
         </div>
       </div>
 
-      <!-- Transport controls -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Contrôles</div>
           <div class="transport">
-            <button class="tbn-sm tbn-sm" onclick="cmd('prev')" title="Précédent">
+            <button class="tbtn tbn-sm" onclick="cmd('prev')" title="Précédent">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/>
               </svg>
             </button>
-            <button class="tbn-lg tbn-sm" id="bplay" onclick="togglePlay()" title="Pause / Reprendre">
+            <button class="tbtn tbn-lg" id="bplay" onclick="togglePlay()" title="Pause / Reprendre">
               <svg id="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
               </svg>
             </button>
-            <button class="tbn-sm tbn-sm" onclick="cmd('next')" title="Suivant">
+            <button class="tbtn tbn-sm" onclick="cmd('next')" title="Suivant">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="4" x2="19" y2="20"/>
               </svg>
@@ -775,24 +778,21 @@ body {
         </div>
       </div>
 
-      <!-- Send URL -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Afficher sur la TV</div>
           <div class="url-bar">
-            <input id="urlin" type="url" placeholder="https://youtube.com/watch?v=…"
-                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <input id="urlin" type="url" placeholder="https://youtube.com/watch?v=…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
             <button class="url-bar-btn" onclick="sendUrl()">Envoyer</button>
           </div>
         </div>
       </div>
 
-      <!-- Volume -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Volume</div>
           <div class="vol-row">
-            <span class="vol-icon" id="vol-icon">
+            <span class="vol-icon">
               <svg id="vol-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -808,10 +808,9 @@ body {
     </div>
   </div>
 
-  <!-- ══ TAB: PLAYLIST ═══════════════════════════════════════ -->
+  <!-- TAB: PLAYLIST -->
   <div class="tab" id="tab-playlist">
     <div class="stack">
-      <!-- Add URL -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Ajouter une URL</div>
@@ -826,10 +825,9 @@ body {
         </div>
       </div>
 
-      <!-- List -->
       <div class="card">
         <div class="card-p">
-          <div class="sect-lbl">Playlist <span id="pl-count" style="color:var(--t3);font-weight:500"></span></div>
+          <div class="sect-lbl">Playlist <span id="pl-count" class="ch-count-lbl"></span></div>
           <div class="pl-list" id="pl-list">
             <div class="pl-empty">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -843,19 +841,23 @@ body {
     </div>
   </div>
 
-  <!-- ══ TAB: DÉCOUVRIR ══════════════════════════════════════ -->
+  <!-- TAB: DÉCOUVRIR -->
   <div class="tab" id="tab-discover">
-    <div class="disc-section-title">Suggestions</div>
-    <div class="disc-grid" id="disc-grid">
-      <!-- filled by JS -->
+    <div class="disc-section-hdr">
+      <div class="disc-section-title">Suggestions</div>
+      <button class="disc-refresh-btn" id="disc-refresh-btn" onclick="loadFeed(true)" title="Actualiser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+      </button>
     </div>
+    <div class="disc-grid" id="disc-grid"></div>
   </div>
 
-  <!-- ══ TAB: RÉGLAGES ═══════════════════════════════════════ -->
+  <!-- TAB: RÉGLAGES -->
   <div class="tab" id="tab-settings">
     <div class="stack">
 
-      <!-- Rotation -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Rotation</div>
@@ -872,7 +874,6 @@ body {
         </div>
       </div>
 
-      <!-- Schedule -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Programmation</div>
@@ -902,18 +903,29 @@ body {
             <div class="time-inputs">
               <input class="time-input" id="s-start" type="time" value="08:00">
               <span class="time-sep">→</span>
-              <input class="time-input" id="s-end"   type="time" value="18:00">
+              <input class="time-input" id="s-end" type="time" value="18:00">
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Save -->
-      <div style="padding: 0 0 4px">
+      <div style="padding:0 0 4px">
         <button class="sett-save-btn" onclick="settSave()">Enregistrer les réglages</button>
       </div>
 
-      <!-- Guide -->
+      <div class="card">
+        <div class="card-p">
+          <div class="sect-lbl">Chaînes YouTube (Découvrir) <span class="ch-count-lbl" id="ch-count-lbl"></span></div>
+          <div class="sett-desc">Ajoutez des chaînes YouTube pour les suggestions dans l'onglet Découvrir.</div>
+          <input class="ch-add-label" id="ch-add-label" type="text" placeholder="Nom de la chaîne (facultatif)" autocomplete="off">
+          <div class="ch-add-row">
+            <input class="ch-add-id" id="ch-add-id" type="text" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+            <button class="ch-add-btn" onclick="chAdd()">Ajouter</button>
+          </div>
+          <div class="ch-list" id="ch-list"></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Guide d'utilisation</div>
@@ -927,15 +939,15 @@ body {
           <div class="guide-step">
             <div class="guide-num">2</div>
             <div class="guide-body">
-              <div class="guide-title">Configurer la playlist</div>
-              <div class="guide-desc">Dans l'onglet <strong>Playlist</strong>, ajoutez les URLs à afficher. Glissez-déposez pour les réorganiser.</div>
+              <div class="guide-title">Choisir une TV</div>
+              <div class="guide-desc">Depuis l'écran d'accueil, sélectionnez le NUC à contrôler. Plusieurs NUCs peuvent être connectés simultanément.</div>
             </div>
           </div>
           <div class="guide-step">
             <div class="guide-num">3</div>
             <div class="guide-body">
-              <div class="guide-title">Lancer la rotation</div>
-              <div class="guide-desc">Ouvrez l'extension Chrome sur le NUC et cliquez sur <strong>Démarrer</strong>. La rotation démarre automatiquement.</div>
+              <div class="guide-title">Configurer la playlist</div>
+              <div class="guide-desc">Dans l'onglet <strong>Playlist</strong>, ajoutez les URLs à afficher. Glissez-déposez pour les réorganiser.</div>
             </div>
           </div>
           <div class="guide-step">
@@ -955,7 +967,6 @@ body {
         </div>
       </div>
 
-      <!-- Debug -->
       <div class="card">
         <div class="card-p">
           <div class="sect-lbl">Debug</div>
@@ -972,33 +983,26 @@ body {
 
   <!-- Bottom nav -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-tab="ecran" onclick="switchTab('ecran', this)">
+    <button class="nav-btn active" data-tab="ecran" onclick="switchTab('ecran',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
       </svg>
       <span>Écran</span>
     </button>
-    <button class="nav-btn" data-tab="playlist" onclick="switchTab('playlist', this)">
+    <button class="nav-btn" data-tab="playlist" onclick="switchTab('playlist',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6"/>
-        <line x1="8" y1="12" x2="21" y2="12"/>
-        <line x1="8" y1="18" x2="21" y2="18"/>
-        <line x1="3" y1="6" x2="3.01" y2="6"/>
-        <line x1="3" y1="12" x2="3.01" y2="12"/>
-        <line x1="3" y1="18" x2="3.01" y2="18"/>
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
       </svg>
       <span>Playlist</span>
     </button>
-    <button class="nav-btn" data-tab="discover" onclick="switchTab('discover', this)">
+    <button class="nav-btn" data-tab="discover" onclick="switchTab('discover',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
       <span>Découvrir</span>
     </button>
-    <button class="nav-btn" data-tab="settings" onclick="switchTab('settings', this)">
+    <button class="nav-btn" data-tab="settings" onclick="switchTab('settings',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -1007,112 +1011,207 @@ body {
     </button>
   </nav>
 
-</div><!-- #app -->
+</div><!-- #screen-control -->
 
 <div id="toast" class="toast"></div>
 
 <script>
-// ── Discover videos ─────────────────────────────────────────────────────────
-const DISCOVER_VIDEOS = [
-  { id: 'dQw4w9WgXcQ', title: 'Comment utiliser wee rotate', channel: 'Wee Technology', desc: 'Guide complet d\'utilisation de l\'extension de rotation d\'affichage.' },
-  { id: 'M7lc1UVf-VE', title: 'Digital Signage pour entreprise', channel: 'Affichage dynamique', desc: 'Les meilleures pratiques pour l\'affichage dynamique en entreprise.' },
-  { id: 'ysz5S6PUM-U', title: 'Canva pour l\'affichage digital', channel: 'Canva', desc: 'Créez des visuels professionnels pour vos écrans avec Canva.' },
-  { id: 'L_LUpnjgPso', title: 'YouTube en mode kiosque', channel: 'Tutoriels', desc: 'Configurer YouTube pour un affichage en boucle en mode kiosque.' },
-  { id: 'oHg5SJYRHA0', title: 'Optimiser votre affichage', channel: 'Productivité', desc: 'Conseils pour optimiser votre configuration d\'affichage dynamique.' },
-];
-
-// ── State ────────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 let ws = null, ip = null, port = 8765;
-let _state = {};
+let _tvList = [], _selectedTvId = null, _state = {};
 let _isPlaying = false;
 let reconnectTimer = null;
 let _cdInterval = null, _cdEnd = null, _cdTotal = 0;
 let _volTimer = null;
-let _plDragSrc = null;
+let _plDragSrc = null, _touchDragIdx = null;
+let _feedLoaded = false, _feedAutoTimer = null;
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 function boot() {
   ip   = location.hostname;
   port = parseInt(location.port) || 8765;
-  buildDiscover();
   connect();
   if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
     document.getElementById('install-banner').classList.add('show');
   }
+
+  // Day pills in settings
+  document.querySelectorAll('#s-days .day-pill').forEach(pill => {
+    pill.addEventListener('click', () => pill.classList.toggle('sel'));
+  });
+
+  // Volume slider
+  const sl = document.getElementById('vol-slider');
+  sl.addEventListener('input', () => {
+    setVolUI(parseInt(sl.value));
+    clearTimeout(_volTimer);
+    _volTimer = setTimeout(() => cmd('set_volume', { level: parseInt(sl.value) / 100 }), 150);
+  });
+
+  // URL enter keys
+  document.getElementById('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
+  document.getElementById('pl-add-url').addEventListener('keydown', e => { if (e.key === 'Enter') plAdd(); });
+  document.getElementById('ch-add-id').addEventListener('keydown', e => { if (e.key === 'Enter') chAdd(); });
 }
 
-// ── Connection ───────────────────────────────────────────────────────────────
+// ── Connection ─────────────────────────────────────────────────────────────────
 function connect() {
   clearTimeout(reconnectTimer);
-  connPill('wait');
+  setPickerPill('wait');
   ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
-    if (m.type === 'ping')       { ws.send(JSON.stringify({ type: 'pong' })); return; }
-    if (m.type === 'auth_ok')    { showApp(); connPill('on'); return; }
-    if (m.type === 'ext_status') { setExtBanner(!m.connected); return; }
-    if (m.type === 'cmd_error')  { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
-    if (m.type === 'state')      { sync(m); return; }
+    if (m.type === 'ping') { ws.send(JSON.stringify({ type: 'pong' })); return; }
+    if (m.type === 'auth_ok') {
+      hideSplash();
+      setPickerPill('on');
+      setCtrlPill('on');
+      return;
+    }
+    if (m.type === 'tv_list') {
+      _tvList = m.tvs || [];
+      renderPicker();
+      // if control view is open, update TV name in case it changed
+      if (_selectedTvId) {
+        const tv = _tvList.find(t => t.id === _selectedTvId);
+        if (tv) document.getElementById('ctrl-tv-name').textContent = tv.name;
+      }
+      return;
+    }
+    if (m.type === 'ext_status') {
+      setCtrlPill(m.connected ? 'on' : 'off');
+      document.getElementById('ext-banner').classList.toggle('show', !m.connected);
+      return;
+    }
+    if (m.type === 'state')     { sync(m); return; }
+    if (m.type === 'deselected') { _selectedTvId = null; showPicker(); return; }
+    if (m.type === 'cmd_error') { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
   };
   ws.onclose = () => {
-    connPill('off');
+    setPickerPill('off');
+    setCtrlPill('off');
     reconnectTimer = setTimeout(connect, 3000);
   };
   ws.onerror = () => {};
 }
 
-// ── UI helpers ───────────────────────────────────────────────────────────────
-function showApp() {
+// ── Screen switching ──────────────────────────────────────────────────────────
+function hideSplash() {
   document.getElementById('splash').classList.add('hide');
-  document.getElementById('app').style.display = '';
+  document.getElementById('splash-loader').style.display = 'none';
 }
 
-function showErr() {
-  document.getElementById('splash').classList.add('hide');
-  document.getElementById('err-screen').classList.add('show');
+function showPicker() {
+  document.getElementById('screen-picker').classList.add('show');
+  document.getElementById('screen-control').classList.remove('show');
 }
 
-function connPill(state) {
-  const p = document.getElementById('cpill');
-  const t = document.getElementById('ctxt');
+function showControl(tvId) {
+  _selectedTvId = tvId;
+  const tv = _tvList.find(t => t.id === tvId);
+  document.getElementById('ctrl-tv-name').textContent = tv ? tv.name : tvId;
+  document.getElementById('screen-picker').classList.remove('show');
+  document.getElementById('screen-control').classList.add('show');
+  // reset ext banner
+  document.getElementById('ext-banner').classList.remove('show');
+  // reset to ecran tab
+  switchTab('ecran', document.querySelector('.nav-btn[data-tab="ecran"]'));
+}
+
+// ── TV selection ──────────────────────────────────────────────────────────────
+function selectTv(id) {
+  if (ws?.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'select_tv', id }));
+    showControl(id);
+  } else {
+    showToast('Connexion perdue — reconnexion en cours…');
+  }
+}
+
+function backToPicker() {
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'deselect_tv' }));
+  _selectedTvId = null;
+  _state = {};
+  stopCountdown();
+  showPicker();
+}
+
+// ── Picker render ─────────────────────────────────────────────────────────────
+function renderPicker() {
+  const list = document.getElementById('tv-list');
+  if (!_tvList.length) {
+    list.innerHTML = `<div class="tv-empty">
+      <div class="tv-empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <div class="tv-empty-title">Aucune TV connectée</div>
+      <div class="tv-empty-sub">Lancez l'extension sur le NUC et assurez-vous d'être sur le même réseau Wi-Fi</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = '';
+  _tvList.forEach((tv, i) => {
+    const online = !!tv.connected;
+    const state  = tv.state || {};
+    const urls   = state.urls || [];
+    const cur    = urls[state.currentIndex || 0];
+    let playingDomain = '';
+    if (cur?.url) {
+      try { playingDomain = new URL(cur.url).hostname.replace(/^www\./, ''); } catch {}
+    }
+
+    const card = document.createElement('button');
+    card.className = 'tv-card' + (online ? '' : ' offline');
+    card.style.animationDelay = (i * 0.06) + 's';
+    card.innerHTML = `
+      <div class="tv-icon-wrap ${online ? 'online' : 'offline'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <div class="tv-info">
+        <div class="tv-card-name">${esc(tv.name)}</div>
+        <div class="tv-card-status ${online ? 'online' : 'offline'}">
+          <div class="tv-status-dot"></div>
+          ${online ? 'En ligne' : 'Hors ligne'}
+        </div>
+        ${playingDomain ? `<div class="tv-card-playing">En cours : ${esc(playingDomain)}</div>` : ''}
+      </div>
+      ${online ? `<div class="tv-card-chevron">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>` : ''}
+    `;
+    card.addEventListener('click', () => selectTv(tv.id));
+    list.appendChild(card);
+  });
+}
+
+// ── Pill helpers ──────────────────────────────────────────────────────────────
+function setPickerPill(state) {
+  const p = document.getElementById('picker-pill');
+  const t = document.getElementById('picker-pill-txt');
   p.className = 'conn-pill ' + state;
   t.textContent = { on:'Connecté', off:'Déconnecté', wait:'Connexion…' }[state] || 'Connexion…';
 }
 
-function setExtBanner(show) {
-  document.getElementById('ext-banner').classList.toggle('show', show);
+function setCtrlPill(state) {
+  const p = document.getElementById('ctrl-pill');
+  const t = document.getElementById('ctrl-pill-txt');
+  p.className = 'conn-pill ' + state;
+  t.textContent = { on:'En ligne', off:'Hors ligne', wait:'Connexion…' }[state] || 'Connexion…';
 }
 
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2800);
-}
-
-// ── Tab switching ─────────────────────────────────────────────────────────────
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('show'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const tab = document.getElementById('tab-' + name);
-  if (tab) {
-    tab.classList.remove('show');
-    void tab.offsetWidth;
-    tab.classList.add('show');
-  }
-  btn.classList.add('active');
-  if (name === 'settings') settLoad();
-  if (name === 'playlist')  renderPlaylist();
-}
-
-// ── Sync ─────────────────────────────────────────────────────────────────────
+// ── Sync ──────────────────────────────────────────────────────────────────────
 function sync(s) {
   _state = s;
   const urls = s.urls || [], c = urls[s.currentIndex || 0] || {};
-
-  // Now playing
   const site = c.url ? (() => { try { return new URL(c.url).hostname.replace(/^www\./,''); } catch { return ''; } })() : '';
   document.getElementById('np-site').textContent = site || '—';
   document.getElementById('np-n').textContent = c.name || c.url || '—';
@@ -1120,37 +1219,32 @@ function sync(s) {
 
   const sb  = document.getElementById('sbadge');
   const sbt = document.getElementById('sbtxt');
-  const playIcon = document.getElementById('play-icon');
-  const brelease = document.getElementById('brelease');
 
   if (s.remotePaused && s.remoteUrl) {
-    document.getElementById('np-site').textContent = (() => { try { return new URL(s.remoteUrl).hostname.replace(/^www\./,''); } catch { return ''; } })();
-    document.getElementById('np-n').textContent = s.remoteUrl;
-    document.getElementById('np-u').textContent  = s.remoteUrl;
+    const rSite = (() => { try { return new URL(s.remoteUrl).hostname.replace(/^www\./,''); } catch { return ''; } })();
+    document.getElementById('np-site').textContent = rSite;
+    document.getElementById('np-n').textContent    = s.remoteUrl;
+    document.getElementById('np-u').textContent    = s.remoteUrl;
     sb.className = 'status-badge ext'; sbt.textContent = 'URL externe';
     setPlayIcon(false);
-    brelease.style.display = '';
+    document.getElementById('brelease').style.display = '';
     stopCountdown();
   } else if (s.active) {
     sb.className = 'status-badge on'; sbt.textContent = 'Rotation active';
     setPlayIcon(true);
-    brelease.style.display = 'none';
+    document.getElementById('brelease').style.display = 'none';
     if (s.remaining > 0 && s.total > 0) startCountdown(s.remaining, s.total);
     else stopCountdown();
   } else {
     sb.className = 'status-badge off'; sbt.textContent = 'En pause';
     setPlayIcon(false);
-    brelease.style.display = 'none';
+    document.getElementById('brelease').style.display = 'none';
     stopCountdown();
   }
 
-  // Volume
   setVolUI(Math.round((s.volume ?? 1) * 100));
 
-  // Playlist tab (update if visible)
   if (document.getElementById('tab-playlist').classList.contains('show')) renderPlaylist();
-
-  // Settings tab (update if visible)
   if (document.getElementById('tab-settings').classList.contains('show')) settLoad();
 }
 
@@ -1164,11 +1258,21 @@ function setPlayIcon(playing) {
   }
 }
 
-function togglePlay() {
-  cmd(_isPlaying ? 'pause' : 'resume');
+function togglePlay() { cmd(_isPlaying ? 'pause' : 'resume'); }
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('#screen-control .tab').forEach(t => t.classList.remove('show'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('tab-' + name);
+  if (tab) { tab.classList.remove('show'); void tab.offsetWidth; tab.classList.add('show'); }
+  if (btn) btn.classList.add('active');
+  if (name === 'settings') { settLoad(); chLoadList(); }
+  if (name === 'playlist') renderPlaylist();
+  if (name === 'discover' && !_feedLoaded) loadFeed(false);
 }
 
-// ── Countdown ─────────────────────────────────────────────────────────────────
+// ── Countdown ──────────────────────────────────────────────────────────────────
 function startCountdown(remaining, total) {
   clearInterval(_cdInterval);
   _cdEnd = Date.now() + remaining * 1000;
@@ -1211,7 +1315,7 @@ function setVolUI(pct) {
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 function cmd(action, extra) {
-  if (ws?.readyState === 1) ws.send(JSON.stringify({ type:'command', action, ...extra }));
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'command', action, ...extra }));
   else showToast('Connexion perdue — reconnexion en cours…');
 }
 
@@ -1229,17 +1333,11 @@ function plAdd() {
   const u = urlEl.value.trim();
   if (!u) { showToast('Entrez une URL valide'); return; }
   cmd('add_url', { url: u, name: nameEl.value.trim() });
-  urlEl.value  = '';
-  nameEl.value = '';
+  urlEl.value = ''; nameEl.value = '';
 }
 
-function plDelete(idx) {
-  cmd('remove_url', { index: idx });
-}
-
-function plSaveEdit(idx, url, name) {
-  cmd('update_url', { index: idx, url, name });
-}
+function plDelete(idx) { cmd('remove_url', { index: idx }); }
+function plSaveEdit(idx, url, name) { cmd('update_url', { index: idx, url, name }); }
 
 function renderPlaylist() {
   const urls = _state.urls || [];
@@ -1266,7 +1364,7 @@ function renderPlaylist() {
     row.dataset.idx = i;
     row.draggable = true;
     row.innerHTML = `
-      <div class="pl-drag">
+      <div class="pl-drag" title="Glisser pour réorganiser">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="9" y1="5" x2="9" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/></svg>
       </div>
       <div class="pl-item-body">
@@ -1282,34 +1380,66 @@ function renderPlaylist() {
         </button>
       </div>`;
 
+    // Desktop drag-and-drop
     row.addEventListener('dragstart', e => {
       _plDragSrc = i;
       e.dataTransfer.effectAllowed = 'move';
       row.style.opacity = '.5';
     });
-    row.addEventListener('dragend',  () => row.style.opacity = '');
-    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    row.addEventListener('dragend',  () => { row.style.opacity = ''; });
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.classList.add('drag-over'); });
+    row.addEventListener('dragleave',() => row.classList.remove('drag-over'));
     row.addEventListener('drop', e => {
-      e.preventDefault();
+      e.preventDefault(); row.classList.remove('drag-over');
       if (_plDragSrc !== null && _plDragSrc !== i) {
         cmd('reorder_url', { from: _plDragSrc, to: i });
       }
       _plDragSrc = null;
     });
 
+    // iOS touch drag
+    const dragHandle = row.querySelector('.pl-drag');
+    dragHandle.addEventListener('touchstart', e => {
+      _touchDragIdx = i;
+      e.stopPropagation();
+    }, { passive: true });
+
     list.appendChild(row);
   });
+
+  // Global touch move/end for iOS reorder
+  list.ontouchmove = e => {
+    if (_touchDragIdx === null) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetRow = el?.closest('.pl-item');
+    if (!targetRow) return;
+    list.querySelectorAll('.pl-item').forEach(r => r.classList.remove('drag-over'));
+    targetRow.classList.add('drag-over');
+  };
+  list.ontouchend = e => {
+    if (_touchDragIdx === null) return;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetRow = el?.closest('.pl-item');
+    list.querySelectorAll('.pl-item').forEach(r => r.classList.remove('drag-over'));
+    if (targetRow && targetRow.dataset.idx !== undefined) {
+      const toIdx = parseInt(targetRow.dataset.idx);
+      if (toIdx !== _touchDragIdx) {
+        cmd('reorder_url', { from: _touchDragIdx, to: toIdx });
+      }
+    }
+    _touchDragIdx = null;
+  };
 }
 
 function plShowEdit(idx) {
-  // Remove any existing edit form
   document.querySelectorAll('.pl-edit-form').forEach(f => f.remove());
   const item = (_state.urls || [])[idx];
   if (!item) return;
   const rows = document.querySelectorAll('#pl-list .pl-item');
   const row  = rows[idx];
   if (!row) return;
-
   const form = document.createElement('div');
   form.className = 'pl-edit-form';
   form.innerHTML = `
@@ -1317,27 +1447,84 @@ function plShowEdit(idx) {
     <input type="url"  placeholder="URL"  value="${esc(item.url  || '')}" id="edit-url-${idx}">
     <div class="pl-edit-btns">
       <button class="pl-edit-cancel" onclick="document.querySelectorAll('.pl-edit-form').forEach(f=>f.remove())">Annuler</button>
-      <button class="pl-edit-save" onclick="plSaveEdit(${idx}, document.getElementById('edit-url-${idx}').value.trim(), document.getElementById('edit-name-${idx}').value.trim()); document.querySelectorAll('.pl-edit-form').forEach(f=>f.remove())">Sauvegarder</button>
+      <button class="pl-edit-save" onclick="plSaveEdit(${idx},document.getElementById('edit-url-${idx}').value.trim(),document.getElementById('edit-name-${idx}').value.trim());document.querySelectorAll('.pl-edit-form').forEach(f=>f.remove())">Sauvegarder</button>
     </div>`;
   row.after(form);
   form.querySelector(`#edit-url-${idx}`).focus();
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── Discover ──────────────────────────────────────────────────────────────────
+async function loadFeed(force) {
+  const grid = document.getElementById('disc-grid');
+  const btn  = document.getElementById('disc-refresh-btn');
+
+  if (!force && _feedLoaded) return;
+
+  // Show skeletons
+  grid.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const sk = document.createElement('div');
+    sk.className = 'disc-skeleton';
+    sk.innerHTML = `
+      <div class="disc-skel-thumb"></div>
+      <div class="disc-skel-body">
+        <div class="disc-skel-line" style="width:85%"></div>
+        <div class="disc-skel-line" style="width:60%"></div>
+        <div class="disc-skel-line" style="width:40%"></div>
+      </div>`;
+    grid.appendChild(sk);
+  }
+
+  btn.classList.add('spinning');
+
+  try {
+    const resp = await fetch('/feed');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const items = await resp.json();
+    _feedLoaded = true;
+    renderFeed(items);
+  } catch {
+    grid.innerHTML = '<div class="disc-error">Impossible de charger les suggestions</div>';
+  } finally {
+    btn.classList.remove('spinning');
+  }
+
+  // Auto-refresh every 5 minutes
+  clearTimeout(_feedAutoTimer);
+  _feedAutoTimer = setTimeout(() => { _feedLoaded = false; }, 300000);
 }
 
-// ── Discover ──────────────────────────────────────────────────────────────────
-function buildDiscover() {
+function renderFeed(items) {
   const grid = document.getElementById('disc-grid');
-  DISCOVER_VIDEOS.forEach((v, i) => {
-    const url = `https://www.youtube.com/watch?v=${v.id}`;
-    const thumb = `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`;
+  grid.innerHTML = '';
+  if (!items.length) {
+    const channels = [];
+    // Check if there might be no channels configured
+    fetch('/feed/channels').then(r => r.json()).then(chs => {
+      if (!chs.length) {
+        grid.innerHTML = `<div class="disc-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Ajoutez des chaînes dans les Réglages
+        </div>`;
+      } else {
+        grid.innerHTML = '<div class="disc-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Aucune vidéo trouvée</div>';
+      }
+    }).catch(() => {
+      grid.innerHTML = '<div class="disc-empty">Aucune vidéo trouvée</div>';
+    });
+    return;
+  }
+
+  items.forEach((v, i) => {
     const card = document.createElement('div');
     card.className = 'disc-card';
-    card.style.animationDelay = (i * 0.06) + 's';
+    card.style.animationDelay = (i * 0.04) + 's';
+    const url = v.url;
+    const relDate = relativeDate(v.published);
     card.innerHTML = `
-      <img class="disc-thumb" src="${thumb}" alt="${esc(v.title)}"
+      <img class="disc-thumb" src="${esc(v.thumbnail)}" alt="${esc(v.title)}" loading="lazy"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
       <div class="disc-thumb-placeholder" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1346,17 +1533,17 @@ function buildDiscover() {
       </div>
       <div class="disc-body">
         <div class="disc-title">${esc(v.title)}</div>
-        <div class="disc-meta">${esc(v.channel)}</div>
+        <div class="disc-meta">${esc(v.channel)}${relDate ? ' · ' + relDate : ''}</div>
         <div class="disc-url">${esc(url)}</div>
         <div class="disc-actions">
-          <button class="disc-copy-btn" onclick="copyUrl('${url}', this)">
+          <button class="disc-copy-btn" id="disc-copy-${i}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
             Copier
           </button>
-          <button class="disc-send-btn" onclick="cmd('open_url', { url: '${url}' })">
+          <button class="disc-send-btn" onclick="cmd('open_url',{url:'${url.replace(/'/g,"\\'")}'})" >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
               <line x1="8" y1="21" x2="16" y2="21"/>
@@ -1366,28 +1553,110 @@ function buildDiscover() {
           </button>
         </div>
       </div>`;
+
+    card.querySelector(`#disc-copy-${i}`).addEventListener('click', function() {
+      copyUrl(url, this);
+    });
+
     grid.appendChild(card);
   });
 }
 
+function relativeDate(iso) {
+  if (!iso) return '';
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const d = Math.floor(diff / 86400000);
+    if (d === 0) return "aujourd'hui";
+    if (d === 1) return 'hier';
+    if (d < 7)   return `il y a ${d} jours`;
+    if (d < 30)  return `il y a ${Math.floor(d/7)} sem.`;
+    if (d < 365) return `il y a ${Math.floor(d/30)} mois`;
+    return `il y a ${Math.floor(d/365)} an(s)`;
+  } catch { return ''; }
+}
+
 function copyUrl(url, btn) {
-  navigator.clipboard?.writeText(url).then(() => {
-    const orig = btn.innerHTML;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copié !`;
-    setTimeout(() => { btn.innerHTML = orig; }, 1800);
-  }).catch(() => showToast('Copie non supportée sur ce navigateur'));
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Copié !`;
+      setTimeout(() => { btn.innerHTML = orig; }, 1800);
+    }).catch(() => showToast('Copie non supportée'));
+  } else {
+    showToast('Copie non supportée sur ce navigateur');
+  }
+}
+
+// ── YouTube Channels in Settings ───────────────────────────────────────────────
+async function chLoadList() {
+  try {
+    const r = await fetch('/feed/channels');
+    const chs = await r.json();
+    renderChList(chs);
+  } catch {}
+}
+
+function renderChList(chs) {
+  const list = document.getElementById('ch-list');
+  const lbl  = document.getElementById('ch-count-lbl');
+  lbl.textContent = chs.length ? `(${chs.length})` : '';
+  list.innerHTML = '';
+  chs.forEach(ch => {
+    const item = document.createElement('div');
+    item.className = 'ch-item';
+    item.innerHTML = `
+      <div class="ch-item-body">
+        <div class="ch-item-name">${esc(ch.name || ch.id)}</div>
+        <div class="ch-item-id">${esc(ch.id)}</div>
+      </div>
+      <button class="ch-del-btn" title="Supprimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>`;
+    item.querySelector('.ch-del-btn').addEventListener('click', () => chDelete(ch.id));
+    list.appendChild(item);
+  });
+}
+
+async function chAdd() {
+  const idEl    = document.getElementById('ch-add-id');
+  const labelEl = document.getElementById('ch-add-label');
+  const id = idEl.value.trim();
+  if (!id) { showToast('Entrez un ID de chaîne YouTube'); return; }
+  try {
+    const r = await fetch('/feed/channels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name: labelEl.value.trim() || id })
+    });
+    const chs = await r.json();
+    renderChList(chs);
+    idEl.value = ''; labelEl.value = '';
+    _feedLoaded = false; // invalidate feed cache
+    showToast('Chaîne ajoutée');
+  } catch { showToast('Erreur lors de l\'ajout'); }
+}
+
+async function chDelete(id) {
+  try {
+    const r = await fetch(`/feed/channels/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const chs = await r.json();
+    renderChList(chs);
+    _feedLoaded = false;
+    showToast('Chaîne supprimée');
+  } catch { showToast('Erreur lors de la suppression'); }
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 function settLoad() {
   const s = _state;
-  if (s.interval) document.getElementById('s-interval').value = s.interval;
+  if (s.interval)             document.getElementById('s-interval').value = s.interval;
   if (s.scheduleEnabled !== undefined) {
     document.getElementById('s-sched-en').checked = s.scheduleEnabled;
     document.getElementById('s-sched-detail').style.display = s.scheduleEnabled ? '' : 'none';
   }
-  if (s.scheduleStart) document.getElementById('s-start').value = s.scheduleStart;
-  if (s.scheduleEnd)   document.getElementById('s-end').value   = s.scheduleEnd;
+  if (s.scheduleStart)        document.getElementById('s-start').value = s.scheduleStart;
+  if (s.scheduleEnd)          document.getElementById('s-end').value   = s.scheduleEnd;
   if (s.scheduleDays) {
     document.querySelectorAll('#s-days .day-pill').forEach(pill => {
       const d = parseInt(pill.dataset.d);
@@ -1402,11 +1671,11 @@ function settSchedToggle() {
 }
 
 function settSave() {
-  const interval = parseInt(document.getElementById('s-interval').value) || 30;
-  const scheduleEnabled = document.getElementById('s-sched-en').checked;
-  const scheduleStart   = document.getElementById('s-start').value;
-  const scheduleEnd     = document.getElementById('s-end').value;
-  const scheduleDays    = [...document.querySelectorAll('#s-days .day-pill.sel')].map(p => parseInt(p.dataset.d));
+  const interval       = parseInt(document.getElementById('s-interval').value) || 30;
+  const scheduleEnabled= document.getElementById('s-sched-en').checked;
+  const scheduleStart  = document.getElementById('s-start').value;
+  const scheduleEnd    = document.getElementById('s-end').value;
+  const scheduleDays   = [...document.querySelectorAll('#s-days .day-pill.sel')].map(p => parseInt(p.dataset.d));
   cmd('set_interval', { interval });
   cmd('set_schedule', { scheduleEnabled, scheduleStart, scheduleEnd, scheduleDays });
   showToast('Réglages enregistrés');
@@ -1417,39 +1686,30 @@ function debugRefresh() {
   cmd('get_logs');
   showToast('Logs actualisés depuis l\'extension');
 }
-
 function debugClear() {
   document.getElementById('debug-log').innerHTML = '<span class="debug-log-empty">Logs effacés</span>';
 }
 
-// ── Day pills ─────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('#s-days .day-pill').forEach(pill => {
-    pill.addEventListener('click', () => pill.classList.toggle('sel'));
-  });
+// ── Toast / helpers ───────────────────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
 
-  const sl = document.getElementById('vol-slider');
-  sl.addEventListener('input', () => {
-    setVolUI(parseInt(sl.value));
-    clearTimeout(_volTimer);
-    _volTimer = setTimeout(() => cmd('set_volume', { level: parseInt(sl.value) / 100 }), 150);
-  });
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  document.getElementById('urlin').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendUrl();
-  });
-  document.getElementById('pl-add-url').addEventListener('keydown', e => {
-    if (e.key === 'Enter') plAdd();
-  });
-});
-
-// ── Error timeout ─────────────────────────────────────────────────────────────
+// ── Error timeout (8 s) ───────────────────────────────────────────────────────
 setTimeout(() => {
-  if (document.getElementById('splash').style.visibility !== 'hidden' &&
-      !document.getElementById('splash').classList.contains('hide')) {
-    showErr();
+  if (!document.getElementById('splash').classList.contains('hide')) {
+    document.getElementById('splash-loader').style.display = 'none';
+    document.getElementById('splash-err').classList.add('show');
   }
-}, 7000);
+}, 8000);
 
 boot();
 </script>

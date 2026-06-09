@@ -101,8 +101,8 @@ async def notify_watching(tv_id, payload_str):
 
 # ── YouTube RSS feed ──────────────────────────────────────────────────────────
 
-NS_ATOM = 'http://www.w3.org/2005/Atom'
-NS_YT   = 'http://www.youtube.com/xml/schemas/2015'
+NS_ATOM  = 'http://www.w3.org/2005/Atom'
+NS_YT    = 'http://www.youtube.com/xml/schemas/2015'
 NS_MEDIA = 'http://search.yahoo.com/mrss/'
 
 async def fetch_channel_feed(session, channel_id):
@@ -125,14 +125,14 @@ async def fetch_channel_feed(session, channel_id):
         items = []
         for entry in root.findall(f'{{{NS_ATOM}}}entry'):
             try:
-                title_el     = entry.find(f'{{{NS_ATOM}}}title')
-                pub_el       = entry.find(f'{{{NS_ATOM}}}published')
-                vid_id_el    = entry.find(f'{{{NS_YT}}}videoId')
-                link_el      = entry.find(f'{{{NS_ATOM}}}link[@rel="alternate"]')
+                title_el  = entry.find(f'{{{NS_ATOM}}}title')
+                pub_el    = entry.find(f'{{{NS_ATOM}}}published')
+                vid_id_el = entry.find(f'{{{NS_YT}}}videoId')
+                link_el   = entry.find(f'{{{NS_ATOM}}}link[@rel="alternate"]')
 
-                title     = title_el.text   if title_el    is not None else ''
-                published = pub_el.text     if pub_el      is not None else ''
-                vid_id    = vid_id_el.text  if vid_id_el   is not None else ''
+                title     = title_el.text  if title_el   is not None else ''
+                published = pub_el.text    if pub_el     is not None else ''
+                vid_id    = vid_id_el.text if vid_id_el  is not None else ''
                 link_url  = link_el.get('href', '') if link_el is not None else ''
 
                 if not vid_id:
@@ -254,7 +254,7 @@ async def handle_http(request):
         return web.Response(
             status=204,
             headers={
-                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Origin':  '*',
                 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
             },

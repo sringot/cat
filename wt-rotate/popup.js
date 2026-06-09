@@ -2,7 +2,8 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  canvaRefreshMin: 5
+  canvaRefreshMin: 5,
+  tvName: 'TV 1'
 };
 
 let config        = null;
@@ -102,6 +103,7 @@ function renderAll() {
   slider.value    = Math.min(config.interval, 300);
   intervalN.value = config.interval;
   canvaRefreshInput.value = config.canvaRefreshMin || 5;
+  $('tv-name').value = config.tvName || 'TV 1';
   renderSchedule();
   updateStatusUI();
   refreshRemoteInfo();
@@ -390,6 +392,11 @@ scheduleEnd.addEventListener('change',   () => { config.scheduleEnd   = schedule
 canvaRefreshInput.addEventListener('change', () => {
   config.canvaRefreshMin = Math.max(1, Math.min(60, parseInt(canvaRefreshInput.value) || 5));
   canvaRefreshInput.value = config.canvaRefreshMin;
+  saveConfig();
+});
+
+$('tv-name').addEventListener('change', () => {
+  config.tvName = $('tv-name').value.trim() || 'TV 1';
   saveConfig();
 });
 

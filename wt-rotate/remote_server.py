@@ -75,7 +75,7 @@ async def handle_ws(request):
     global ext_ws, state
     from aiohttp import web, WSMsgType
 
-    ws = web.WebSocketResponse(heartbeat=20)
+    ws = web.WebSocketResponse()
     await ws.prepare(request)
 
     try:

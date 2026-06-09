@@ -95,7 +95,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   const isKiosk  = config.tabIds.includes(tabId);
   const isRemote = config.remoteTabId === tabId;
   if (!isKiosk && !isRemote) return;
-  if (isKiosk && info?.connected) await injectOverlay(tabId, info);
+  if (isKiosk && info?.ip) await injectOverlay(tabId, info);
   try {
     const tab = await chrome.tabs.get(tabId);
     if (/youtube\.com\/watch/.test(tab.url || '')) await injectYouTubeMaximize(tabId);
@@ -284,7 +284,7 @@ async function injectOverlayAll() {
   const data = await chrome.storage.local.get(['config', 'remoteInfo']);
   const config = migrateConfig(data.config);
   const info = data.remoteInfo;
-  if (!info?.connected || !config.tabIds.length) return;
+  if (!info?.ip || !config.tabIds.length) return;
   for (const tabId of config.tabIds) {
     await injectOverlay(tabId, info);
   }
@@ -321,7 +321,8 @@ function connectRemote() {
   };
 
   remoteWs.onclose = async () => {
-    await chrome.storage.local.set({ remoteInfo: { connected: false } });
+    const d = await chrome.storage.local.get('remoteInfo');
+    await chrome.storage.local.set({ remoteInfo: { ...(d.remoteInfo || {}), connected: false } });
     scheduleReconnect();
   };
   remoteWs.onerror = () => scheduleReconnect();

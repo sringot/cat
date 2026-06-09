@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="wt remote">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="/app.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon128.png">
 <title>wt · remote</title>
 <style>
 *, *::before, *::after {
@@ -212,6 +216,17 @@ body {
 /* ── SEP ────────────────────────────────────────────────── */
 .div  { border: none; border-top: 1px solid var(--bdr); margin: 14px 0; }
 
+/* ── INSTALL BANNER ──────────────────────────────────────── */
+.install-banner {
+  display: none;
+  background: #EFF6FF; color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: 14px; padding: 13px 16px;
+  font-size: 13px; font-weight: 600;
+  text-align: center; line-height: 1.6;
+}
+.install-banner.show { display: block; }
+
 /* ── EXT BANNER ─────────────────────────────────────────── */
 .ext-banner {
   display: none;
@@ -280,6 +295,11 @@ body {
 <!-- Control -->
 <div id="s-main" class="screen">
   <div class="stack">
+
+    <!-- iOS install hint (hidden once installed as PWA) -->
+    <div id="install-banner" class="install-banner">
+      📲 Installer l'appli : bouton <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong>
+    </div>
 
     <!-- Extension offline banner -->
     <div id="ext-banner" class="ext-banner">
@@ -450,6 +470,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('urlin')
     .addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
 });
+
+// Show install hint on iOS Safari (not when already in standalone/PWA mode)
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
+  document.getElementById('install-banner').classList.add('show');
+}
 
 boot();
 </script>

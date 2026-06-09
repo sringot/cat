@@ -1,0 +1,17 @@
+{
+  "name": "wt remote",
+  "short_name": "wt remote",
+  "description": "Contrôle à distance wee rotate",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F7",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ]
+}

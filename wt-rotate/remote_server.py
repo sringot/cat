@@ -8,12 +8,14 @@ from pathlib import Path
 
 PORT = 8765
 
-local_ip    = '127.0.0.1'
-ext_ws      = None
-mob_clients = set()
-state       = {}
-qr_cache    = None
-html_cache  = None
+local_ip       = '127.0.0.1'
+ext_ws         = None
+mob_clients    = set()
+state          = {}
+qr_cache       = None
+html_cache     = None
+manifest_cache = None
+icon_cache     = {}
 
 # ── QR code ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,20 @@ def make_qr_svg(url):
 async def handle_http(request):
     from aiohttp import web
     path = request.path.split('?')[0]
+
+    if path == '/app.webmanifest':
+        if manifest_cache:
+            return web.Response(body=manifest_cache, content_type='application/manifest+json',
+                                headers={'Cache-Control': 'no-store',
+                                         'Access-Control-Allow-Origin': '*'})
+        return web.Response(status=404)
+
+    if path.startswith('/icons/'):
+        data = icon_cache.get(path)
+        if data:
+            return web.Response(body=data, content_type='image/png',
+                                headers={'Cache-Control': 'max-age=86400'})
+        return web.Response(status=404)
 
     if path == '/info':
         body = json.dumps({'ip': local_ip, 'ws_port': PORT, 'http_port': PORT}).encode()
@@ -158,7 +174,7 @@ async def handle(request):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
-    global local_ip, qr_cache, html_cache
+    global local_ip, qr_cache, html_cache, manifest_cache, icon_cache
     from aiohttp import web
 
     try:
@@ -176,6 +192,19 @@ async def main():
         html_cache = (Path(__file__).parent / 'control.html').read_bytes()
     except Exception:
         html_cache = b'<h1>control.html introuvable</h1>'
+
+    try:
+        manifest_cache = (Path(__file__).parent / 'app.webmanifest').read_bytes()
+    except Exception:
+        pass
+
+    icons_dir = Path(__file__).parent / 'icons'
+    if icons_dir.exists():
+        for icon_file in icons_dir.glob('*.png'):
+            try:
+                icon_cache[f'/icons/{icon_file.name}'] = icon_file.read_bytes()
+            except Exception:
+                pass
 
     print('╔══════════════════════════════════════════╗')
     print('║    wt-rotate Remote Control Server       ║')

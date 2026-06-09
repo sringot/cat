@@ -12,6 +12,17 @@
       "src": "/icons/icon128.png",
       "sizes": "128x128",
       "type": "image/png"
+    },
+    {
+      "src": "/icons/icon180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

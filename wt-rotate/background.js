@@ -306,7 +306,9 @@ function connectRemote() {
   remoteWs.onmessage = async evt => {
     try {
       const msg = JSON.parse(evt.data);
-      if (msg.type === 'ack') {
+      if (msg.type === 'ping') {
+        remoteWs.send(JSON.stringify({ type: 'pong' }));
+      } else if (msg.type === 'ack') {
         await chrome.storage.local.set({
           remoteInfo: { ip: msg.ip, http_port: msg.http_port, connected: true }
         });

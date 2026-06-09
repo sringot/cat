@@ -50,13 +50,32 @@ async def handle_http(request):
                                      'Cache-Control': 'no-store'})
     return web.Response(status=404, text='control.html introuvable')
 
+# ── Keepalive (application-level pings) ───────────────────────────────────────
+# Protocol-level heartbeat pings are silently handled by the browser and do NOT
+# fire JS onmessage — so they never reset Chrome's 30s service-worker idle timer.
+# JSON pings DO fire onmessage, keeping the extension SW alive.
+
+async def keepalive_loop():
+    ping = json.dumps({'type': 'ping'})
+    while True:
+        await asyncio.sleep(20)
+        if ext_ws and not ext_ws.closed:
+            try: await ext_ws.send_str(ping)
+            except: pass
+        dead = set()
+        for m in list(mob_clients):
+            if m.closed: dead.add(m); continue
+            try: await m.send_str(ping)
+            except: dead.add(m)
+        mob_clients -= dead
+
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 async def handle_ws(request):
     global ext_ws, state
     from aiohttp import web, WSMsgType
 
-    ws = web.WebSocketResponse(heartbeat=30)
+    ws = web.WebSocketResponse()
     await ws.prepare(request)
 
     try:
@@ -82,12 +101,12 @@ async def handle_ws(request):
                             try: await m.send_str(msg_data.data)
                             except: dead.add(m)
                         mob_clients -= dead
+                    # pong responses from extension are silently ignored
         except Exception:
             pass
         finally:
             if ext_ws is ws:
                 ext_ws = None
-            state = {}
             print('[-] Extension déconnectée')
 
     elif msg.get('type') == 'mobile':
@@ -103,6 +122,7 @@ async def handle_ws(request):
                     if d.get('type') == 'command' and ext_ws:
                         try: await ext_ws.send_str(msg_data.data)
                         except: pass
+                    # pong responses from mobile are silently ignored
         except Exception:
             pass
         finally:
@@ -157,6 +177,8 @@ async def main():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', PORT)
     await site.start()
+
+    asyncio.create_task(keepalive_loop())
     await asyncio.Future()
 
 if __name__ == '__main__':

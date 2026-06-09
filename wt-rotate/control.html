@@ -342,6 +342,7 @@ function connect() {
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
     let m; try { m = JSON.parse(e.data); } catch(e) { return; }
+    if (m.type === 'ping')    { ws.send(JSON.stringify({ type: 'pong' })); return; }
     if (m.type === 'auth_ok') { show('s-main'); badge('on'); }
     if (m.type === 'state')   sync(m);
   };

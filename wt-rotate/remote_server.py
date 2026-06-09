@@ -90,6 +90,12 @@ async def handle_ws(request):
         ext_ws = ws
         print('[+] Extension connectée')
         await ws.send_str(json.dumps({'type': 'ack', 'ip': local_ip, 'http_port': PORT}))
+        ext_on = json.dumps({'type': 'ext_status', 'connected': True})
+        dead = set()
+        for m in list(mob_clients):
+            try: await m.send_str(ext_on)
+            except: dead.add(m)
+        mob_clients -= dead
         try:
             async for msg_data in ws:
                 if msg_data.type == WSMsgType.TEXT:
@@ -108,20 +114,31 @@ async def handle_ws(request):
             if ext_ws is ws:
                 ext_ws = None
             print('[-] Extension déconnectée')
+            ext_off = json.dumps({'type': 'ext_status', 'connected': False})
+            dead = set()
+            for m in list(mob_clients):
+                try: await m.send_str(ext_off)
+                except: dead.add(m)
+            mob_clients -= dead
 
     elif msg.get('type') == 'mobile':
         mob_clients.add(ws)
         print(f'[+] Mobile connecté ({len(mob_clients)} actif(s))')
         await ws.send_str(json.dumps({'type': 'auth_ok'}))
+        await ws.send_str(json.dumps({'type': 'ext_status', 'connected': ext_ws is not None and not ext_ws.closed}))
         if state:
             await ws.send_str(json.dumps({**state, 'type': 'state'}))
         try:
             async for msg_data in ws:
                 if msg_data.type == WSMsgType.TEXT:
                     d = json.loads(msg_data.data)
-                    if d.get('type') == 'command' and ext_ws:
-                        try: await ext_ws.send_str(msg_data.data)
-                        except: pass
+                    if d.get('type') == 'command':
+                        if ext_ws and not ext_ws.closed:
+                            try: await ext_ws.send_str(msg_data.data)
+                            except: pass
+                        else:
+                            try: await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'ext_offline'}))
+                            except: pass
                     # pong responses from mobile are silently ignored
         except Exception:
             pass

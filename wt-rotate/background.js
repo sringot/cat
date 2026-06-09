@@ -69,7 +69,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-rotate')   await rotateToNext();
-  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await refreshCanvaTabsIfNeeded(); }
+  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await injectOverlayAll(); await refreshCanvaTabsIfNeeded(); }
 });
 
 chrome.tabs.onRemoved.addListener(async tabId => {
@@ -330,7 +330,7 @@ function connectRemote() {
 
 function scheduleReconnect() {
   clearTimeout(remoteReconnectTimer);
-  remoteReconnectTimer = setTimeout(connectRemote, 5000);
+  remoteReconnectTimer = setTimeout(connectRemote, 2000);
 }
 
 async function sendStateToRemote() {

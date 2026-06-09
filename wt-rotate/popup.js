@@ -45,7 +45,10 @@ function initTabs() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
-      $('tab-' + btn.dataset.tab).classList.add('active');
+      const pane = $('tab-' + btn.dataset.tab);
+      pane.classList.remove('active');
+      pane.offsetWidth; // force reflow to re-trigger animation
+      pane.classList.add('active');
     });
   });
 }
@@ -292,7 +295,12 @@ async function startRotation() {
   }
 }
 
-btnStart.addEventListener('click', startRotation);
+btnStart.addEventListener('click', async () => {
+  btnStart.disabled = true;
+  btnStart.textContent = '▶ Démarrage…';
+  try { await startRotation(); }
+  finally { btnStart.disabled = false; btnStart.textContent = '▶ Démarrer'; }
+});
 
 btnStop.addEventListener('click', async () => {
   config.active = false;
@@ -321,7 +329,9 @@ btnAdd.addEventListener('click', () => {
   if (!config) config = migrateConfig(null);
   config.urls.push({ url: '', name: '', interval: null });
   saveConfig(); renderUrls();
+  const rows   = urlList.querySelectorAll('.url-row');
   const inputs = urlList.querySelectorAll('.url-input');
+  if (rows.length)   rows[rows.length - 1].classList.add('url-row-new');
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 

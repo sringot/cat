@@ -3,7 +3,8 @@ const DEFAULT_CONFIG = {
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
   remotePaused: false, remoteTabId: null,
-  canvaRefreshMin: 5
+  canvaRefreshMin: 5,
+  volume: 1.0
 };
 
 const MAX_LOGS = 60;
@@ -95,7 +96,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   const isKiosk  = config.tabIds.includes(tabId);
   const isRemote = config.remoteTabId === tabId;
   if (!isKiosk && !isRemote) return;
-  if (isKiosk && info?.ip) await injectOverlay(tabId, info);
+  if (isKiosk) {
+    if (info?.ip) await injectOverlay(tabId, info);
+    const vol = config.volume ?? 1.0;
+    if (vol !== 1.0) await injectVolume(tabId, vol);
+  }
   try {
     const tab = await chrome.tabs.get(tabId);
     if (/youtube\.com\/watch/.test(tab.url || '')) await injectYouTubeMaximize(tabId);
@@ -290,6 +295,28 @@ async function injectOverlayAll() {
   }
 }
 
+async function injectVolume(tabId, level) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (lvl) => {
+        const apply = () => document.querySelectorAll('video,audio').forEach(m => {
+          m.volume = lvl;
+          m.muted = (lvl === 0);
+        });
+        apply();
+        if (window._wtVolObs) { window._wtVolObs.disconnect(); window._wtVolObs = null; }
+        if (lvl < 1.0) {
+          window._wtVolObs = new MutationObserver(apply);
+          window._wtVolObs.observe(document.documentElement, { childList: true, subtree: true });
+        }
+        window._wtVol = lvl;
+      },
+      args: [level]
+    });
+  } catch {}
+}
+
 // ── Remote WebSocket client ───────────────────────────────────────────────────
 
 let remoteWs             = null;
@@ -342,13 +369,20 @@ async function sendStateToRemote() {
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
+  const _now = Date.now();
+  const _elapsed = config.lastAlarmTime ? (_now - config.lastAlarmTime) / 1000 : 0;
+  const _total = config.currentAlarmSec || config.interval;
+  const _remaining = Math.max(0, _total - _elapsed);
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
-    interval: config.interval
+    interval: config.interval,
+    volume: config.volume ?? 1.0,
+    remaining: Math.round(_remaining * 10) / 10,
+    total: _total
   }));
 }
 
@@ -490,6 +524,16 @@ async function handleRemoteCommand(cmd) {
       }
       await setNextAlarm(config.currentAlarmSec || config.interval);
       await log('remote — libération'); break;
+    }
+
+    case 'set_volume': {
+      const level = Math.max(0, Math.min(1, parseFloat(cmd.level) || 0));
+      config.volume = level;
+      await chrome.storage.local.set({ config });
+      for (const tabId of config.tabIds) {
+        await injectVolume(tabId, level);
+      }
+      break;
     }
 
     case 'next': case 'prev': {

@@ -250,6 +250,62 @@ body {
   white-space: nowrap; pointer-events: none;
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── CARD ANIMATIONS ─────────────────────────────────────── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#s-main .stack > .card:nth-child(1) { animation: cardIn .24s .00s ease both; }
+#s-main .stack > .card:nth-child(2) { animation: cardIn .24s .06s ease both; }
+#s-main .stack > .card:nth-child(3) { animation: cardIn .24s .12s ease both; }
+#s-main .stack > .card:nth-child(4) { animation: cardIn .24s .18s ease both; }
+#s-main .stack > .card:nth-child(5) { animation: cardIn .24s .24s ease both; }
+
+/* ── COUNTDOWN TIMER ─────────────────────────────────────── */
+.np-timer { margin-top: 14px; }
+.np-progress-wrap {
+  height: 4px; background: var(--bdr); border-radius: 2px;
+  overflow: hidden; margin-bottom: 6px;
+}
+.np-progress-fill {
+  height: 100%; background: var(--black); border-radius: 2px;
+  transition: width 1s linear; will-change: width; width: 0%;
+}
+.np-time-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.np-time-label { font-size: 11px; color: var(--t2); font-weight: 500; }
+.np-countdown {
+  font-size: 12px; color: var(--t1); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── VOLUME SLIDER ───────────────────────────────────────── */
+.vol-row { display: flex; align-items: center; gap: 12px; }
+.vol-icon { font-size: 20px; line-height: 1; }
+.vol-pct {
+  font-size: 13px; font-weight: 700; color: var(--t1);
+  min-width: 42px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vol-slider {
+  flex: 1; height: 6px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  border-radius: 3px; outline: none; border: none; background: transparent;
+  background: linear-gradient(to right, var(--black) var(--vp, 100%), var(--bdr) var(--vp, 100%));
+}
+.vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px; background: var(--black);
+  border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+  transition: transform .12s;
+}
+.vol-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
+.vol-slider::-moz-range-thumb {
+  width: 22px; height: 22px; background: var(--black);
+  border-radius: 50%; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+}
 </style>
 </head>
 <body>
@@ -318,6 +374,15 @@ body {
           <span class="sb-dot"></span>
           <span id="sbtxt">Rotation active</span>
         </span>
+        <div class="np-timer" id="np-timer" style="display:none">
+          <div class="np-progress-wrap">
+            <div class="np-progress-fill" id="np-progress-fill"></div>
+          </div>
+          <div class="np-time-row">
+            <span class="np-time-label">Prochain</span>
+            <span class="np-countdown" id="np-countdown">—</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -345,6 +410,19 @@ body {
         <div class="row2">
           <button class="btn btn-line btn-sm" onclick="cmd('prev')">⏮ &nbsp;Précédent</button>
           <button class="btn btn-line btn-sm" onclick="cmd('next')">Suivant&nbsp; ⏭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Volume -->
+    <div class="card">
+      <div class="card-p">
+        <div class="sect-lbl">Volume</div>
+        <div class="vol-row">
+          <span class="vol-icon" id="vol-icon">🔊</span>
+          <input type="range" class="vol-slider" id="vol-slider"
+                 min="0" max="100" value="100">
+          <span class="vol-pct" id="vol-pct">100%</span>
         </div>
       </div>
     </div>
@@ -429,26 +507,77 @@ function sync(s) {
   const crel = document.getElementById('card-release');
 
   if (s.remotePaused && s.remoteUrl) {
-    // External URL open from remote
     npn.textContent = s.remoteUrl;
     npu.textContent = s.remoteUrl;
     sb.className = 'status-badge ext';
     sbt.textContent = 'URL externe';
     bp.style.display = 'none'; br.style.display = ''; crel.style.display = '';
+    stopCountdown();
   } else if (s.active) {
     npn.textContent = c.name || c.url || '—';
     npu.textContent = c.url || '—';
     sb.className = 'status-badge on';
     sbt.textContent = 'Rotation active';
     bp.style.display = ''; br.style.display = 'none'; crel.style.display = 'none';
+    if (s.remaining > 0 && s.total > 0) startCountdown(s.remaining, s.total);
   } else {
     npn.textContent = c.name || c.url || '—';
     npu.textContent = c.url || '—';
     sb.className = 'status-badge off';
     sbt.textContent = 'En pause';
     bp.style.display = 'none'; br.style.display = ''; crel.style.display = 'none';
+    stopCountdown();
   }
+
+  // Volume
+  const vol = Math.round((s.volume ?? 1) * 100);
+  setVolUI(vol);
 }
+
+// ── Countdown ─────────────────────────────────────────────
+let _cdInterval = null, _cdEnd = null, _cdTotal = 0;
+
+function startCountdown(remaining, total) {
+  clearInterval(_cdInterval);
+  _cdEnd   = Date.now() + remaining * 1000;
+  _cdTotal = total;
+  document.getElementById('np-timer').style.display = '';
+  tick();
+  _cdInterval = setInterval(tick, 500);
+}
+function stopCountdown() {
+  clearInterval(_cdInterval); _cdInterval = null;
+  document.getElementById('np-timer').style.display = 'none';
+}
+function tick() {
+  const left = Math.max(0, (_cdEnd - Date.now()) / 1000);
+  const pct  = _cdTotal > 0 ? Math.min(100, (1 - left / _cdTotal) * 100) : 0;
+  document.getElementById('np-progress-fill').style.width = pct + '%';
+  document.getElementById('np-countdown').textContent =
+    left <= 0 ? '—' : left >= 60
+      ? Math.floor(left / 60) + 'min ' + String(Math.ceil(left % 60)).padStart(2, '0') + 's'
+      : Math.ceil(left) + 's';
+  if (left <= 0) { clearInterval(_cdInterval); _cdInterval = null; }
+}
+
+// ── Volume ────────────────────────────────────────────────
+let _volTimer = null;
+function setVolUI(pct) {
+  const sl = document.getElementById('vol-slider');
+  if (!sl) return;
+  sl.value = pct;
+  sl.style.setProperty('--vp', pct + '%');
+  document.getElementById('vol-pct').textContent = pct + '%';
+  document.getElementById('vol-icon').textContent = pct === 0 ? '🔇' : pct < 50 ? '🔉' : '🔊';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const sl = document.getElementById('vol-slider');
+  sl.addEventListener('input', () => {
+    setVolUI(parseInt(sl.value));
+    clearTimeout(_volTimer);
+    _volTimer = setTimeout(() => cmd('set_volume', { level: parseInt(sl.value) / 100 }), 150);
+  });
+});
 
 function cmd(action, extra) {
   if (ws?.readyState === 1)

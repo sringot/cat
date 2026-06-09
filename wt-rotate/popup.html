@@ -356,18 +356,23 @@
       background: none; border: none; color: var(--red); cursor: pointer; padding: 0;
       font-family: inherit;
     }
+    /* ── Animations ── */
+    @keyframes paneIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
+    @keyframes rowIn   { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes dotPulse { 0%,100% { box-shadow:0 0 5px rgba(48,209,88,.4); } 50% { box-shadow:0 0 11px rgba(48,209,88,.75); } }
+
+    .tab-pane.active { animation: paneIn .17s ease both; }
+    .url-row-new     { animation: rowIn  .22s ease both; }
+    .remote-dot-on   { animation: dotPulse 2.2s infinite; }
+
+    .btn-primary:disabled { opacity: .55; cursor: default; transform: none !important; }
   </style>
 </head>
 <body>
 
   <div class="header">
     <div class="logo">
-      <svg viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="13" fill="#0D0D0D"/>
-        <path d="M7 9l3.2 8.5 2.8-6 2.8 6L19 9"
-              stroke="white" stroke-width="2.1"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <img src="icons/icon48.png" width="26" height="26" style="border-radius:6px;flex-shrink:0;object-fit:cover">
       wee&nbsp;<span style="color:var(--muted);font-weight:500">rotate</span>
     </div>
     <span id="badge" class="badge badge-stopped">Arrêté</span>

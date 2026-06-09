@@ -330,16 +330,6 @@
       font-family: 'Consolas', monospace; color: var(--text);
       word-break: break-all;
     }
-    .btn-copy {
-      width: 100%; margin-top: 8px;
-      padding: 9px; border: 1.5px solid var(--border);
-      border-radius: var(--r); background: var(--bg);
-      color: var(--text); font-family: inherit;
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      transition: all .15s;
-    }
-    .btn-copy:hover { border-color: var(--black); color: var(--black); background: var(--white); }
-
     /* ── Debug ── */
     #debug-toggle {
       width: 100%; background: var(--bg);
@@ -510,7 +500,6 @@
         </div>
         <div class="remote-qr-hint">Scannez pour contrôler depuis votre téléphone</div>
         <div class="remote-url-box" id="remote-url-box">—</div>
-        <button id="btn-copy-remote" class="btn-copy">📋 Copier l'URL</button>
       </div>
 
       <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">

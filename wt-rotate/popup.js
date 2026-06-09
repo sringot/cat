@@ -485,17 +485,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-$('btn-copy-remote').addEventListener('click', async () => {
-  const url = $('remote-url-box').textContent;
-  if (!url || url === '—') return;
-  try {
-    await navigator.clipboard.writeText(url);
-    const btn = $('btn-copy-remote');
-    btn.textContent = '✓ Copié !';
-    setTimeout(() => { btn.textContent = '📋 Copier l\'URL'; }, 1500);
-  } catch {}
-});
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function flushInputs() {

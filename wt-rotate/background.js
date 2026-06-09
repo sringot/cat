@@ -450,19 +450,19 @@ async function handleRemoteCommand(cmd) {
       await chrome.storage.local.set({ config });
       await log('remote — pause'); break;
 
-    case 'resume':
-      if (config.remoteTabId) {
-        try { await chrome.tabs.remove(config.remoteTabId); } catch {}
-        config.remoteTabId = null;
-      }
+    case 'resume': {
+      const tabToRemove = config.remoteTabId;
+      config.remoteTabId = null;
+      config.active = true; config.remotePaused = false;
+      config.lastAlarmTime = Date.now();
+      await chrome.storage.local.set({ config });          // sauvegarde avant remove
+      if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
       if (config.tabIds.length) {
         try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
       }
-      config.active = true; config.remotePaused = false;
-      config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
       await setNextAlarm(config.currentAlarmSec || config.interval);
       await log('remote — reprise'); break;
+    }
 
     case 'open_url':
       if (cmd.url && config.windowId) {
@@ -476,18 +476,18 @@ async function handleRemoteCommand(cmd) {
         } catch (e) { await log('remote open_url ERR: ' + e.message); }
       } break;
 
-    case 'release':
-      if (config.remoteTabId) {
-        try { await chrome.tabs.remove(config.remoteTabId); } catch {}
-        config.remoteTabId = null;
-      }
+    case 'release': {
+      const tabToRemove = config.remoteTabId;
+      config.remoteTabId = null;
+      config.active = true; config.remotePaused = false; config.lastAlarmTime = Date.now();
+      await chrome.storage.local.set({ config });          // sauvegarde avant remove
+      if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
       if (config.tabIds.length) {
         try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
       }
-      config.active = true; config.remotePaused = false; config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
       await setNextAlarm(config.currentAlarmSec || config.interval);
       await log('remote — libération'); break;
+    }
 
     case 'next': case 'prev': {
       const urls = config.urls.filter(u => u?.url?.trim());

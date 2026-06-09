@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-wt-rotate Remote Control Server — HTTP + WebSocket sur le même port (8765)
+wt-rotate Remote Control Server
 pip install aiohttp qrcode
 """
 import asyncio, json, socket, io
 from pathlib import Path
-from aiohttp import web, WSMsgType
 
 PORT = 8765
 
@@ -27,14 +26,10 @@ def make_qr_svg(url):
     except Exception:
         return None
 
-# ── Gestionnaire principal (HTTP + WebSocket sur le même port) ────────────────
-
-async def handle(request):
-    if request.headers.get('upgrade', '').lower() == 'websocket':
-        return await handle_ws(request)
-    return await handle_http(request)
+# ── HTTP ──────────────────────────────────────────────────────────────────────
 
 async def handle_http(request):
+    from aiohttp import web
     path = request.path.split('?')[0]
 
     if path == '/info':
@@ -55,9 +50,13 @@ async def handle_http(request):
                                      'Cache-Control': 'no-store'})
     return web.Response(status=404, text='control.html introuvable')
 
+# ── WebSocket ─────────────────────────────────────────────────────────────────
+
 async def handle_ws(request):
     global ext_ws, state
-    ws = web.WebSocketResponse()
+    from aiohttp import web, WSMsgType
+
+    ws = web.WebSocketResponse(heartbeat=30)
     await ws.prepare(request)
 
     try:
@@ -86,7 +85,8 @@ async def handle_ws(request):
         except Exception:
             pass
         finally:
-            ext_ws = None
+            if ext_ws is ws:
+                ext_ws = None
             state = {}
             print('[-] Extension déconnectée')
 
@@ -111,10 +111,18 @@ async def handle_ws(request):
 
     return ws
 
+# ── Routeur principal ─────────────────────────────────────────────────────────
+
+async def handle(request):
+    if request.headers.get('Upgrade', '').lower() == 'websocket':
+        return await handle_ws(request)
+    return await handle_http(request)
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
     global local_ip, qr_cache, html_cache
+    from aiohttp import web
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -142,8 +150,8 @@ async def main():
     print('\nEn attente de connexions...\n')
 
     app = web.Application()
-    app.router.add_route('*', '/',              handle)
-    app.router.add_route('*', '/{path_info:.*}', handle)
+    app.router.add_get('/', handle)
+    app.router.add_get('/{path:.+}', handle)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -153,7 +161,7 @@ async def main():
 
 if __name__ == '__main__':
     try:
-        from aiohttp import web, WSMsgType
+        import aiohttp
     except ImportError:
         print('ERREUR : pip install aiohttp qrcode')
         input('Appuyez sur Entrée pour quitter...')

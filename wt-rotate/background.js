@@ -378,7 +378,8 @@ async function injectYouTubeMaximize(tabId) {
           const s = document.createElement('style');
           s.id = 'wt-yt-style';
           s.textContent = [
-            'body{overflow:hidden!important}',
+            'html,body{overflow:hidden!important}',
+            'ytd-app,#page-manager{overflow:hidden!important;height:100vh!important}',
             '#masthead-container,ytd-miniguide-renderer{display:none!important}',
             'ytd-page-manager{margin-top:0!important;padding-top:0!important}',
             '#secondary,ytd-watch-next-secondary-results-renderer{display:none!important}',
@@ -386,6 +387,7 @@ async function injectYouTubeMaximize(tabId) {
             'ytd-watch-metadata,#above-the-fold,ytd-above-the-fold-renderer,#actions,#owner,ytd-video-owner-renderer{display:none!important}',
             '.ytp-chrome-bottom,.ytp-gradient-bottom,.ytp-ce-element,.ytp-endscreen-element,.ytp-cards-teaser{display:none!important}',
             '#panels,ytd-engagement-panel-section-list-renderer{display:none!important}',
+            'ytd-comments,#comments,#comment-teaser,#below{display:none!important}',
           ].join('');
           document.head.appendChild(s);
         }

@@ -3,215 +3,69 @@
 wt-rotate Remote Control Server
 pip install aiohttp qrcode
 """
-import asyncio, json, socket, io
+import asyncio
+import io
+import socket
 from pathlib import Path
 
-PORT = 8765
-
-local_ip       = '127.0.0.1'
-ext_ws         = None
-mob_clients    = set()
-state          = {}
-qr_cache       = None
-html_cache     = None
-manifest_cache = None
-icon_cache     = {}
-
-# ── QR code ───────────────────────────────────────────────────────────────────
-
-def make_qr_svg(url):
-    try:
-        import qrcode, qrcode.image.svg
-        buf = io.BytesIO()
-        qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, border=2).save(buf)
-        return buf.getvalue()
-    except Exception:
-        return None
-
-# ── HTTP ──────────────────────────────────────────────────────────────────────
-
-async def handle_http(request):
-    from aiohttp import web
-    path = request.path.split('?')[0]
-
-    if path == '/app.webmanifest':
-        if manifest_cache:
-            return web.Response(body=manifest_cache, content_type='application/manifest+json',
-                                headers={'Cache-Control': 'no-store',
-                                         'Access-Control-Allow-Origin': '*'})
-        return web.Response(status=404)
-
-    if path.startswith('/icons/'):
-        data = icon_cache.get(path)
-        if data:
-            return web.Response(body=data, content_type='image/png',
-                                headers={'Cache-Control': 'max-age=86400'})
-        return web.Response(status=404)
-
-    if path == '/info':
-        body = json.dumps({'ip': local_ip, 'ws_port': PORT, 'http_port': PORT}).encode()
-        return web.Response(body=body, content_type='application/json',
-                            headers={'Access-Control-Allow-Origin': '*'})
-
-    if path == '/qr.svg':
-        if qr_cache:
-            return web.Response(body=qr_cache, content_type='image/svg+xml',
-                                headers={'Cache-Control': 'no-store',
-                                         'Access-Control-Allow-Origin': '*'})
-        return web.Response(status=503, text='pip install qrcode')
-
-    if html_cache:
-        return web.Response(body=html_cache,
-                            headers={'Content-Type': 'text/html; charset=utf-8',
-                                     'Cache-Control': 'no-store'})
-    return web.Response(status=404, text='control.html introuvable')
-
-# ── Keepalive (application-level pings) ───────────────────────────────────────
-# Protocol-level heartbeat pings are silently handled by the browser and do NOT
-# fire JS onmessage — so they never reset Chrome's 30s service-worker idle timer.
-# JSON pings DO fire onmessage, keeping the extension SW alive.
-
-async def keepalive_loop():
-    ping = json.dumps({'type': 'ping'})
-    while True:
-        await asyncio.sleep(20)
-        if ext_ws and not ext_ws.closed:
-            try: await ext_ws.send_str(ping)
-            except: pass
-        dead = set()
-        for m in list(mob_clients):
-            if m.closed: dead.add(m); continue
-            try: await m.send_str(ping)
-            except: dead.add(m)
-        mob_clients -= dead
-
-# ── WebSocket ─────────────────────────────────────────────────────────────────
-
-async def handle_ws(request):
-    global ext_ws, state, mob_clients
-    from aiohttp import web, WSMsgType
-
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
-
-    try:
-        msg_data = await asyncio.wait_for(ws.receive(), timeout=10)
-        if msg_data.type != WSMsgType.TEXT:
-            return ws
-        msg = json.loads(msg_data.data)
-    except Exception:
-        return ws
-
-    if msg.get('type') == 'extension':
-        ext_ws = ws
-        print('[+] Extension connectée')
-        await ws.send_str(json.dumps({'type': 'ack', 'ip': local_ip, 'http_port': PORT}))
-        ext_on = json.dumps({'type': 'ext_status', 'connected': True})
-        dead = set()
-        for m in list(mob_clients):
-            try: await m.send_str(ext_on)
-            except: dead.add(m)
-        mob_clients -= dead
-        try:
-            async for msg_data in ws:
-                if msg_data.type == WSMsgType.TEXT:
-                    d = json.loads(msg_data.data)
-                    if d.get('type') == 'state':
-                        state = d
-                        dead = set()
-                        for m in list(mob_clients):
-                            try: await m.send_str(msg_data.data)
-                            except: dead.add(m)
-                        mob_clients -= dead
-                    # pong responses from extension are silently ignored
-        except Exception:
-            pass
-        finally:
-            if ext_ws is ws:
-                ext_ws = None
-            print('[-] Extension déconnectée')
-            ext_off = json.dumps({'type': 'ext_status', 'connected': False})
-            dead = set()
-            for m in list(mob_clients):
-                try: await m.send_str(ext_off)
-                except: dead.add(m)
-            mob_clients -= dead
-
-    elif msg.get('type') == 'mobile':
-        mob_clients.add(ws)
-        print(f'[+] Mobile connecté ({len(mob_clients)} actif(s))')
-        await ws.send_str(json.dumps({'type': 'auth_ok'}))
-        await ws.send_str(json.dumps({'type': 'ext_status', 'connected': ext_ws is not None and not ext_ws.closed}))
-        if state:
-            await ws.send_str(json.dumps({**state, 'type': 'state'}))
-        try:
-            async for msg_data in ws:
-                if msg_data.type == WSMsgType.TEXT:
-                    d = json.loads(msg_data.data)
-                    if d.get('type') == 'command':
-                        if ext_ws and not ext_ws.closed:
-                            try: await ext_ws.send_str(msg_data.data)
-                            except: pass
-                        else:
-                            try: await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'ext_offline'}))
-                            except: pass
-                    # pong responses from mobile are silently ignored
-        except Exception:
-            pass
-        finally:
-            mob_clients.discard(ws)
-            print(f'[-] Mobile déconnecté ({len(mob_clients)} actif(s))')
-
-    return ws
-
-# ── Routeur principal ─────────────────────────────────────────────────────────
-
-async def handle(request):
-    if request.headers.get('Upgrade', '').lower() == 'websocket':
-        return await handle_ws(request)
-    return await handle_http(request)
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
-    global local_ip, qr_cache, html_cache, manifest_cache, icon_cache
     from aiohttp import web
+    from server import state, auth
+    from server.http_handler import handle_http
+    from server.ws_handler import handle_ws, keepalive_loop
 
+    # Detect LAN IP
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
-        local_ip = s.getsockname()[0]
+        state.local_ip = s.getsockname()[0]
         s.close()
     except Exception:
         pass
 
-    control_url = f'http://{local_ip}:{PORT}/'
-    qr_cache    = make_qr_svg(control_url)
-
+    # QR code encodes URL with auth token so rescanning is only needed after token rotation
+    control_url = f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
     try:
-        html_cache = (Path(__file__).parent / 'control.html').read_bytes()
+        import qrcode
+        import qrcode.image.svg
+        buf = io.BytesIO()
+        qrcode.make(control_url, image_factory=qrcode.image.svg.SvgPathImage, border=2).save(buf)
+        state.qr_cache = buf.getvalue()
     except Exception:
-        html_cache = b'<h1>control.html introuvable</h1>'
+        state.qr_cache = None
 
+    # Load static assets
+    base = Path(__file__).parent
     try:
-        manifest_cache = (Path(__file__).parent / 'app.webmanifest').read_bytes()
+        state.html_cache = (base / 'control.html').read_bytes()
+    except Exception:
+        state.html_cache = b'<h1>control.html introuvable</h1>'
+    try:
+        state.manifest_cache = (base / 'app.webmanifest').read_bytes()
     except Exception:
         pass
-
-    icons_dir = Path(__file__).parent / 'icons'
+    icons_dir = base / 'icons'
     if icons_dir.exists():
         for icon_file in icons_dir.glob('*.png'):
             try:
-                icon_cache[f'/icons/{icon_file.name}'] = icon_file.read_bytes()
+                state.icon_cache[f'/icons/{icon_file.name}'] = icon_file.read_bytes()
             except Exception:
                 pass
 
+    async def handle(request):
+        if request.headers.get('Upgrade', '').lower() == 'websocket':
+            return await handle_ws(request)
+        return await handle_http(request)
+
+    plain_url = f'http://{state.local_ip}:{state.PORT}/'
     print('╔══════════════════════════════════════════╗')
     print('║    wt-rotate Remote Control Server       ║')
     print('╠══════════════════════════════════════════╣')
-    print(f'║  IP locale  : {local_ip:<27}║')
-    print(f'║  URL mobile : {control_url:<27}║')
-    print(f'║  QR code    : {"OK" if qr_cache else "manquant (pip install qrcode)":<27}║')
+    print(f'║  IP locale  : {state.local_ip:<27}║')
+    print(f'║  URL mobile : {plain_url:<27}║')
+    print(f'║  Token auth : {auth.TOKEN:<27}║')
+    print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
     print('╚══════════════════════════════════════════╝')
     print('\nEn attente de connexions...\n')
 
@@ -221,15 +75,16 @@ async def main():
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    site = web.TCPSite(runner, '0.0.0.0', state.PORT)
     await site.start()
 
     asyncio.create_task(keepalive_loop())
     await asyncio.Future()
 
+
 if __name__ == '__main__':
     try:
-        import aiohttp
+        import aiohttp  # noqa: F401
     except ImportError:
         print('ERREUR : pip install aiohttp qrcode')
         input('Appuyez sur Entrée pour quitter...')

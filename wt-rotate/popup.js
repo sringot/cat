@@ -2,7 +2,9 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  canvaRefreshMin: 5
+  remotePaused: false, remoteTabId: null,
+  canvaRefreshMin: 5,
+  tabRefreshHours: 4
 };
 
 let config        = null;
@@ -130,7 +132,7 @@ function renderUrls() {
         <div class="url-interval-wrap">
           <button class="url-dur-toggle${entry.interval ? ' on' : ''}" title="Durée personnalisée">⏱</button>
           <input class="url-interval" type="number"
-                 value="${entry.interval || config.interval}"
+                 value="${parseInt(entry.interval) || parseInt(config.interval) || 30}"
                  min="5" max="86400"
                  style="display:${entry.interval ? '' : 'none'}">
           <span class="interval-s" style="display:${entry.interval ? '' : 'none'}">s</span>
@@ -282,6 +284,7 @@ async function startRotation() {
 
     config.currentIndex    = 0;
     config.active          = true;
+    config.remotePaused    = false;
     config.lastAlarmTime   = Date.now();
     config.currentAlarmSec = activeUrls[0].interval || config.interval;
     await saveConfig();

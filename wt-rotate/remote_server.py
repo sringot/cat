@@ -3,7 +3,8 @@
 wt-rotate Remote Control Server
 pip install aiohttp qrcode
 """
-import asyncio, json, socket, io
+import asyncio, json, socket, io, time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 PORT = 8765
@@ -17,6 +18,13 @@ html_cache     = None
 manifest_cache = None
 icon_cache     = {}
 
+_feed_cache      = None
+_feed_cache_time = 0
+FEED_CACHE_SECONDS = 300
+CHANNELS_FILE = Path(__file__).parent / 'feed_channels.json'
+NS_ATOM = 'http://www.w3.org/2005/Atom'
+NS_YT   = 'http://www.youtube.com/xml/schemas/2015'
+
 # ── QR code ───────────────────────────────────────────────────────────────────
 
 def make_qr_svg(url):
@@ -27,6 +35,91 @@ def make_qr_svg(url):
         return buf.getvalue()
     except Exception:
         return None
+
+# ── Channel persistence ───────────────────────────────────────────────────────
+
+def load_channels():
+    try:
+        return json.loads(CHANNELS_FILE.read_text(encoding='utf-8'))
+    except:
+        return []
+
+def save_channels(channels):
+    try:
+        CHANNELS_FILE.write_text(json.dumps(channels, ensure_ascii=False, indent=2), encoding='utf-8')
+    except:
+        pass
+
+# ── YouTube feed ──────────────────────────────────────────────────────────────
+
+async def fetch_channel_feed(session, channel_id):
+    url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+    try:
+        import aiohttp
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+            if resp.status != 200:
+                return []
+            text = await resp.text()
+    except:
+        return []
+    try:
+        root = ET.fromstring(text)
+        author_el = root.find(f'{{{NS_ATOM}}}author/{{{NS_ATOM}}}name')
+        channel_name = author_el.text if author_el is not None else channel_id
+        items = []
+        for entry in root.findall(f'{{{NS_ATOM}}}entry'):
+            try:
+                title_el  = entry.find(f'{{{NS_ATOM}}}title')
+                pub_el    = entry.find(f'{{{NS_ATOM}}}published')
+                vid_id_el = entry.find(f'{{{NS_YT}}}videoId')
+                link_el   = entry.find(f'{{{NS_ATOM}}}link[@rel="alternate"]')
+                vid_id = vid_id_el.text if vid_id_el is not None else ''
+                if not vid_id:
+                    continue
+                items.append({
+                    'id':        vid_id,
+                    'title':     (title_el.text if title_el is not None else ''),
+                    'channel':   channel_name,
+                    'published': (pub_el.text   if pub_el  is not None else ''),
+                    'url':       (link_el.get('href', '') if link_el is not None
+                                  else f'https://www.youtube.com/watch?v={vid_id}'),
+                    'thumbnail': f'https://img.youtube.com/vi/{vid_id}/hqdefault.jpg',
+                })
+            except:
+                continue
+        return items
+    except:
+        return []
+
+async def get_feed():
+    global _feed_cache, _feed_cache_time
+    now = time.time()
+    if _feed_cache is not None and (now - _feed_cache_time) < FEED_CACHE_SECONDS:
+        return _feed_cache
+    channels = load_channels()
+    if not channels:
+        _feed_cache = []
+        _feed_cache_time = now
+        return _feed_cache
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            results = await asyncio.gather(
+                *[fetch_channel_feed(session, ch['id']) for ch in channels],
+                return_exceptions=True
+            )
+    except:
+        return _feed_cache or []
+    all_items = [item for r in results if isinstance(r, list) for item in r]
+    all_items.sort(key=lambda x: x.get('published', ''), reverse=True)
+    _feed_cache = all_items
+    _feed_cache_time = now
+    return _feed_cache
+
+def invalidate_feed_cache():
+    global _feed_cache, _feed_cache_time
+    _feed_cache = None
+    _feed_cache_time = 0
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
 
@@ -59,6 +152,69 @@ async def handle_http(request):
                                 headers={'Cache-Control': 'no-store',
                                          'Access-Control-Allow-Origin': '*'})
         return web.Response(status=503, text='pip install qrcode')
+
+    # ── Feed endpoints ────────────────────────────────────────────────────────
+
+    if path == '/feed':
+        try:
+            items = await get_feed()
+        except:
+            items = []
+        return web.Response(
+            body=json.dumps(items, ensure_ascii=False).encode(),
+            content_type='application/json',
+            headers={'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store'}
+        )
+
+    if path == '/feed/channels':
+        if request.method == 'POST':
+            try:
+                body = await request.json()
+                ch_id = (body.get('id') or '').strip()
+                if not ch_id:
+                    return web.Response(status=400, text='Missing id')
+                channels = load_channels()
+                if not any(c['id'] == ch_id for c in channels):
+                    channels.append({'id': ch_id, 'name': (body.get('name') or ch_id).strip()})
+                    save_channels(channels)
+                    invalidate_feed_cache()
+                return web.Response(
+                    body=json.dumps(channels, ensure_ascii=False).encode(),
+                    content_type='application/json',
+                    headers={'Access-Control-Allow-Origin': '*'}
+                )
+            except Exception as e:
+                return web.Response(status=400, text=str(e))
+        # GET
+        channels = load_channels()
+        return web.Response(
+            body=json.dumps(channels, ensure_ascii=False).encode(),
+            content_type='application/json',
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
+
+    if path.startswith('/feed/channels/') and request.method == 'DELETE':
+        ch_id = path[len('/feed/channels/'):]
+        channels = [c for c in load_channels() if c['id'] != ch_id]
+        save_channels(channels)
+        invalidate_feed_cache()
+        return web.Response(
+            body=json.dumps(channels, ensure_ascii=False).encode(),
+            content_type='application/json',
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
+
+    # ── OPTIONS preflight ─────────────────────────────────────────────────────
+
+    if request.method == 'OPTIONS':
+        return web.Response(
+            status=204,
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            }
+        )
 
     if html_cache:
         return web.Response(body=html_cache,
@@ -206,6 +362,9 @@ async def main():
             except Exception:
                 pass
 
+    if not CHANNELS_FILE.exists():
+        save_channels([])
+
     print('╔══════════════════════════════════════════╗')
     print('║    wt-rotate Remote Control Server       ║')
     print('╠══════════════════════════════════════════╣')
@@ -216,8 +375,8 @@ async def main():
     print('\nEn attente de connexions...\n')
 
     app = web.Application()
-    app.router.add_get('/', handle)
-    app.router.add_get('/{path:.+}', handle)
+    app.router.add_route('*', '/', handle)
+    app.router.add_route('*', '/{path:.+}', handle)
 
     runner = web.AppRunner(app)
     await runner.setup()

@@ -3,7 +3,8 @@ const DEFAULT_CONFIG = {
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
   remotePaused: false, remoteTabId: null,
-  canvaRefreshMin: 5
+  canvaRefreshMin: 5,
+  volume: 1.0
 };
 
 const MAX_LOGS = 60;
@@ -342,13 +343,24 @@ async function sendStateToRemote() {
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
+  const now     = Date.now();
+  const total   = config.currentAlarmSec || config.interval;
+  const elapsed = config.lastAlarmTime ? (now - config.lastAlarmTime) / 1000 : 0;
+  const remaining = (config.active && !config.remotePaused) ? Math.max(0, total - elapsed) : 0;
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
-    interval: config.interval
+    interval: config.interval,
+    volume: config.volume !== undefined ? config.volume : 1.0,
+    scheduleEnabled: config.scheduleEnabled || false,
+    scheduleStart: config.scheduleStart || '08:00',
+    scheduleEnd: config.scheduleEnd || '18:00',
+    scheduleDays: config.scheduleDays || [1,2,3,4,5],
+    remaining,
+    total
   }));
 }
 
@@ -442,6 +454,16 @@ async function injectYouTubeMaximize(tabId) {
   } catch {}
 }
 
+async function injectVolume(tabId, level) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (lv) => { document.querySelectorAll('video,audio').forEach(el => el.volume = lv); },
+      args: [level]
+    });
+  } catch {}
+}
+
 async function handleRemoteCommand(cmd) {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
@@ -506,6 +528,81 @@ async function handleRemoteCommand(cmd) {
           await log('remote — ' + cmd.action);
         }
       } break;
+    }
+
+    case 'set_volume': {
+      const level = Math.max(0, Math.min(1, parseFloat(cmd.level) || 0));
+      config.volume = level;
+      await chrome.storage.local.set({ config });
+      for (const tid of config.tabIds) await injectVolume(tid, level);
+      if (config.remoteTabId) await injectVolume(config.remoteTabId, level);
+      await log('remote — volume: ' + Math.round(level * 100) + '%');
+      break;
+    }
+
+    case 'add_url': {
+      const url = (cmd.url || '').trim();
+      if (url) {
+        config.urls.push({ url, name: (cmd.name || '').trim(), interval: null });
+        await chrome.storage.local.set({ config });
+        await log('remote — add_url: ' + url.slice(0, 60));
+      }
+      break;
+    }
+
+    case 'remove_url': {
+      const idx = parseInt(cmd.index);
+      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
+        config.urls.splice(idx, 1);
+        if (config.currentIndex >= config.urls.length) config.currentIndex = Math.max(0, config.urls.length - 1);
+        await chrome.storage.local.set({ config });
+        await log('remote — remove_url idx=' + idx);
+      }
+      break;
+    }
+
+    case 'update_url': {
+      const idx = parseInt(cmd.index);
+      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
+        if (cmd.url  !== undefined) config.urls[idx].url  = (cmd.url  || '').trim();
+        if (cmd.name !== undefined) config.urls[idx].name = (cmd.name || '').trim();
+        await chrome.storage.local.set({ config });
+        await log('remote — update_url idx=' + idx);
+      }
+      break;
+    }
+
+    case 'reorder_url': {
+      const from = parseInt(cmd.from), to = parseInt(cmd.to);
+      if (!isNaN(from) && !isNaN(to) && from !== to &&
+          from >= 0 && to >= 0 && from < config.urls.length && to < config.urls.length) {
+        const [item] = config.urls.splice(from, 1);
+        config.urls.splice(to, 0, item);
+        if (config.currentIndex === from) config.currentIndex = to;
+        else if (from < config.currentIndex && to >= config.currentIndex) config.currentIndex--;
+        else if (from > config.currentIndex && to <= config.currentIndex) config.currentIndex++;
+        await chrome.storage.local.set({ config });
+        await log('remote — reorder ' + from + '→' + to);
+      }
+      break;
+    }
+
+    case 'set_interval': {
+      const interval = Math.max(5, parseInt(cmd.interval) || 30);
+      config.interval = interval;
+      await chrome.storage.local.set({ config });
+      await log('remote — set_interval: ' + interval);
+      break;
+    }
+
+    case 'set_schedule': {
+      config.scheduleEnabled = !!cmd.scheduleEnabled;
+      if (cmd.scheduleStart) config.scheduleStart = cmd.scheduleStart;
+      if (cmd.scheduleEnd)   config.scheduleEnd   = cmd.scheduleEnd;
+      if (Array.isArray(cmd.scheduleDays)) config.scheduleDays = cmd.scheduleDays;
+      await chrome.storage.local.set({ config });
+      await log('remote — set_schedule');
+      break;
     }
   }
   await sendStateToRemote();

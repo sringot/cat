@@ -524,10 +524,19 @@ async function refreshStaleTabsIfNeeded() {
   const times = data.tabRefreshTimes || {};
   const now = Date.now();
   let changed = false;
+  // snapshot currentIndex now; re-read before each reload to shrink the race window
   for (let i = 0; i < config.tabIds.length; i++) {
-    if (i === config.currentIndex) continue; // ne jamais recharger l'onglet actif
     const tabId = config.tabIds[i];
-    if (now - (times[tabId] || 0) >= intervalMs) {
+    // Re-read currentIndex in case rotation advanced during an async reload above
+    const fresh = await chrome.storage.local.get('config');
+    if (i === migrateConfig(fresh.config).currentIndex) continue;
+    if (!(tabId in times)) {
+      // First time we see this tab — seed the clock so it isn't reloaded immediately
+      times[tabId] = now;
+      changed = true;
+      continue;
+    }
+    if (now - times[tabId] >= intervalMs) {
       try {
         await chrome.tabs.reload(tabId);
         times[tabId] = now;
@@ -583,5 +592,5 @@ connectRemote();
 
 // Empêche Chrome de tuer le service worker entre les alarmes (astuce MV3)
 try {
-  navigator.locks.request('wt-rotate-sw-alive', { mode: 'shared' }, () => new Promise(() => {}));
+  navigator.locks.request('wt-rotate-sw-alive', { mode: 'exclusive' }, () => new Promise(() => {}));
 } catch {}

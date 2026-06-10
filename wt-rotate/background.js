@@ -82,6 +82,76 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  // ── Popup actions (run in SW so popup closing doesn't interrupt them) ─────
+  if (msg.action === 'startRotation') {
+    (async () => {
+      try {
+        const data = await chrome.storage.local.get('config');
+        const config = migrateConfig(data.config);
+        if (!config.urls.filter(u => u?.url?.trim()).length) {
+          reply({ ok: false, error: 'no_urls' }); return;
+        }
+        await autoStartRotation(config);
+        reply({ ok: true });
+      } catch (e) {
+        await log('startRotation ERR: ' + e.message);
+        reply({ ok: false, error: e.message });
+      }
+    })();
+    return true;
+  }
+  if (msg.action === 'stopRotation') {
+    (async () => {
+      const data = await chrome.storage.local.get('config');
+      const config = migrateConfig(data.config);
+      config.active = false; config.remotePaused = false;
+      chrome.alarms.clear('wt-rotate');
+      await chrome.storage.local.set({ config });
+      await log('popup — arrêt');
+      await sendStateToRemote();
+      reply({ ok: true });
+    })();
+    return true;
+  }
+  if (msg.action === 'nextUrl') {
+    (async () => {
+      const data = await chrome.storage.local.get('config');
+      const config = migrateConfig(data.config);
+      const urls = config.urls.filter(u => u?.url?.trim());
+      if (!urls.length || !config.tabIds.length) { reply({ ok: false, error: 'not_running' }); return; }
+      const next = (config.currentIndex + 1) % urls.length;
+      if (next >= config.tabIds.length) { reply({ ok: false, error: 'sync_error' }); return; }
+      try {
+        await chrome.tabs.update(config.tabIds[next], { active: true });
+        config.currentIndex = next; config.lastAlarmTime = Date.now();
+        await chrome.storage.local.set({ config });
+        if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+        await sendStateToRemote();
+        reply({ ok: true });
+      } catch (e) { reply({ ok: false, error: e.message }); }
+    })();
+    return true;
+  }
+  if (msg.action === 'prevUrl') {
+    (async () => {
+      const data = await chrome.storage.local.get('config');
+      const config = migrateConfig(data.config);
+      const urls = config.urls.filter(u => u?.url?.trim());
+      if (!urls.length || !config.tabIds.length) { reply({ ok: false, error: 'not_running' }); return; }
+      const prev = (config.currentIndex - 1 + urls.length) % urls.length;
+      if (prev >= config.tabIds.length) { reply({ ok: false, error: 'sync_error' }); return; }
+      try {
+        await chrome.tabs.update(config.tabIds[prev], { active: true });
+        config.currentIndex = prev; config.lastAlarmTime = Date.now();
+        await chrome.storage.local.set({ config });
+        if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+        await sendStateToRemote();
+        reply({ ok: true });
+      } catch (e) { reply({ ok: false, error: e.message }); }
+    })();
+    return true;
+  }
+  // ── Legacy timer messages ─────────────────────────────────────────────────
   if (msg.action === 'startTimer') {
     log('startTimer interval=' + msg.interval);
     setNextAlarm(msg.interval);

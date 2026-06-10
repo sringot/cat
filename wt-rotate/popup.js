@@ -10,34 +10,16 @@ const DEFAULT_CONFIG = {
 let config        = null;
 let progressTimer = null;
 let dragSrcIndex  = null;
+let toastTimer    = null;
 
 const $ = id => document.getElementById(id);
-
-const badge          = $('badge');
-const progressWrap   = $('progress-wrap');
-const progressBar    = $('progress-bar');
-const urlList        = $('url-list');
-const btnAdd         = $('btn-add');
-const slider         = $('slider');
-const intervalN      = $('interval');
-const btnStart       = $('btn-start');
-const btnStop        = $('btn-stop');
-const btnNext        = $('btn-next');
-const scheduleEnabledCb = $('schedule-enabled');
-const scheduleDetails   = $('schedule-details');
-const scheduleStart     = $('schedule-start');
-const scheduleEnd       = $('schedule-end');
-const canvaRefreshInput = $('canva-refresh');
-const debugToggle    = $('debug-toggle');
-const debugBox       = $('debug-box');
-const debugLog       = $('debug-log');
-const debugClear     = $('debug-clear');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   initDayButtons();
+  wireButtons();
   await refresh();
 });
 
@@ -45,7 +27,7 @@ function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       $('tab-' + btn.dataset.tab).classList.add('active');
     });
@@ -67,13 +49,84 @@ function initDayButtons() {
   });
 }
 
+function wireButtons() {
+  $('b-main').addEventListener('click', onMainButton);
+  $('b-prev').addEventListener('click', onPrev);
+  $('b-next-t').addEventListener('click', onNext);
+  $('btn-next').addEventListener('click', onNext);
+
+  $('btn-add').addEventListener('click', () => {
+    if (!config) config = migrateConfig(null);
+    config.urls.push({ url: '', name: '', interval: null });
+    saveConfig(); renderUrls();
+    const inputs = $('url-list').querySelectorAll('.url-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+
+  $('slider').addEventListener('input', () => {
+    config.interval = parseInt($('slider').value);
+    $('interval').value = config.interval;
+    saveConfig(); renderUrls();
+  });
+  $('interval').addEventListener('change', () => {
+    config.interval = Math.max(5, Math.min(86400, parseInt($('interval').value) || 30));
+    $('interval').value = config.interval;
+    $('slider').value   = Math.min(config.interval, 300);
+    saveConfig(); renderUrls();
+  });
+
+  $('tab-refresh').addEventListener('change', () => {
+    config.tabRefreshHours = Math.max(0, Math.min(24, parseInt($('tab-refresh').value) || 0));
+    $('tab-refresh').value = config.tabRefreshHours;
+    saveConfig();
+  });
+
+  $('canva-refresh').addEventListener('change', () => {
+    config.canvaRefreshMin = Math.max(1, Math.min(60, parseInt($('canva-refresh').value) || 5));
+    $('canva-refresh').value = config.canvaRefreshMin;
+    saveConfig();
+  });
+
+  $('schedule-enabled').addEventListener('change', () => {
+    config.scheduleEnabled = $('schedule-enabled').checked;
+    $('schedule-details').classList.toggle('show', config.scheduleEnabled);
+    saveConfig();
+  });
+  $('schedule-start').addEventListener('change', () => { config.scheduleStart = $('schedule-start').value; saveConfig(); });
+  $('schedule-end').addEventListener('change',   () => { config.scheduleEnd   = $('schedule-end').value;   saveConfig(); });
+
+  $('btn-export').addEventListener('click', exportConfig);
+  $('btn-import').addEventListener('click', () => $('import-file').click());
+  $('import-file').addEventListener('change', importConfig);
+  $('btn-reset').addEventListener('click', resetConfig);
+
+  $('debug-toggle').addEventListener('click', async () => {
+    const open = $('debug-box').classList.toggle('open');
+    if (open) await refreshDebugLogs();
+  });
+  $('debug-clear').addEventListener('click', async () => {
+    await chrome.storage.local.set({ debugLogs: [] });
+    $('debug-log').textContent = '(logs effacés)';
+  });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.remoteInfo) {
+      const qrDiv = $('remote-qr');
+      if (qrDiv) qrDiv.dataset.loaded = '';
+      refreshRemoteInfo();
+    }
+  });
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+
 function migrateConfig(raw) {
   if (!raw) return { ...DEFAULT_CONFIG };
   const c = { ...DEFAULT_CONFIG, ...raw };
   c.urls = (c.urls || []).map(u =>
     typeof u === 'string' ? { url: u, name: '', interval: null } : u
   );
-  // Migrate from old single tabId to tabIds array
   if (c.tabId !== undefined) {
     if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
     delete c.tabId;
@@ -98,9 +151,10 @@ function saveConfig() {
 
 function renderAll() {
   renderUrls();
-  slider.value    = Math.min(config.interval, 300);
-  intervalN.value = config.interval;
-  canvaRefreshInput.value = config.canvaRefreshMin || 5;
+  $('slider').value        = Math.min(config.interval, 300);
+  $('interval').value      = config.interval;
+  $('tab-refresh').value   = config.tabRefreshHours ?? 4;
+  $('canva-refresh').value = config.canvaRefreshMin  || 5;
   renderSchedule();
   updateStatusUI();
   refreshRemoteInfo();
@@ -109,13 +163,21 @@ function renderAll() {
 // ── URL list ──────────────────────────────────────────────────────────────────
 
 function renderUrls() {
+  const urlList = $('url-list');
   urlList.innerHTML = '';
+
   if (!config.urls.length) {
     urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
+    $('pl-count').textContent = '';
     return;
   }
+
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  $('pl-count').textContent = activeUrls.length + ' URL' + (activeUrls.length > 1 ? 's' : '');
+
   config.urls.forEach((entry, i) => {
-    const isActive = config.active && i === config.currentIndex;
+    const isActive    = config.active && i === config.currentIndex;
+    const hasCustomInt = entry.interval != null;
     const row = document.createElement('div');
     row.className = 'url-row' + (isActive ? ' active-url' : '');
     row.draggable = true;
@@ -129,21 +191,20 @@ function renderUrls() {
       </div>
       <div class="url-actions">
         <button class="btn-del" title="Supprimer">✕</button>
-        <div class="url-interval-wrap">
-          <button class="url-dur-toggle${entry.interval ? ' on' : ''}" title="Durée personnalisée">⏱</button>
-          <input class="url-interval" type="number"
+        <div class="url-dur-wrap">
+          <button class="url-dur-btn${hasCustomInt ? ' on' : ''}" title="Durée personnalisée">⏱</button>
+          <input class="url-int" type="number"
                  value="${parseInt(entry.interval) || parseInt(config.interval) || 30}"
-                 min="5" max="86400"
-                 style="display:${entry.interval ? '' : 'none'}">
-          <span class="interval-s" style="display:${entry.interval ? '' : 'none'}">s</span>
+                 min="5" max="86400" style="display:${hasCustomInt ? '' : 'none'}">
+          <span class="url-int-s" style="display:${hasCustomInt ? '' : 'none'}">s</span>
         </div>
-      </div>
-    `;
-    const nameInp   = row.querySelector('.name-input');
-    const urlInp    = row.querySelector('.url-input');
-    const toggleBtn = row.querySelector('.url-dur-toggle');
-    const intInp    = row.querySelector('.url-interval');
-    const intS      = row.querySelector('.interval-s');
+      </div>`;
+
+    const nameInp = row.querySelector('.name-input');
+    const urlInp  = row.querySelector('.url-input');
+    const durBtn  = row.querySelector('.url-dur-btn');
+    const intInp  = row.querySelector('.url-int');
+    const intS    = row.querySelector('.url-int-s');
 
     nameInp.addEventListener('input', () => { config.urls[i].name = nameInp.value; saveConfig(); });
     nameInp.addEventListener('blur',  () => { config.urls[i].name = nameInp.value.trim(); nameInp.value = config.urls[i].name; saveConfig(); });
@@ -153,15 +214,15 @@ function renderUrls() {
     urlInp.addEventListener('blur',  () => { config.urls[i].url = urlInp.value.trim(); urlInp.value = config.urls[i].url; saveConfig(); });
     urlInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.blur(); });
 
-    toggleBtn.addEventListener('click', () => {
-      if (config.urls[i].interval) {
+    durBtn.addEventListener('click', () => {
+      if (config.urls[i].interval != null) {
         config.urls[i].interval = null;
-        toggleBtn.classList.remove('on');
+        durBtn.classList.remove('on');
         intInp.style.display = 'none'; intS.style.display = 'none';
       } else {
         config.urls[i].interval = config.interval;
         intInp.value = config.interval;
-        toggleBtn.classList.add('on');
+        durBtn.classList.add('on');
         intInp.style.display = ''; intS.style.display = '';
       }
       saveConfig();
@@ -195,31 +256,48 @@ function renderUrls() {
       dragSrcIndex = null;
       urlList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
+
     urlList.appendChild(row);
   });
 }
 
-// ── Status ────────────────────────────────────────────────────────────────────
+// ── Status UI ─────────────────────────────────────────────────────────────────
 
 function updateStatusUI() {
-  const on = config.active;
-  badge.className   = 'badge ' + (on ? 'badge-active' : 'badge-stopped');
-  badge.textContent = on ? 'Actif' : 'Arrêté';
-  btnStart.classList.toggle('hidden', on);
-  btnStop.classList.toggle('hidden', !on);
-  btnNext.classList.toggle('hidden', !on);
-  progressWrap.classList.toggle('hidden', !on);
+  const on     = config.active;
+  const paused = config.remotePaused;
 
+  $('chip').classList.toggle('on', on);
+  $('chip-txt').textContent = on ? (paused ? 'En pause' : 'Actif') : 'Arrêté';
+
+  $('btn-next').classList.toggle('hidden', !on);
+  $('prog-wrap').classList.toggle('hidden', !on || paused);
+
+  $('ic-play').style.display = on ? 'none' : '';
+  $('ic-stop').style.display = on ? ''     : 'none';
+
+  const nowLbl = $('now-lbl');
   if (on) {
-    const activeUrls  = config.urls.filter(u => u?.url?.trim());
-    const cur         = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
-    const totalSec    = config.currentAlarmSec || cur?.interval || config.interval;
-    let   remainSec   = totalSec;
-    if (config.lastAlarmTime) {
-      remainSec = Math.max(1, totalSec - (Date.now() - config.lastAlarmTime) / 1000);
+    const activeUrls = config.urls.filter(u => u?.url?.trim());
+    const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
+    nowLbl.classList.toggle('live', !paused);
+    $('now-lbl-txt').textContent = paused ? 'En pause' : 'En cours';
+    $('now-name').textContent    = cur?.name || cur?.url || '—';
+    $('now-url').textContent     = cur?.url  || '';
+    if (!paused) {
+      const totalSec  = config.currentAlarmSec || cur?.interval || config.interval;
+      let   remainSec = totalSec;
+      if (config.lastAlarmTime)
+        remainSec = Math.max(1, totalSec - (Date.now() - config.lastAlarmTime) / 1000);
+      startProgressBar(remainSec, totalSec);
+    } else {
+      stopProgressBar();
     }
-    startProgressBar(remainSec, totalSec);
   } else {
+    nowLbl.classList.remove('live');
+    $('now-lbl-txt').textContent = 'Arrêté';
+    $('now-name').textContent    = '—';
+    $('now-url').textContent     = '';
     stopProgressBar();
   }
 }
@@ -228,12 +306,13 @@ function updateStatusUI() {
 
 function startProgressBar(remainSec, totalSec) {
   stopProgressBar();
+  const bar = $('prog-bar');
   const pct = (remainSec / totalSec) * 100;
-  progressBar.style.transition = 'none';
-  progressBar.style.width = pct + '%';
-  progressBar.offsetWidth;
-  progressBar.style.transition = `width ${remainSec}s linear`;
-  progressBar.style.width = '0%';
+  bar.style.transition = 'none';
+  bar.style.width = pct + '%';
+  bar.offsetWidth; // force reflow
+  bar.style.transition = `width ${remainSec}s linear`;
+  bar.style.width = '0%';
   progressTimer = setTimeout(async () => {
     try {
       const d = await chrome.storage.local.get('config');
@@ -244,136 +323,65 @@ function startProgressBar(remainSec, totalSec) {
 
 function stopProgressBar() {
   if (progressTimer) { clearTimeout(progressTimer); progressTimer = null; }
-  progressBar.style.transition = 'none';
-  progressBar.style.width = '0%';
+  const bar = $('prog-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
 }
 
-// ── Start / Stop / Next ───────────────────────────────────────────────────────
+// ── Transport ─────────────────────────────────────────────────────────────────
 
-async function startRotation() {
-  try {
+async function onMainButton() {
+  if (config.active) {
+    const res = await chrome.runtime.sendMessage({ action: 'stopRotation' });
+    if (res?.ok) await refresh();
+  } else {
     flushInputs();
     await saveConfig();
     const activeUrls = config.urls.filter(u => u?.url?.trim());
-    if (!activeUrls.length) { alert('Ajoutez au moins une URL avant de démarrer.'); return; }
-
-    let winExists = false;
-    if (config.windowId) {
-      try { await chrome.windows.get(config.windowId); winExists = true; } catch {}
-    }
-
-    if (!winExists) {
-      const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
-      if (!win?.tabs?.[0]?.id) { alert("Impossible d'ouvrir la fenêtre."); return; }
-      config.tabIds   = [win.tabs[0].id];
-      config.windowId = win.id;
-      for (let i = 1; i < activeUrls.length; i++) {
-        const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i].url, active: false });
-        config.tabIds.push(tab.id);
+    if (!activeUrls.length) { showToast('Ajoutez au moins une URL.'); return; }
+    $('b-main').disabled = true;
+    try {
+      const res = await chrome.runtime.sendMessage({ action: 'startRotation' });
+      if (res?.ok) {
+        await refresh();
+      } else {
+        const msg = res?.error === 'no_urls' ? 'Ajoutez au moins une URL.' : (res?.error || 'Erreur');
+        showToast(msg);
       }
-    } else {
-      // Window exists — close stale tabs and recreate for the current URL list
-      for (const tid of config.tabIds || []) { try { await chrome.tabs.remove(tid); } catch {} }
-      config.tabIds = [];
-      for (let i = 0; i < activeUrls.length; i++) {
-        const tab = await chrome.tabs.create({ windowId: config.windowId, url: activeUrls[i].url, active: i === 0 });
-        config.tabIds.push(tab.id);
-      }
-      await chrome.windows.update(config.windowId, { state: 'fullscreen' });
+    } finally {
+      $('b-main').disabled = false;
     }
-
-    config.currentIndex    = 0;
-    config.active          = true;
-    config.remotePaused    = false;
-    config.lastAlarmTime   = Date.now();
-    config.currentAlarmSec = activeUrls[0].interval || config.interval;
-    await saveConfig();
-    chrome.runtime.sendMessage({ action: 'startTimer', interval: config.currentAlarmSec }).catch(() => {});
-    await refresh();
-  } catch (err) {
-    alert('Erreur : ' + (err?.message || String(err)));
   }
 }
 
-btnStart.addEventListener('click', startRotation);
+async function onNext() {
+  const res = await chrome.runtime.sendMessage({ action: 'nextUrl' });
+  if (res?.ok) await refresh();
+  else if (res?.error === 'not_running') showToast('La rotation n\'est pas active.');
+}
 
-btnStop.addEventListener('click', async () => {
-  config.active = false;
-  await saveConfig();
-  chrome.runtime.sendMessage({ action: 'stopTimer' }).catch(() => {});
-  await refresh();
-});
-
-btnNext.addEventListener('click', async () => {
-  const activeUrls = config.urls.filter(u => u?.url?.trim());
-  if (!config.tabIds?.length || !activeUrls.length) return;
-  const next = (config.currentIndex + 1) % activeUrls.length;
-  if (next < config.tabIds.length) {
-    try { await chrome.tabs.update(config.tabIds[next], { active: true }); } catch {}
-  }
-  config.currentIndex    = next;
-  config.lastAlarmTime   = Date.now();
-  config.currentAlarmSec = activeUrls[next].interval || config.interval;
-  await saveConfig();
-  renderUrls(); updateStatusUI();
-});
-
-// ── Add URL ───────────────────────────────────────────────────────────────────
-
-btnAdd.addEventListener('click', () => {
-  if (!config) config = migrateConfig(null);
-  config.urls.push({ url: '', name: '', interval: null });
-  saveConfig(); renderUrls();
-  const inputs = urlList.querySelectorAll('.url-input');
-  if (inputs.length) inputs[inputs.length - 1].focus();
-});
-
-// ── Interval ──────────────────────────────────────────────────────────────────
-
-slider.addEventListener('input', () => {
-  config.interval = parseInt(slider.value);
-  intervalN.value = config.interval;
-  saveConfig(); renderUrls();
-});
-
-intervalN.addEventListener('change', () => {
-  config.interval = Math.max(5, Math.min(86400, parseInt(intervalN.value) || 30));
-  intervalN.value = config.interval;
-  slider.value    = Math.min(config.interval, 300);
-  saveConfig(); renderUrls();
-});
+async function onPrev() {
+  const res = await chrome.runtime.sendMessage({ action: 'prevUrl' });
+  if (res?.ok) await refresh();
+  else if (res?.error === 'not_running') showToast('La rotation n\'est pas active.');
+}
 
 // ── Schedule ──────────────────────────────────────────────────────────────────
 
 function renderSchedule() {
-  scheduleEnabledCb.checked = !!config.scheduleEnabled;
-  scheduleDetails.classList.toggle('hidden', !config.scheduleEnabled);
-  scheduleStart.value = config.scheduleStart || '08:00';
-  scheduleEnd.value   = config.scheduleEnd   || '18:00';
+  $('schedule-enabled').checked = !!config.scheduleEnabled;
+  $('schedule-details').classList.toggle('show', !!config.scheduleEnabled);
+  $('schedule-start').value = config.scheduleStart || '08:00';
+  $('schedule-end').value   = config.scheduleEnd   || '18:00';
   const days = config.scheduleDays || [1, 2, 3, 4, 5];
   document.querySelectorAll('.day-btn').forEach(btn => {
     btn.classList.toggle('on', days.includes(parseInt(btn.dataset.day)));
   });
 }
 
-scheduleEnabledCb.addEventListener('change', () => {
-  config.scheduleEnabled = scheduleEnabledCb.checked;
-  scheduleDetails.classList.toggle('hidden', !config.scheduleEnabled);
-  saveConfig();
-});
-
-scheduleStart.addEventListener('change', () => { config.scheduleStart = scheduleStart.value; saveConfig(); });
-scheduleEnd.addEventListener('change',   () => { config.scheduleEnd   = scheduleEnd.value;   saveConfig(); });
-
-canvaRefreshInput.addEventListener('change', () => {
-  config.canvaRefreshMin = Math.max(1, Math.min(60, parseInt(canvaRefreshInput.value) || 5));
-  canvaRefreshInput.value = config.canvaRefreshMin;
-  saveConfig();
-});
-
 // ── Import / Export ───────────────────────────────────────────────────────────
 
-$('btn-export').addEventListener('click', async () => {
+async function exportConfig() {
   const data = await chrome.storage.local.get('config');
   const json = JSON.stringify(data.config, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -381,11 +389,9 @@ $('btn-export').addEventListener('click', async () => {
   const a    = document.createElement('a');
   a.href = url; a.download = 'wee-rotate-config.json';
   a.click(); URL.revokeObjectURL(url);
-});
+}
 
-$('btn-import').addEventListener('click', () => $('import-file').click());
-
-$('import-file').addEventListener('change', async e => {
+async function importConfig(e) {
   const file = e.target.files[0];
   if (!file) return;
   try {
@@ -394,37 +400,29 @@ $('import-file').addEventListener('change', async e => {
     config = migrateConfig(raw);
     await saveConfig();
     await refresh();
-    alert('Configuration importée avec succès.');
+    showToast('Configuration importée.');
   } catch (err) {
-    alert('Erreur import : ' + err.message);
+    showToast('Erreur import : ' + err.message);
   }
   e.target.value = '';
-});
+}
 
-$('btn-reset').addEventListener('click', async () => {
+async function resetConfig() {
   if (!confirm('Réinitialiser toute la configuration ?')) return;
   config = migrateConfig(null);
   await saveConfig();
-  chrome.runtime.sendMessage({ action: 'stopTimer' }).catch(() => {});
+  chrome.runtime.sendMessage({ action: 'stopRotation' }).catch(() => {});
   await refresh();
-});
+}
 
 // ── Debug ─────────────────────────────────────────────────────────────────────
 
-debugToggle.addEventListener('click', async () => {
-  const open = debugBox.classList.toggle('open');
-  if (open) await refreshDebugLogs();
-});
-debugClear.addEventListener('click', async () => {
-  await chrome.storage.local.set({ debugLogs: [] });
-  debugLog.textContent = '(logs effacés)';
-});
 async function refreshDebugLogs() {
   try {
     const data = await chrome.storage.local.get('debugLogs');
-    debugLog.textContent = (data.debugLogs || []).join('\n') || '(aucun log)';
-    debugBox.scrollTop = debugBox.scrollHeight;
-  } catch { debugLog.textContent = '(erreur)'; }
+    $('debug-log').textContent = (data.debugLogs || []).join('\n') || '(aucun log)';
+    $('debug-box').scrollTop = $('debug-box').scrollHeight;
+  } catch { $('debug-log').textContent = '(erreur)'; }
 }
 
 // ── Remote info ───────────────────────────────────────────────────────────────
@@ -433,65 +431,72 @@ async function refreshRemoteInfo() {
   try {
     const data = await chrome.storage.local.get('remoteInfo');
     const info = data?.remoteInfo;
-    const dot    = $('remote-dot');
-    const online = $('remote-online');
-    const offlineHint = $('remote-offline-hint');
-    const statusTxt   = $('remote-status-txt');
 
     if (info?.connected && info?.ip) {
       const url = info.control_url || `http://${info.ip}:${info.http_port}/`;
-      dot.className = 'remote-dot remote-dot-on';
-      statusTxt.textContent = 'Serveur connecté';
-      statusTxt.style.color = 'var(--green-txt)';
+      $('remote-dot').classList.add('on');
+      $('remote-status-txt').textContent = 'Serveur connecté';
+      $('remote-status-txt').style.color = 'var(--green)';
       $('remote-url-box').textContent = url;
-      online.classList.remove('hidden');
-      offlineHint.classList.add('hidden');
+      $('remote-online').classList.remove('hidden');
+      $('remote-offline-hint').classList.add('hidden');
       const qrDiv = $('remote-qr');
       if (qrDiv && !qrDiv.dataset.loaded) {
         try {
           const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);
           if (resp.ok) {
-            const svgText = await resp.text();
-            qrDiv.innerHTML = svgText;
+            qrDiv.innerHTML = await resp.text();
             const svgEl = qrDiv.querySelector('svg');
             if (svgEl) {
               const w = svgEl.getAttribute('width'), h = svgEl.getAttribute('height');
               if (w && h && !svgEl.getAttribute('viewBox'))
                 svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
               svgEl.removeAttribute('width'); svgEl.removeAttribute('height');
-              qrDiv.dataset.loaded = '1';
             }
           } else {
             qrDiv.innerHTML = '<div style="font-size:10px;color:#aaa;padding:12px;text-align:center">pip install qrcode</div>';
-            qrDiv.dataset.loaded = '1';
           }
+          qrDiv.dataset.loaded = '1';
         } catch {
           qrDiv.innerHTML = '<div style="font-size:10px;color:#aaa;padding:12px;text-align:center">QR indisponible</div>';
           qrDiv.dataset.loaded = '1';
         }
       }
     } else {
-      dot.className = 'remote-dot remote-dot-off';
-      statusTxt.textContent = 'Serveur non détecté';
-      statusTxt.style.color = '';
-      online.classList.add('hidden');
-      offlineHint.classList.remove('hidden');
+      $('remote-dot').classList.remove('on');
+      $('remote-status-txt').textContent = 'Non détecté';
+      $('remote-status-txt').style.color = '';
+      $('remote-online').classList.add('hidden');
+      $('remote-offline-hint').classList.remove('hidden');
     }
   } catch {}
 }
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.remoteInfo) {
-    const qrDiv = $('remote-qr');
-    if (qrDiv) qrDiv.dataset.loaded = '';
-    refreshRemoteInfo();
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  let t = $('__toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '__toast';
+    Object.assign(t.style, {
+      position: 'fixed', bottom: '14px', left: '50%', transform: 'translateX(-50%)',
+      background: 'rgba(0,0,0,.82)', color: '#fff', borderRadius: '20px',
+      padding: '7px 16px', fontSize: '12px', fontWeight: '500',
+      zIndex: '9999', pointerEvents: 'none', transition: 'opacity .2s', opacity: '0',
+    });
+    document.body.appendChild(t);
   }
-});
+  t.textContent = msg;
+  t.style.opacity = '1';
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function flushInputs() {
-  urlList.querySelectorAll('.url-row').forEach((row, i) => {
+  $('url-list').querySelectorAll('.url-row').forEach((row, i) => {
     if (!config.urls[i]) return;
     const n = row.querySelector('.name-input');
     const u = row.querySelector('.url-input');
@@ -501,5 +506,5 @@ function flushInputs() {
 }
 
 function esc(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

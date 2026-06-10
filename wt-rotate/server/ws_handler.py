@@ -48,7 +48,10 @@ async def handle_ws(request):
 async def _handle_extension(ws) -> None:
     state.ext_ws = ws
     print('[+] Extension connectée')
-    await ws.send_str(json.dumps({'type': 'ack', 'ip': state.local_ip, 'http_port': state.PORT}))
+    await ws.send_str(json.dumps({
+        'type': 'ack', 'ip': state.local_ip, 'http_port': state.PORT,
+        'control_url': f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
+    }))
     await _broadcast_mobiles(json.dumps({'type': 'ext_status', 'connected': True}))
     try:
         async for msg_data in ws:

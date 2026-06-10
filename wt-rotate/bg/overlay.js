@@ -1,6 +1,6 @@
 // injectOverlay: qrSrc is a pre-fetched data-URI (or null to fetch inline for single-tab calls)
 async function injectOverlay(tabId, info, qrSrc = null) {
-  const controlUrl = `http://${info.ip}:${info.http_port}/`;
+  const controlUrl = info.control_url || `http://${info.ip}:${info.http_port}/`;
   if (qrSrc === null) {
     try {
       const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);

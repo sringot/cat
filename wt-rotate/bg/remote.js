@@ -36,7 +36,7 @@ function connectRemote() {
         remoteWs.send(JSON.stringify({ type: 'pong' }));
       } else if (msg.type === 'ack') {
         await chrome.storage.local.set({
-          remoteInfo: { ip: msg.ip, http_port: msg.http_port, connected: true }
+          remoteInfo: { ip: msg.ip, http_port: msg.http_port, control_url: msg.control_url, connected: true }
         });
         await sendStateToRemote();
         await injectOverlayAll();

@@ -439,7 +439,7 @@ async function refreshRemoteInfo() {
     const statusTxt   = $('remote-status-txt');
 
     if (info?.connected && info?.ip) {
-      const url = `http://${info.ip}:${info.http_port}/`;
+      const url = info.control_url || `http://${info.ip}:${info.http_port}/`;
       dot.className = 'remote-dot remote-dot-on';
       statusTxt.textContent = 'Serveur connecté';
       statusTxt.style.color = 'var(--green-txt)';

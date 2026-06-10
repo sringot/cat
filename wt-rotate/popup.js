@@ -2,8 +2,7 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  canvaRefreshMin: 5,
-  tvName: 'TV 1'
+  canvaRefreshMin: 5
 };
 
 let config        = null;
@@ -46,10 +45,7 @@ function initTabs() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
-      const pane = $('tab-' + btn.dataset.tab);
-      pane.classList.remove('active');
-      pane.offsetWidth; // force reflow to re-trigger animation
-      pane.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('active');
     });
   });
 }
@@ -103,7 +99,6 @@ function renderAll() {
   slider.value    = Math.min(config.interval, 300);
   intervalN.value = config.interval;
   canvaRefreshInput.value = config.canvaRefreshMin || 5;
-  $('tv-name').value = config.tvName || 'TV 1';
   renderSchedule();
   updateStatusUI();
   refreshRemoteInfo();
@@ -123,11 +118,7 @@ function renderUrls() {
     row.className = 'url-row' + (isActive ? ' active-url' : '');
     row.draggable = true;
     row.innerHTML = `
-      <span class="drag-handle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="9" y1="5" x2="9" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/>
-        </svg>
-      </span>
+      <span class="drag-handle">⠿</span>
       <div class="url-fields">
         <input class="name-input" type="text" value="${esc(entry.name || '')}"
                placeholder="Nom affiché" autocomplete="off">
@@ -135,17 +126,9 @@ function renderUrls() {
                placeholder="https://..." spellcheck="false" autocomplete="off">
       </div>
       <div class="url-actions">
-        <button class="btn-del" title="Supprimer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        <button class="btn-del" title="Supprimer">✕</button>
         <div class="url-interval-wrap">
-          <button class="url-dur-toggle${entry.interval ? ' on' : ''}" title="Durée personnalisée">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
-            </svg>
-          </button>
+          <button class="url-dur-toggle${entry.interval ? ' on' : ''}" title="Durée personnalisée">⏱</button>
           <input class="url-interval" type="number"
                  value="${entry.interval || config.interval}"
                  min="5" max="86400"
@@ -218,8 +201,8 @@ function renderUrls() {
 
 function updateStatusUI() {
   const on = config.active;
-  badge.className = 'pill ' + (on ? 'on' : 'off');
-  document.getElementById('badge-txt').textContent = on ? 'Actif' : 'Arrêté';
+  badge.className   = 'badge ' + (on ? 'badge-active' : 'badge-stopped');
+  badge.textContent = on ? 'Actif' : 'Arrêté';
   btnStart.classList.toggle('hidden', on);
   btnStop.classList.toggle('hidden', !on);
   btnNext.classList.toggle('hidden', !on);
@@ -309,15 +292,7 @@ async function startRotation() {
   }
 }
 
-btnStart.addEventListener('click', async () => {
-  btnStart.disabled = true;
-  btnStart.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="0" style="animation:spin .7s linear infinite;transform-origin:center"><animateTransform attributeName="transform" type="rotate" dur=".7s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg> Démarrage…';
-  try { await startRotation(); }
-  finally {
-    btnStart.disabled = false;
-    btnStart.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Démarrer';
-  }
-});
+btnStart.addEventListener('click', startRotation);
 
 btnStop.addEventListener('click', async () => {
   config.active = false;
@@ -346,9 +321,7 @@ btnAdd.addEventListener('click', () => {
   if (!config) config = migrateConfig(null);
   config.urls.push({ url: '', name: '', interval: null });
   saveConfig(); renderUrls();
-  const rows   = urlList.querySelectorAll('.url-row');
   const inputs = urlList.querySelectorAll('.url-input');
-  if (rows.length)   rows[rows.length - 1].classList.add('url-row-new');
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
@@ -392,11 +365,6 @@ scheduleEnd.addEventListener('change',   () => { config.scheduleEnd   = schedule
 canvaRefreshInput.addEventListener('change', () => {
   config.canvaRefreshMin = Math.max(1, Math.min(60, parseInt(canvaRefreshInput.value) || 5));
   canvaRefreshInput.value = config.canvaRefreshMin;
-  saveConfig();
-});
-
-$('tv-name').addEventListener('change', () => {
-  config.tvName = $('tv-name').value.trim() || 'TV 1';
   saveConfig();
 });
 

@@ -1,12 +1,9 @@
-// FILE: /home/user/cat/wt-rotate/background.js
 const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
   remotePaused: false, remoteTabId: null,
-  canvaRefreshMin: 5,
-  tvName: 'TV 1',
-  volume: 1.0
+  canvaRefreshMin: 5
 };
 
 const MAX_LOGS = 60;
@@ -99,9 +96,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   const isRemote = config.remoteTabId === tabId;
   if (!isKiosk && !isRemote) return;
   if (isKiosk && info?.ip) await injectOverlay(tabId, info);
-  if (isKiosk && (config.volume ?? 1.0) !== 1.0) {
-    await injectVolume(tabId, config.volume ?? 1.0);
-  }
   try {
     const tab = await chrome.tabs.get(tabId);
     if (/youtube\.com\/watch/.test(tab.url || '')) await injectYouTubeMaximize(tabId);
@@ -273,9 +267,9 @@ async function injectOverlay(tabId, info) {
         ].join('!important;') + '!important';
         el.innerHTML = qrSrc
           ? `<img src="${qrSrc}" width="86" height="86" style="display:block;border-radius:4px">
-             <div style="font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.5px">Accéder au remote</div>`
+             <div style="font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.5px">📱 REMOTE</div>`
           : `<div style="font-size:9px;color:#333;padding:4px 6px;max-width:90px;word-break:break-all;font-weight:600">${ctrlUrl}</div>
-             <div style="font-size:9px;color:#555;font-weight:700">Accéder au remote</div>`;
+             <div style="font-size:9px;color:#555;font-weight:700">📱 REMOTE</div>`;
         el.addEventListener('mouseenter', () => el.style.opacity = '.6');
         el.addEventListener('mouseleave', () => el.style.opacity = '1');
         el.addEventListener('click', () => window.open(ctrlUrl, '_blank'));
@@ -296,22 +290,6 @@ async function injectOverlayAll() {
   }
 }
 
-// ── Volume injection ──────────────────────────────────────────────────────────
-
-async function injectVolume(tabId, level) {
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (level) => {
-        document.querySelectorAll('video, audio').forEach(el => {
-          el.volume = Math.max(0, Math.min(1, level));
-        });
-      },
-      args: [level]
-    });
-  } catch {}
-}
-
 // ── Remote WebSocket client ───────────────────────────────────────────────────
 
 let remoteWs             = null;
@@ -323,11 +301,7 @@ function connectRemote() {
   clearTimeout(remoteReconnectTimer);
   try { remoteWs = new WebSocket('ws://localhost:8765'); } catch { scheduleReconnect(); return; }
 
-  remoteWs.onopen = async () => {
-    const data = await chrome.storage.local.get('config');
-    const config = migrateConfig(data.config);
-    remoteWs.send(JSON.stringify({ type: 'extension', name: config.tvName || 'TV 1' }));
-  };
+  remoteWs.onopen = () => remoteWs.send(JSON.stringify({ type: 'extension' }));
 
   remoteWs.onmessage = async evt => {
     try {
@@ -368,30 +342,13 @@ async function sendStateToRemote() {
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
-
-  // Compute remaining / total for countdown
-  const cur       = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
-  const total     = config.currentAlarmSec || cur?.interval || config.interval;
-  let   remaining = total;
-  if (config.lastAlarmTime) {
-    remaining = Math.max(0, total - (Date.now() - config.lastAlarmTime) / 1000);
-  }
-
   remoteWs.send(JSON.stringify({
-    type: 'state',
-    active: config.active,
+    type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
-    interval: config.interval,
-    volume: config.volume ?? 1.0,
-    scheduleEnabled: config.scheduleEnabled || false,
-    scheduleStart:   config.scheduleStart   || '08:00',
-    scheduleEnd:     config.scheduleEnd     || '18:00',
-    scheduleDays:    config.scheduleDays    || [1,2,3,4,5],
-    remaining,
-    total,
+    interval: config.interval
   }));
 }
 
@@ -407,6 +364,7 @@ function transformUrl(url) {
       else if (u.pathname.startsWith('/shorts/')) videoId = u.pathname.split('/')[2];
       else if (u.pathname.startsWith('/embed/')) videoId = u.pathname.split('/')[2];
     }
+    // Use regular watch URL — embed fails with error 153 for many videos
     if (videoId) return `https://www.youtube.com/watch?v=${videoId}`;
   } catch {}
   return url;
@@ -436,10 +394,13 @@ async function injectYouTubeMaximize(tabId) {
         }
 
         function maximize() {
+          // Target the YouTube player container directly (same element YouTube uses for its own fullscreen)
           const player = document.querySelector('.html5-video-player') ||
                          document.getElementById('movie_player');
           if (!player) return false;
 
+          // Clear stacking context blockers on every ancestor — transform/filter/contain/perspective
+          // prevent position:fixed from being viewport-relative
           let el = player.parentElement;
           while (el && el !== document.documentElement) {
             el.style.setProperty('transform',   'none', 'important');
@@ -449,11 +410,13 @@ async function injectYouTubeMaximize(tabId) {
             el = el.parentElement;
           }
 
+          // Make the player fill the entire viewport
           [['position','fixed'],['top','0'],['left','0'],
            ['width','100vw'],['height','100vh'],
            ['z-index','2147483647'],['background','#000'],['overflow','hidden']
           ].forEach(([p, v]) => player.style.setProperty(p, v, 'important'));
 
+          // Make the inner video container + video element fill the player
           player.querySelectorAll('.html5-video-container, video').forEach(el => {
             [['position','absolute'],['top','0'],['left','0'],
              ['width','100%'],['height','100%'],
@@ -466,10 +429,12 @@ async function injectYouTubeMaximize(tabId) {
           return true;
         }
 
+        // Initial attempts with backoff
         let t = 0;
         const run = () => { if (!maximize() && ++t < 15) setTimeout(run, 400); };
         run();
 
+        // Re-apply for 2 minutes in case YouTube resets styles dynamically
         const reapply = setInterval(maximize, 3000);
         setTimeout(() => clearInterval(reapply), 120000);
       }
@@ -493,7 +458,7 @@ async function handleRemoteCommand(cmd) {
       config.remoteTabId = null;
       config.active = true; config.remotePaused = false;
       config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
+      await chrome.storage.local.set({ config });          // sauvegarde avant remove
       if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
       if (config.tabIds.length) {
         try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
@@ -518,7 +483,7 @@ async function handleRemoteCommand(cmd) {
       const tabToRemove = config.remoteTabId;
       config.remoteTabId = null;
       config.active = true; config.remotePaused = false; config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
+      await chrome.storage.local.set({ config });          // sauvegarde avant remove
       if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
       if (config.tabIds.length) {
         try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
@@ -541,81 +506,6 @@ async function handleRemoteCommand(cmd) {
           await log('remote — ' + cmd.action);
         }
       } break;
-    }
-
-    case 'set_volume': {
-      const level = Math.max(0, Math.min(1, parseFloat(cmd.level) || 0));
-      config.volume = level;
-      await chrome.storage.local.set({ config });
-      for (const tabId of config.tabIds) {
-        await injectVolume(tabId, level);
-      }
-      await log('remote — volume: ' + Math.round(level * 100) + '%');
-      break;
-    }
-
-    case 'add_url': {
-      const url = (cmd.url || '').trim();
-      if (url) {
-        config.urls.push({ url, name: (cmd.name || '').trim(), interval: null });
-        await chrome.storage.local.set({ config });
-        await log('remote — add_url');
-      }
-      break;
-    }
-
-    case 'remove_url': {
-      const idx = parseInt(cmd.index);
-      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
-        config.urls.splice(idx, 1);
-        if (config.currentIndex >= config.urls.length) config.currentIndex = Math.max(0, config.urls.length - 1);
-        await chrome.storage.local.set({ config });
-        await log('remote — remove_url idx=' + idx);
-      }
-      break;
-    }
-
-    case 'update_url': {
-      const idx = parseInt(cmd.index);
-      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
-        config.urls[idx].url  = (cmd.url  || '').trim();
-        config.urls[idx].name = (cmd.name || '').trim();
-        await chrome.storage.local.set({ config });
-        await log('remote — update_url idx=' + idx);
-      }
-      break;
-    }
-
-    case 'reorder_url': {
-      const from = parseInt(cmd.from);
-      const to   = parseInt(cmd.to);
-      if (!isNaN(from) && !isNaN(to) && from >= 0 && to >= 0 &&
-          from < config.urls.length && to < config.urls.length && from !== to) {
-        const [moved] = config.urls.splice(from, 1);
-        config.urls.splice(to, 0, moved);
-        await chrome.storage.local.set({ config });
-        await log(`remote — reorder_url ${from}→${to}`);
-      }
-      break;
-    }
-
-    case 'set_interval': {
-      const interval = Math.max(5, parseInt(cmd.interval) || 30);
-      config.interval = interval;
-      await chrome.storage.local.set({ config });
-      if (config.active) await setNextAlarm(interval);
-      await log('remote — set_interval: ' + interval + 's');
-      break;
-    }
-
-    case 'set_schedule': {
-      if (cmd.scheduleEnabled !== undefined) config.scheduleEnabled = !!cmd.scheduleEnabled;
-      if (cmd.scheduleStart)  config.scheduleStart  = cmd.scheduleStart;
-      if (cmd.scheduleEnd)    config.scheduleEnd    = cmd.scheduleEnd;
-      if (Array.isArray(cmd.scheduleDays)) config.scheduleDays = cmd.scheduleDays;
-      await chrome.storage.local.set({ config });
-      await log('remote — set_schedule');
-      break;
     }
   }
   await sendStateToRemote();

@@ -3,588 +3,511 @@
 <head>
   <meta charset="UTF-8">
   <title>wee rotate</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --black:  #0D0D0D;
-      --white:  #FFFFFF;
-      --bg:     #F5F5F7;
-      --card:   #FFFFFF;
-      --t1:     #0D0D0D;
-      --t2:     #6E6E73;
-      --t3:     #AEAEB2;
-      --bdr:    #E8E8ED;
-      --green:  #30D158;
-      --gbg:    #F0FFF5;
-      --red:    #FF3B30;
-      --rbg:    #FFF1F0;
-      --sh:     0 1px 1px rgba(0,0,0,.03), 0 4px 16px rgba(0,0,0,.06);
+      --black:     #0D0D0D;
+      --white:     #FFFFFF;
+      --bg:        #F5F5F7;
+      --surface:   #FFFFFF;
+      --border:    #E5E5EA;
+      --text:      #0D0D0D;
+      --muted:     #6E6E73;
+      --faint:     #AEAEB2;
+      --blue:      #0066FF;
+      --red:       #FF3B30;
+      --red-dark:  #D93025;
+      --green-bg:  #F0FFF5;
+      --green-bd:  #86EFAC;
+      --green-txt: #166534;
+      --r:         10px;
+      --sh:        0 1px 1px rgba(0,0,0,.03), 0 3px 10px rgba(0,0,0,.06);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       width: 380px;
-      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px;
-      color: var(--t1);
+      color: var(--text);
       background: var(--bg);
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Header ─────────────────────────────────────────────── */
+    /* ── Header ── */
     .header {
       background: var(--white);
-      border-bottom: 1px solid var(--bdr);
-      padding: 12px 16px;
-      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding: 11px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .logo { display: flex; align-items: center; gap: 9px; }
-    .logo-icon {
-      width: 28px; height: 28px; background: var(--black);
-      border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    .logo svg { width: 26px; height: 26px; flex-shrink: 0; }
+
+    .badge {
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
       flex-shrink: 0;
     }
-    .logo-icon svg { width: 14px; height: 14px; }
-    .logo-text { font-size: 14px; font-weight: 700; letter-spacing: -.3px; color: var(--t1); }
-    .logo-text span { color: var(--t2); font-weight: 500; }
+    .badge-active  { background: var(--green-bg); color: var(--green-txt); border: 1px solid var(--green-bd); }
+    .badge-stopped { background: var(--bg); color: var(--faint); border: 1px solid var(--border); }
 
-    .pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 10px; font-weight: 700; letter-spacing: .2px;
-    }
-    .pill-dot { width: 5px; height: 5px; border-radius: 50%; }
-    .pill.on  { background: var(--gbg); color: #166534; }
-    .pill.on  .pill-dot { background: var(--green); animation: dotPulse 2.2s infinite; }
-    .pill.off { background: var(--bg); color: var(--t3); border: 1px solid var(--bdr); }
-    .pill.off .pill-dot { background: var(--t3); }
-
-    @keyframes dotPulse { 0%,100%{box-shadow:0 0 4px rgba(48,209,88,.4)} 50%{box-shadow:0 0 9px rgba(48,209,88,.75)} }
-
-    /* ── Progress bar ────────────────────────────────────────── */
-    #progress-wrap { height: 3px; background: var(--bdr); overflow: hidden; }
+    /* ── Progress bar ── */
+    #progress-wrap { height: 3px; background: var(--border); overflow: hidden; }
     #progress-wrap.hidden { display: none; }
-    #progress-bar { height: 100%; background: var(--black); width: 100%; }
+    #progress-bar  { height: 100%; background: var(--black); width: 100%; }
 
-    /* ── Tabs ────────────────────────────────────────────────── */
+    /* ── Tabs ── */
     .tabs {
-      display: flex; background: var(--white);
-      border-bottom: 1px solid var(--bdr);
-      padding: 0 12px; gap: 0;
+      display: flex;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
     }
     .tab-btn {
-      padding: 10px 13px; background: none; border: none;
+      padding: 9px 12px;
+      background: none; border: none;
       border-bottom: 2px solid transparent;
-      font-family: 'Poppins', sans-serif;
-      font-size: 11.5px; font-weight: 600;
-      color: var(--t2); cursor: pointer;
+      font-family: inherit;
+      font-size: 12px; font-weight: 600;
+      color: var(--muted); cursor: pointer;
       margin-bottom: -1px;
       transition: color .15s, border-color .15s;
-      display: flex; align-items: center; gap: 5px;
     }
-    .tab-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
     .tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
-    .tab-btn:hover:not(.active) { color: var(--t1); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
 
-    /* ── Panes ───────────────────────────────────────────────── */
-    .tab-pane { display: none; padding: 12px; max-height: 500px; overflow-y: auto; }
+    /* ── Tab panes ── */
+    .tab-pane { display: none; padding: 12px; }
     .tab-pane.active { display: block; }
 
-    /* ── Card ────────────────────────────────────────────────── */
-    .card {
-      background: var(--card); border-radius: 16px;
-      box-shadow: var(--sh); overflow: hidden; margin-bottom: 10px;
-    }
-    .card-p { padding: 15px; }
-    .sect-lbl {
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1.4px;
-      color: var(--t2); margin-bottom: 12px;
-    }
-    .card-div { border: none; border-top: 1px solid var(--bdr); margin: 10px 0; }
-
-    /* ── URL list ────────────────────────────────────────────── */
+    /* ── URL list ── */
     #url-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 
     .url-row {
       display: grid;
-      grid-template-columns: 16px 1fr auto;
-      align-items: center; gap: 0 8px;
-      background: var(--bg); border: 1.5px solid var(--bdr);
-      border-radius: 12px; padding: 10px 12px;
+      grid-template-columns: 18px 1fr auto;
+      align-items: center;
+      gap: 0 8px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 9px 11px;
+      box-shadow: var(--sh);
       transition: border-color .15s;
     }
-    .url-row:focus-within { border-color: var(--black); background: var(--white); }
-    .url-row.active-url { border-color: #86EFAC; background: var(--gbg); }
-    .url-row.drag-over  { border-color: var(--black); background: #F0F0F5; }
+    .url-row:focus-within { border-color: var(--black); }
+    .url-row.active-url   { border-color: var(--green-bd); background: var(--green-bg); }
+    .url-row.drag-over    { border-color: var(--black); background: #F8F8FB; }
 
-    .drag-handle { color: var(--t3); cursor: grab; user-select: none; align-self: center; }
-    .drag-handle svg { width: 13px; height: 13px; display: block; }
+    .drag-handle {
+      color: var(--faint); cursor: grab; font-size: 14px;
+      user-select: none; align-self: center;
+    }
     .drag-handle:active { cursor: grabbing; }
 
     .url-fields { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
     .name-input {
       border: none; outline: none; background: transparent;
-      font-family: 'Poppins', sans-serif;
-      font-size: 12px; font-weight: 600; color: var(--t1); width: 100%;
+      font-family: inherit;
+      font-size: 12px; font-weight: 600; color: var(--text); width: 100%;
     }
-    .name-input::placeholder { color: var(--t3); font-weight: 400; }
+    .name-input::placeholder { color: var(--faint); font-weight: 400; }
+
     .url-input {
       border: none; outline: none; background: transparent;
-      font-size: 11px; font-family: 'SF Mono','Consolas','Fira Mono',monospace;
-      color: var(--t2); width: 100%;
+      font-size: 11px; font-family: 'Consolas', 'Fira Mono', monospace;
+      color: var(--muted); width: 100%;
     }
-    .url-input::placeholder { color: var(--t3); }
+    .url-input::placeholder { color: var(--faint); }
 
     .url-actions {
       display: flex; flex-direction: column;
       align-items: flex-end; gap: 4px; flex-shrink: 0;
     }
+
     .btn-del {
       background: none; border: none; cursor: pointer;
-      color: var(--t3); padding: 2px; border-radius: 4px;
-      display: flex; align-items: center; transition: color .13s;
+      color: var(--faint); padding: 1px 2px;
+      font-size: 12px; line-height: 1; border-radius: 3px;
+      transition: color .15s;
     }
-    .btn-del svg { width: 13px; height: 13px; }
     .btn-del:hover { color: var(--red); }
 
-    .url-interval-wrap { display: flex; align-items: center; gap: 3px; }
+    .url-interval-wrap { display: flex; align-items: center; gap: 4px; }
     .url-dur-toggle {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 1.5px solid var(--bdr); background: var(--bg);
-      color: var(--t3); cursor: pointer;
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--faint); font-size: 10px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all .15s; flex-shrink: 0; padding: 0;
     }
-    .url-dur-toggle svg { width: 10px; height: 10px; }
     .url-dur-toggle.on { background: var(--black); border-color: var(--black); color: #fff; }
     .url-dur-toggle:hover:not(.on) { border-color: var(--black); color: var(--black); }
     .url-interval {
-      width: 34px; border: 1px solid var(--bdr); border-radius: 6px;
+      width: 38px; border: 1px solid var(--border); border-radius: 5px;
       padding: 2px 4px; font-size: 10px; text-align: center;
-      color: var(--t1); font-weight: 700; outline: none;
-      font-family: 'Poppins', sans-serif;
+      color: var(--text); font-weight: 700; outline: none;
+      font-family: inherit;
       background: var(--bg); transition: border-color .15s;
     }
     .url-interval:focus { border-color: var(--black); }
-    .interval-s { font-size: 9px; color: var(--t3); }
+    .interval-s { font-size: 9px; color: var(--faint); }
 
-    /* ── Add button ──────────────────────────────────────────── */
+    /* ── Add button ── */
     .btn-add {
-      width: 100%; padding: 10px;
-      background: none; border: 1.5px dashed var(--bdr);
-      border-radius: 12px; cursor: pointer;
-      color: var(--t2); font-family: 'Poppins', sans-serif;
+      width: 100%; padding: 9px;
+      background: none; border: 1.5px dashed var(--border);
+      border-radius: var(--r); cursor: pointer;
+      color: var(--muted); font-family: inherit;
       font-size: 12px; font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
       transition: all .15s;
     }
-    .btn-add svg { width: 13px; height: 13px; }
     .btn-add:hover { border-color: var(--black); color: var(--black); background: var(--white); }
 
-    .empty-hint {
-      text-align: center; color: var(--t3); font-size: 12px;
-      padding: 20px 0; font-weight: 500;
-    }
+    .empty-hint { text-align: center; color: var(--faint); font-size: 12px; padding: 20px 0; }
 
-    /* ── Action buttons ──────────────────────────────────────── */
-    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    /* ── Action buttons ── */
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+
     .btn {
       display: flex; align-items: center; justify-content: center;
-      gap: 6px; padding: 10px 14px;
-      border: none; border-radius: 12px;
-      cursor: pointer; font-family: 'Poppins', sans-serif;
+      gap: 5px; padding: 10px 16px;
+      border: none; border-radius: var(--r);
+      cursor: pointer; font-family: inherit;
       font-size: 12px; font-weight: 700;
       transition: all .13s; white-space: nowrap;
     }
-    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
     .btn:active { transform: scale(.97); }
     .btn-primary { background: var(--black); color: #fff; flex: 1; }
     .btn-primary:hover { background: #222; }
-    .btn-danger  { background: var(--red);   color: #fff; flex: 1; }
-    .btn-danger:hover  { background: #e0332a; }
-    .btn-ghost   { background: var(--white);  color: var(--t1); border: 1.5px solid var(--bdr); }
+    .btn-danger  { background: var(--red); color: #fff; flex: 1; }
+    .btn-danger:hover  { background: var(--red-dark); }
+    .btn-ghost   { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
     .btn-ghost:hover   { border-color: var(--black); }
-    .btn-primary:disabled { opacity: .5; cursor: default; transform: none !important; }
 
     .hidden { display: none !important; }
 
-    /* ── Setting rows ────────────────────────────────────────── */
+    /* ── Setting cards ── */
+    .setting-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 13px 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--sh);
+    }
+    .setting-card-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--faint); margin-bottom: 11px;
+    }
     .setting-row {
       display: flex; align-items: center;
-      justify-content: space-between; gap: 12px; padding: 4px 0;
+      justify-content: space-between; gap: 12px;
     }
-    .setting-label { font-size: 13px; font-weight: 600; color: var(--t1); }
-    .setting-desc  { font-size: 11px; color: var(--t2); margin-top: 2px; }
+    .setting-label { font-size: 12px; font-weight: 600; color: var(--text); }
+    .setting-desc  { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
     .interval-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    input[type="range"] { width: 80px; accent-color: var(--black); cursor: pointer; }
+    input[type="range"] { width: 90px; accent-color: var(--black); cursor: pointer; }
     .interval-num {
-      width: 52px; padding: 5px 6px;
-      border: 1.5px solid var(--bdr); border-radius: 8px;
-      font-family: 'Poppins', sans-serif;
+      width: 52px; padding: 4px 6px;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      font-family: inherit;
       font-size: 12px; text-align: center; outline: none;
-      background: var(--bg); color: var(--t1); font-weight: 700;
+      background: var(--bg); color: var(--text);
       transition: border-color .15s;
     }
-    .interval-num:focus { border-color: var(--black); background: #fff; }
-    .interval-unit { font-size: 11px; color: var(--t2); }
+    .interval-num:focus { border-color: var(--black); }
+    .interval-unit { font-size: 11px; color: var(--muted); }
 
-    /* ── Toggle ──────────────────────────────────────────────── */
-    .toggle {
-      position: relative; width: 40px; height: 24px;
-      flex-shrink: 0; cursor: pointer;
-    }
+    /* ── Toggle switch ── */
+    .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; cursor: pointer; }
     .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-track {
       position: absolute; inset: 0;
-      background: var(--bdr); border-radius: 20px;
+      background: var(--border); border-radius: 20px;
       transition: background .2s;
     }
     .toggle-thumb {
-      position: absolute; width: 18px; height: 18px;
+      position: absolute;
+      width: 16px; height: 16px;
       top: 3px; left: 3px;
       background: #fff; border-radius: 50%;
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
-      transition: transform .2s; pointer-events: none;
+      transition: transform .2s;
+      pointer-events: none;
     }
-    .toggle input:checked ~ .toggle-track { background: var(--green); }
+    .toggle input:checked ~ .toggle-track { background: var(--black); }
     .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
 
-    /* ── Schedule ────────────────────────────────────────────── */
-    .schedule-details { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    /* ── Schedule details ── */
+    .schedule-details { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+
     .time-row {
       display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: var(--t2); font-weight: 500;
+      font-size: 12px; color: var(--muted); font-weight: 500;
     }
     input[type="time"] {
-      background: var(--bg); border: 1.5px solid var(--bdr);
-      border-radius: 8px; padding: 5px 8px;
-      font-family: 'Poppins', sans-serif;
-      font-size: 12px; color: var(--t1); font-weight: 600;
-      outline: none; cursor: pointer; transition: border-color .15s;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 6px; padding: 4px 8px;
+      font-family: inherit;
+      font-size: 12px; color: var(--text); outline: none; cursor: pointer;
+      transition: border-color .15s;
     }
-    input[type="time"]:focus { border-color: var(--black); background: #fff; }
-    .days-row { display: flex; gap: 4px; flex-wrap: wrap; }
-    .day-btn {
-      padding: 4px 9px; border-radius: 20px;
-      border: 1.5px solid var(--bdr); background: var(--bg);
-      color: var(--t2); font-family: 'Poppins', sans-serif;
-      font-size: 10px; font-weight: 700; cursor: pointer; transition: all .15s;
-    }
-    .day-btn.on { background: var(--black); border-color: var(--black); color: #fff; }
-    .day-btn:hover:not(.on) { border-color: var(--black); color: var(--black); }
+    input[type="time"]:focus { border-color: var(--black); }
 
-    /* ── Config buttons ──────────────────────────────────────── */
-    .config-btns { display: flex; gap: 8px; }
-    .btn-cfg {
-      flex: 1; padding: 9px 6px;
-      border: 1.5px solid var(--bdr); border-radius: 10px;
-      background: var(--bg); color: var(--t1);
-      font-family: 'Poppins', sans-serif;
-      font-size: 11px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
+    .days-row { display: flex; gap: 4px; }
+    .day-btn {
+      width: 30px; height: 28px;
+      border: 1.5px solid var(--border); border-radius: 7px;
+      background: var(--bg); color: var(--muted);
+      font-family: inherit;
+      font-size: 10px; font-weight: 700; cursor: pointer;
       transition: all .15s;
     }
-    .btn-cfg svg { width: 12px; height: 12px; }
+    .day-btn.on  { background: var(--black); border-color: var(--black); color: #fff; }
+    .day-btn:hover:not(.on) { border-color: var(--black); color: var(--black); }
+
+    /* ── Config actions ── */
+    .config-btns { display: flex; gap: 8px; }
+    .btn-cfg {
+      flex: 1; padding: 7px 8px;
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      background: var(--bg); color: var(--text);
+      font-family: inherit;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
     .btn-cfg:hover { border-color: var(--black); color: var(--black); background: var(--white); }
     .btn-cfg-danger:hover { border-color: var(--red); color: var(--red); }
 
-    /* ── Remote ──────────────────────────────────────────────── */
-    .remote-status { display: flex; align-items: center; gap: 7px; }
-    .remote-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      flex-shrink: 0; transition: background .3s;
+    /* ── Remote tab ── */
+    .remote-status {
+      display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
     }
-    .remote-dot-on  { background: var(--green); animation: remotePulse 2s infinite; }
-    .remote-dot-off { background: var(--t3); }
-    @keyframes remotePulse { 0%,100%{box-shadow:0 0 4px rgba(48,209,88,.4)} 50%{box-shadow:0 0 10px rgba(48,209,88,.7)} }
+    .remote-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: background .3s;
+    }
+    .remote-dot-on  { background: #30D158; box-shadow: 0 0 5px rgba(48,209,88,.4); }
+    .remote-dot-off { background: var(--faint); }
 
-    .remote-qr-wrap { text-align: center; padding: 16px 0 10px; }
+    .remote-qr-wrap {
+      text-align: center; padding: 12px 0 8px;
+    }
     .remote-qr-img {
-      width: 148px; height: 148px; border-radius: 12px;
-      border: 1.5px solid var(--bdr); margin: 0 auto;
-      background: #fff; display: flex; align-items: center;
-      justify-content: center; overflow: hidden;
+      width: 148px; height: 148px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      margin: 0 auto; overflow: hidden;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
     }
     .remote-qr-img svg { display: block; width: 100%; height: 100%; }
     .remote-qr-hint {
-      text-align: center; font-size: 10px; color: var(--t2);
-      margin: 6px 0 12px; font-weight: 500;
+      text-align: center; font-size: 10px;
+      color: var(--muted); margin: 6px 0 12px;
     }
     .remote-url-box {
-      background: var(--bg); border: 1.5px solid var(--bdr);
-      border-radius: 10px; padding: 8px 12px;
-      font-size: 11px; font-family: 'SF Mono','Consolas',monospace;
-      color: var(--t1); word-break: break-all; font-weight: 600;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 7px; padding: 7px 10px; font-size: 11px;
+      font-family: 'Consolas', monospace; color: var(--text);
+      word-break: break-all;
     }
-
-    /* ── Debug ───────────────────────────────────────────────── */
+    /* ── Debug ── */
     #debug-toggle {
       width: 100%; background: var(--bg);
-      border: 1.5px solid var(--bdr); border-radius: 10px;
-      padding: 8px 12px; font-family: 'Poppins', sans-serif;
+      border: 1.5px solid var(--border); border-radius: 7px;
+      padding: 7px 10px; font-family: inherit;
       font-size: 10px; font-weight: 700;
-      color: var(--t2); cursor: pointer;
+      color: var(--muted); cursor: pointer;
       text-align: left; text-transform: uppercase; letter-spacing: 1px;
       transition: all .15s;
     }
     #debug-toggle:hover { border-color: var(--black); color: var(--black); }
     #debug-box {
-      display: none; margin-top: 8px;
-      background: #0D0D0D; border-radius: 10px;
-      padding: 10px; max-height: 140px; overflow-y: auto;
+      display: none; margin-top: 6px;
+      background: #0D1117; border-radius: 7px;
+      padding: 8px; max-height: 140px; overflow-y: auto;
     }
     #debug-box.open { display: block; }
     #debug-log {
-      font-family: 'SF Mono','Consolas',monospace; font-size: 10px;
-      color: #A0FFA0; white-space: pre-wrap; word-break: break-all;
+      font-family: 'Consolas', monospace; font-size: 10px;
+      color: #7EE787; white-space: pre-wrap; word-break: break-all;
     }
     #debug-clear {
-      margin-top: 8px; font-size: 11px;
-      background: none; border: none; color: var(--red); cursor: pointer;
-      padding: 0; font-family: 'Poppins', sans-serif; font-weight: 600;
+      margin-top: 6px; font-size: 10px;
+      background: none; border: none; color: var(--red); cursor: pointer; padding: 0;
+      font-family: inherit;
     }
-
-    /* ── Animations ──────────────────────────────────────────── */
-    @keyframes paneIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes rowIn  { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
-    .tab-pane.active  { animation: paneIn .16s ease both; }
-    .url-row-new      { animation: rowIn  .2s  ease both; }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
   <div class="header">
     <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="logo-text">wee <span>rotate</span></div>
+      <svg viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="13" fill="#0D0D0D"/>
+        <path d="M7 9l3.2 8.5 2.8-6 2.8 6L19 9"
+              stroke="white" stroke-width="2.1"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      wee&nbsp;<span style="color:var(--muted);font-weight:500">rotate</span>
     </div>
-    <span id="badge" class="pill off">
-      <span class="pill-dot"></span>
-      <span id="badge-txt">Arrêté</span>
-    </span>
+    <span id="badge" class="badge badge-stopped">Arrêté</span>
   </div>
 
-  <!-- Progress -->
   <div id="progress-wrap" class="hidden">
     <div id="progress-bar"></div>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="rotation">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-      </svg>
-      Rotation
-    </button>
-    <button class="tab-btn" data-tab="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-      Paramètres
-    </button>
-    <button class="tab-btn" data-tab="remote">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/>
-      </svg>
-      Remote
-    </button>
+    <button class="tab-btn active" data-tab="rotation">Rotation</button>
+    <button class="tab-btn" data-tab="settings">Paramètres</button>
+    <button class="tab-btn" data-tab="remote">Remote</button>
   </div>
 
-  <!-- ── TAB: ROTATION ──────────────────────────────────── -->
+  <!-- Tab Rotation -->
   <div id="tab-rotation" class="tab-pane active">
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Playlist</div>
-        <div id="url-list"></div>
-        <button id="btn-add" class="btn-add">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Ajouter une URL
-        </button>
-      </div>
-    </div>
+    <div id="url-list"></div>
+    <button id="btn-add" class="btn-add">+ Ajouter une URL</button>
     <div class="actions">
-      <button id="btn-start" class="btn btn-primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/>
-        </svg>
-        Démarrer
-      </button>
-      <button id="btn-stop" class="btn btn-danger hidden">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" stroke="none"/>
-        </svg>
-        Arrêter
-      </button>
-      <button id="btn-next" class="btn btn-ghost hidden" title="URL suivante">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="4" x2="19" y2="20"/>
-        </svg>
-      </button>
+      <button id="btn-start" class="btn btn-primary">▶ Démarrer</button>
+      <button id="btn-stop"  class="btn btn-danger  hidden">■ Arrêter</button>
+      <button id="btn-next"  class="btn btn-ghost   hidden" title="URL suivante">⏭</button>
     </div>
   </div>
 
-  <!-- ── TAB: PARAMÈTRES ────────────────────────────────── -->
+  <!-- Tab Paramètres -->
   <div id="tab-settings" class="tab-pane">
 
     <!-- Intervalle -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Intervalle de rotation</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Durée globale</div>
-            <div class="setting-desc">Pour les URLs sans durée spécifique</div>
-          </div>
-          <div class="interval-controls">
-            <input type="range" id="slider" min="5" max="300" step="5" value="30">
-            <input type="number" id="interval" class="interval-num" min="5" max="86400" value="30">
-            <span class="interval-unit">s</span>
-          </div>
+    <div class="setting-card">
+      <div class="setting-card-title">Intervalle de rotation</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Durée globale</div>
+          <div class="setting-desc">Utilisée pour les URLs sans durée spécifique</div>
+        </div>
+        <div class="interval-controls">
+          <input type="range" id="slider" min="5" max="300" step="5" value="30">
+          <input type="number" id="interval" class="interval-num" min="5" max="86400" value="30">
+          <span class="interval-unit">s</span>
         </div>
       </div>
     </div>
 
-    <!-- Schedule -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Plages horaires</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Activation automatique</div>
-            <div class="setting-desc">Démarre et arrête selon l'horaire</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="schedule-enabled">
-            <div class="toggle-track"></div>
-            <div class="toggle-thumb"></div>
-          </label>
+    <!-- Plages horaires -->
+    <div class="setting-card">
+      <div class="setting-card-title">Plages horaires</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Activation automatique</div>
+          <div class="setting-desc">Démarre et arrête la rotation selon l'horaire</div>
         </div>
-        <div id="schedule-details" class="schedule-details hidden">
-          <div class="time-row">
-            <span>De</span>
-            <input type="time" id="schedule-start" value="08:00">
-            <span>à</span>
-            <input type="time" id="schedule-end" value="18:00">
-          </div>
-          <div class="days-row">
-            <button class="day-btn" data-day="1">Lun</button>
-            <button class="day-btn" data-day="2">Mar</button>
-            <button class="day-btn" data-day="3">Mer</button>
-            <button class="day-btn" data-day="4">Jeu</button>
-            <button class="day-btn" data-day="5">Ven</button>
-            <button class="day-btn" data-day="6">Sam</button>
-            <button class="day-btn" data-day="0">Dim</button>
-          </div>
+        <label class="toggle">
+          <input type="checkbox" id="schedule-enabled">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+      <div id="schedule-details" class="schedule-details hidden">
+        <div class="time-row">
+          <span>De</span>
+          <input type="time" id="schedule-start" value="08:00">
+          <span>à</span>
+          <input type="time" id="schedule-end" value="18:00">
+        </div>
+        <div class="days-row">
+          <button class="day-btn" data-day="1">Lu</button>
+          <button class="day-btn" data-day="2">Ma</button>
+          <button class="day-btn" data-day="3">Me</button>
+          <button class="day-btn" data-day="4">Je</button>
+          <button class="day-btn" data-day="5">Ve</button>
+          <button class="day-btn" data-day="6">Sa</button>
+          <button class="day-btn" data-day="0">Di</button>
         </div>
       </div>
     </div>
 
-    <!-- Canva -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Actualisation Canva</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Rafraîchissement auto</div>
-            <div class="setting-desc">Recharge les onglets Canva en arrière-plan</div>
-          </div>
-          <div class="interval-controls">
-            <input type="number" id="canva-refresh" class="interval-num" min="1" max="60" value="5">
-            <span class="interval-unit">min</span>
-          </div>
+    <!-- Canva refresh -->
+    <div class="setting-card">
+      <div class="setting-card-title">Actualisation Canva</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Rafraîchissement auto</div>
+          <div class="setting-desc">Recharge les onglets Canva en arrière-plan</div>
         </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Nom de la TV</div>
-            <div class="setting-desc">Identifiant affiché dans le remote</div>
-          </div>
-          <input type="text" id="tv-name" class="interval-num" style="width:90px;font-size:11px;text-align:left;padding:5px 8px" placeholder="TV 1" maxlength="20">
+        <div class="interval-controls">
+          <input type="number" id="canva-refresh" class="interval-num" min="1" max="60" value="5">
+          <span class="interval-unit">min</span>
         </div>
       </div>
     </div>
 
-    <!-- Config -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Configuration</div>
-        <div class="config-btns">
-          <button id="btn-export" class="btn-cfg">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Exporter
-          </button>
-          <button id="btn-import" class="btn-cfg">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            Importer
-          </button>
-          <button id="btn-reset" class="btn-cfg btn-cfg-danger">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/>
-            </svg>
-            Reset
-          </button>
-        </div>
-        <input type="file" id="import-file" accept=".json" class="hidden">
+    <!-- Import / Export -->
+    <div class="setting-card">
+      <div class="setting-card-title">Configuration</div>
+      <div class="config-btns">
+        <button id="btn-export" class="btn-cfg">⬇ Exporter</button>
+        <button id="btn-import" class="btn-cfg">⬆ Importer</button>
+        <button id="btn-reset"  class="btn-cfg btn-cfg-danger">↺ Réinitialiser</button>
       </div>
+      <input type="file" id="import-file" accept=".json" class="hidden">
     </div>
 
     <!-- Debug -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Debug</div>
-        <button id="debug-toggle">Logs background</button>
-        <div id="debug-box">
-          <div id="debug-log">(aucun log)</div>
-          <button id="debug-clear">Effacer les logs</button>
-        </div>
+    <div class="setting-card">
+      <div class="setting-card-title">Debug</div>
+      <button id="debug-toggle">⚙ Logs background</button>
+      <div id="debug-box">
+        <div id="debug-log">(aucun log)</div>
+        <button id="debug-clear">Effacer les logs</button>
       </div>
     </div>
 
   </div>
 
-  <!-- ── TAB: REMOTE ────────────────────────────────────── -->
+  <!-- Tab Remote -->
   <div id="tab-remote" class="tab-pane">
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Contrôle à distance</div>
-        <div class="remote-status">
-          <span class="remote-dot remote-dot-off" id="remote-dot"></span>
-          <span id="remote-status-txt" style="font-size:12px;color:var(--t2);font-weight:500">Serveur non détecté</span>
-        </div>
 
-        <div id="remote-online" class="hidden">
-          <div class="remote-qr-wrap">
-            <div id="remote-qr" class="remote-qr-img"></div>
-          </div>
-          <div class="remote-qr-hint">Scannez pour contrôler depuis votre téléphone</div>
-          <div class="remote-url-box" id="remote-url-box">—</div>
-        </div>
+    <div class="setting-card">
+      <div class="setting-card-title">Contrôle à distance</div>
+      <div class="remote-status">
+        <span class="remote-dot remote-dot-off" id="remote-dot"></span>
+        <span id="remote-status-txt" style="font-size:12px;color:var(--muted)">Serveur non détecté</span>
+      </div>
 
-        <div id="remote-offline-hint" style="font-size:11px;color:var(--t2);margin-top:8px;line-height:1.6">
-          Lancez <strong style="color:var(--t1)">start_remote.bat</strong> sur le NUC pour activer le contrôle mobile.
+      <div id="remote-online" class="hidden">
+        <div class="remote-qr-wrap">
+          <div id="remote-qr" class="remote-qr-img"></div>
         </div>
+        <div class="remote-qr-hint">Scannez pour contrôler depuis votre téléphone</div>
+        <div class="remote-url-box" id="remote-url-box">—</div>
+      </div>
+
+      <div id="remote-offline-hint" class="setting-desc" style="margin-top:4px">
+        Lancez <code style="color:var(--black);font-weight:700">start_remote.bat</code>
+        sur le NUC pour activer le contrôle mobile
       </div>
     </div>
+
   </div>
 
   <script src="popup.js"></script>

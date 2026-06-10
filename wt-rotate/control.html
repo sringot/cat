@@ -104,24 +104,6 @@ body {
 .brand-label { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
 .brand-label span { color: var(--t2); font-weight: 500; }
 
-/* back button */
-.hdr-back {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--bg); border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: background .15s;
-}
-.hdr-back svg { width: 18px; height: 18px; color: var(--t1); }
-.hdr-back:active { background: var(--bdr); }
-
-/* TV name in control header */
-.hdr-tv-name {
-  flex: 1; min-width: 0;
-  font-size: 14px; font-weight: 700;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 140px; text-align: center;
-}
-
 /* connection pill */
 .conn-pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -138,88 +120,10 @@ body {
 .conn-pill.wait .conn-dot { background: var(--t3); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
-/* ── TV PICKER SCREEN ─────────────────────────────────────── */
-#screen-picker {
-  padding-bottom: calc(32px + env(safe-area-inset-bottom));
-}
-.picker-hero {
-  padding: 28px 20px 12px;
-  max-width: 520px; margin: 0 auto;
-}
-.picker-title {
-  font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1.1;
-  margin-bottom: 6px;
-}
-.picker-sub { font-size: 14px; color: var(--t2); }
-
-.tv-list {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 16px 20px;
-  max-width: 520px; margin: 0 auto;
-}
-
-.tv-card {
-  background: var(--card); border-radius: 20px;
-  box-shadow: var(--sh);
-  display: flex; align-items: center; gap: 14px;
-  padding: 18px 16px;
-  cursor: pointer;
-  transition: transform .13s, box-shadow .13s;
-  animation: cardIn .22s ease both;
-  text-decoration: none; color: inherit;
-  border: none; width: 100%; text-align: left; font-family: inherit;
-}
-.tv-card:active { transform: scale(.98); box-shadow: 0 1px 8px rgba(0,0,0,.08); }
-.tv-card.offline { opacity: 0.55; }
-
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-.tv-icon-wrap {
-  width: 52px; height: 52px; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.tv-icon-wrap.online  { background: var(--blue); }
-.tv-icon-wrap.offline { background: var(--bdr); }
-.tv-icon-wrap svg { width: 26px; height: 26px; color: #fff; }
-
-.tv-info { flex: 1; min-width: 0; }
-.tv-card-name { font-size: 16px; font-weight: 700; color: var(--t1); }
-.tv-card-status {
-  display: flex; align-items: center; gap: 5px;
-  margin-top: 3px; font-size: 13px; font-weight: 500;
-}
-.tv-status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.tv-card-status.online .tv-status-dot  { background: var(--green); }
-.tv-card-status.online                  { color: #1D7A3A; }
-.tv-card-status.offline .tv-status-dot { background: var(--t3); }
-.tv-card-status.offline                 { color: var(--t2); }
-.tv-card-playing {
-  font-size: 11px; color: var(--t3); margin-top: 3px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.tv-card-chevron { flex-shrink: 0; color: var(--t3); }
-.tv-card-chevron svg { width: 18px; height: 18px; display: block; }
-
-/* empty state */
-.tv-empty {
-  text-align: center; padding: 56px 24px;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.tv-empty-icon {
-  width: 72px; height: 72px; background: var(--bdr);
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-}
-.tv-empty-icon svg { width: 36px; height: 36px; color: var(--t3); }
-.tv-empty-title { font-size: 18px; font-weight: 800; letter-spacing: -.4px; }
-.tv-empty-sub { font-size: 13px; color: var(--t2); line-height: 1.6; max-width: 280px; }
 
 /* ── CONTROL SCREEN ───────────────────────────────────────── */
 #screen-control {
@@ -671,8 +575,8 @@ body {
   </div>
 </div>
 
-<!-- TV PICKER SCREEN -->
-<div id="screen-picker" class="screen">
+<!-- CONTROL SCREEN -->
+<div id="screen-control" class="screen">
   <header class="app-header">
     <div class="header-brand">
       <div class="brand-logo">
@@ -682,29 +586,6 @@ body {
       </div>
       <div class="brand-label">wt<span> remote</span></div>
     </div>
-    <div class="conn-pill wait" id="picker-pill">
-      <div class="conn-dot"></div>
-      <span id="picker-pill-txt">Connexion…</span>
-    </div>
-  </header>
-
-  <div class="picker-hero">
-    <div class="picker-title">Choisir une TV</div>
-    <div class="picker-sub">Sélectionnez l'écran à contrôler</div>
-  </div>
-
-  <div class="tv-list" id="tv-list"></div>
-</div>
-
-<!-- CONTROL SCREEN -->
-<div id="screen-control" class="screen">
-  <header class="app-header">
-    <button class="hdr-back" id="btn-back" onclick="backToPicker()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
-    </button>
-    <div class="hdr-tv-name" id="ctrl-tv-name">TV</div>
     <div class="conn-pill wait" id="ctrl-pill">
       <div class="conn-dot"></div>
       <span id="ctrl-pill-txt">Connexion…</span>
@@ -939,26 +820,19 @@ body {
           <div class="guide-step">
             <div class="guide-num">2</div>
             <div class="guide-body">
-              <div class="guide-title">Choisir une TV</div>
-              <div class="guide-desc">Depuis l'écran d'accueil, sélectionnez le NUC à contrôler. Plusieurs NUCs peuvent être connectés simultanément.</div>
-            </div>
-          </div>
-          <div class="guide-step">
-            <div class="guide-num">3</div>
-            <div class="guide-body">
               <div class="guide-title">Configurer la playlist</div>
               <div class="guide-desc">Dans l'onglet <strong>Playlist</strong>, ajoutez les URLs à afficher. Glissez-déposez pour les réorganiser.</div>
             </div>
           </div>
           <div class="guide-step">
-            <div class="guide-num">4</div>
+            <div class="guide-num">3</div>
             <div class="guide-body">
               <div class="guide-title">Contrôler depuis le remote</div>
               <div class="guide-desc">Utilisez l'onglet <strong>Écran</strong> pour pause, navigation et volume. L'onglet <strong>Playlist</strong> permet de modifier la liste en temps réel.</div>
             </div>
           </div>
           <div class="guide-step">
-            <div class="guide-num">5</div>
+            <div class="guide-num">4</div>
             <div class="guide-body">
               <div class="guide-title">Installer comme appli (iOS)</div>
               <div class="guide-desc">Dans Safari, appuyez sur <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong> pour accéder rapidement au remote.</div>
@@ -1018,7 +892,7 @@ body {
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 let ws = null, ip = null, port = 8765;
-let _tvList = [], _selectedTvId = null, _state = {};
+let _state = {};
 let _isPlaying = false;
 let reconnectTimer = null;
 let _cdInterval = null, _cdEnd = null, _cdTotal = 0;
@@ -1057,7 +931,6 @@ function boot() {
 // ── Connection ─────────────────────────────────────────────────────────────────
 function connect() {
   clearTimeout(reconnectTimer);
-  setPickerPill('wait');
   ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile' }));
   ws.onmessage = e => {
@@ -1065,18 +938,8 @@ function connect() {
     if (m.type === 'ping') { ws.send(JSON.stringify({ type: 'pong' })); return; }
     if (m.type === 'auth_ok') {
       hideSplash();
-      setPickerPill('on');
+      showApp();
       setCtrlPill('on');
-      return;
-    }
-    if (m.type === 'tv_list') {
-      _tvList = m.tvs || [];
-      renderPicker();
-      // if control view is open, update TV name in case it changed
-      if (_selectedTvId) {
-        const tv = _tvList.find(t => t.id === _selectedTvId);
-        if (tv) document.getElementById('ctrl-tv-name').textContent = tv.name;
-      }
       return;
     }
     if (m.type === 'ext_status') {
@@ -1085,11 +948,9 @@ function connect() {
       return;
     }
     if (m.type === 'state')     { sync(m); return; }
-    if (m.type === 'deselected') { _selectedTvId = null; showPicker(); return; }
     if (m.type === 'cmd_error') { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
   };
   ws.onclose = () => {
-    setPickerPill('off');
     setCtrlPill('off');
     reconnectTimer = setTimeout(connect, 3000);
   };
@@ -1102,105 +963,11 @@ function hideSplash() {
   document.getElementById('splash-loader').style.display = 'none';
 }
 
-function showPicker() {
-  document.getElementById('screen-picker').classList.add('show');
-  document.getElementById('screen-control').classList.remove('show');
-}
-
-function showControl(tvId) {
-  _selectedTvId = tvId;
-  const tv = _tvList.find(t => t.id === tvId);
-  document.getElementById('ctrl-tv-name').textContent = tv ? tv.name : tvId;
-  document.getElementById('screen-picker').classList.remove('show');
+function showApp() {
   document.getElementById('screen-control').classList.add('show');
-  // reset ext banner
-  document.getElementById('ext-banner').classList.remove('show');
-  // reset to ecran tab
-  switchTab('ecran', document.querySelector('.nav-btn[data-tab="ecran"]'));
-}
-
-// ── TV selection ──────────────────────────────────────────────────────────────
-function selectTv(id) {
-  if (ws?.readyState === 1) {
-    ws.send(JSON.stringify({ type: 'select_tv', id }));
-    showControl(id);
-  } else {
-    showToast('Connexion perdue — reconnexion en cours…');
-  }
-}
-
-function backToPicker() {
-  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'deselect_tv' }));
-  _selectedTvId = null;
-  _state = {};
-  stopCountdown();
-  showPicker();
-}
-
-// ── Picker render ─────────────────────────────────────────────────────────────
-function renderPicker() {
-  const list = document.getElementById('tv-list');
-  if (!_tvList.length) {
-    list.innerHTML = `<div class="tv-empty">
-      <div class="tv-empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      </div>
-      <div class="tv-empty-title">Aucune TV connectée</div>
-      <div class="tv-empty-sub">Lancez l'extension sur le NUC et assurez-vous d'être sur le même réseau Wi-Fi</div>
-    </div>`;
-    return;
-  }
-  list.innerHTML = '';
-  _tvList.forEach((tv, i) => {
-    const online = !!tv.connected;
-    const state  = tv.state || {};
-    const urls   = state.urls || [];
-    const cur    = urls[state.currentIndex || 0];
-    let playingDomain = '';
-    if (cur?.url) {
-      try { playingDomain = new URL(cur.url).hostname.replace(/^www\./, ''); } catch {}
-    }
-
-    const card = document.createElement('button');
-    card.className = 'tv-card' + (online ? '' : ' offline');
-    card.style.animationDelay = (i * 0.06) + 's';
-    card.innerHTML = `
-      <div class="tv-icon-wrap ${online ? 'online' : 'offline'}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      </div>
-      <div class="tv-info">
-        <div class="tv-card-name">${esc(tv.name)}</div>
-        <div class="tv-card-status ${online ? 'online' : 'offline'}">
-          <div class="tv-status-dot"></div>
-          ${online ? 'En ligne' : 'Hors ligne'}
-        </div>
-        ${playingDomain ? `<div class="tv-card-playing">En cours : ${esc(playingDomain)}</div>` : ''}
-      </div>
-      ${online ? `<div class="tv-card-chevron">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </div>` : ''}
-    `;
-    card.addEventListener('click', () => selectTv(tv.id));
-    list.appendChild(card);
-  });
 }
 
 // ── Pill helpers ──────────────────────────────────────────────────────────────
-function setPickerPill(state) {
-  const p = document.getElementById('picker-pill');
-  const t = document.getElementById('picker-pill-txt');
-  p.className = 'conn-pill ' + state;
-  t.textContent = { on:'Connecté', off:'Déconnecté', wait:'Connexion…' }[state] || 'Connexion…';
-}
-
 function setCtrlPill(state) {
   const p = document.getElementById('ctrl-pill');
   const t = document.getElementById('ctrl-pill-txt');

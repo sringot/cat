@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # FILE: /home/user/cat/wt-rotate/remote_server.py
 """
-wt-rotate Remote Control Server  —  multi-TV edition
+wt-rotate Remote Control Server
 pip install aiohttp qrcode
 """
 import asyncio, json, socket, io, time
@@ -17,11 +17,8 @@ html_cache     = None
 manifest_cache = None
 icon_cache     = {}
 
-# ext_clients: tv_id -> { 'ws': ws|None, 'name': str, 'state': dict }
-ext_clients = {}
-
-# mob_tv_sel: id(ws) -> tv_id | None
-mob_tv_sel = {}
+ext_ws = None
+state  = {}
 
 # YouTube feed cache
 _feed_cache        = None
@@ -54,50 +51,6 @@ def make_qr_svg(url):
         return buf.getvalue()
     except Exception:
         return None
-
-# ── TV state helpers ──────────────────────────────────────────────────────────
-
-def tv_snapshot():
-    """Return list of {id, name, connected, state} for all known TVs."""
-    result = []
-    for tv_id, info in ext_clients.items():
-        ws = info.get('ws')
-        result.append({
-            'id':        tv_id,
-            'name':      info.get('name', tv_id),
-            'connected': ws is not None and not ws.closed,
-            'state':     info.get('state', {}),
-        })
-    return result
-
-async def broadcast_tv_list():
-    """Send tv_list to all connected mobiles."""
-    msg = json.dumps({'type': 'tv_list', 'tvs': tv_snapshot()})
-    dead = set()
-    for m in list(mob_clients):
-        if m.closed:
-            dead.add(m)
-            continue
-        try:
-            await m.send_str(msg)
-        except Exception:
-            dead.add(m)
-    mob_clients -= dead
-
-async def notify_watching(tv_id, payload_str):
-    """Send a message only to mobiles currently watching a specific TV."""
-    dead = set()
-    for m in list(mob_clients):
-        if mob_tv_sel.get(id(m)) != tv_id:
-            continue
-        if m.closed:
-            dead.add(m)
-            continue
-        try:
-            await m.send_str(payload_str)
-        except Exception:
-            dead.add(m)
-    mob_clients -= dead
 
 # ── YouTube RSS feed ──────────────────────────────────────────────────────────
 
@@ -180,7 +133,6 @@ async def get_feed():
         if isinstance(r, list):
             all_items.extend(r)
 
-    # Sort by published descending
     all_items.sort(key=lambda x: x.get('published', ''), reverse=True)
     _feed_cache = all_items
     _feed_cache_time = now
@@ -299,15 +251,12 @@ async def keepalive_loop():
     ping = json.dumps({'type': 'ping'})
     while True:
         await asyncio.sleep(20)
-        # Ping all extension clients
-        for tv_id, info in list(ext_clients.items()):
-            ws = info.get('ws')
-            if ws and not ws.closed:
-                try:
-                    await ws.send_str(ping)
-                except Exception:
-                    pass
-        # Ping all mobile clients
+        global ext_ws
+        if ext_ws and not ext_ws.closed:
+            try:
+                await ext_ws.send_str(ping)
+            except Exception:
+                pass
         dead = set()
         for m in list(mob_clients):
             if m.closed:
@@ -319,10 +268,24 @@ async def keepalive_loop():
                 dead.add(m)
         mob_clients -= dead
 
+# ── Broadcast helper ──────────────────────────────────────────────────────────
+
+async def broadcast_mobs(payload_str):
+    dead = set()
+    for m in list(mob_clients):
+        if m.closed:
+            dead.add(m)
+            continue
+        try:
+            await m.send_str(payload_str)
+        except Exception:
+            dead.add(m)
+    mob_clients -= dead
+
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 async def handle_ws(request):
-    global mob_clients, ext_clients, mob_tv_sel
+    global ext_ws, state, mob_clients
     from aiohttp import web, WSMsgType
 
     ws = web.WebSocketResponse()
@@ -338,50 +301,40 @@ async def handle_ws(request):
 
     # ── Extension client ───────────────────────────────────────────────────────
     if msg.get('type') == 'extension':
-        tv_name = (msg.get('name') or 'TV ?').strip()
-        tv_id   = tv_name  # stable key = display name
-
-        # Register (or replace) this TV
-        if tv_id not in ext_clients:
-            ext_clients[tv_id] = {'ws': ws, 'name': tv_name, 'state': {}}
-        else:
-            ext_clients[tv_id]['ws']   = ws
-            ext_clients[tv_id]['name'] = tv_name
+        tv_name = (msg.get('name') or 'TV').strip()
+        ext_ws = ws
 
         print(f'[+] Extension connectée: {tv_name}')
-        await ws.send_str(json.dumps({
-            'type': 'ack', 'ip': local_ip, 'http_port': PORT, 'tv_id': tv_id
-        }))
-
-        # Notify watching mobiles that the ext is now online
-        await notify_watching(tv_id, json.dumps({'type': 'ext_status', 'connected': True}))
-        await broadcast_tv_list()
+        await ws.send_str(json.dumps({'type': 'ack', 'ip': local_ip, 'http_port': PORT}))
+        await broadcast_mobs(json.dumps({'type': 'ext_status', 'connected': True}))
 
         try:
             async for msg_data in ws:
                 if msg_data.type == WSMsgType.TEXT:
                     d = json.loads(msg_data.data)
                     if d.get('type') == 'state':
-                        ext_clients[tv_id]['state'] = d
-                        await notify_watching(tv_id, msg_data.data)
+                        state = d
+                        await broadcast_mobs(msg_data.data)
                     # pong silently ignored
         except Exception:
             pass
         finally:
-            # Mark disconnected but keep entry so mobile can see "offline" status
-            if ext_clients.get(tv_id, {}).get('ws') is ws:
-                ext_clients[tv_id]['ws'] = None
+            if ext_ws is ws:
+                ext_ws = None
             print(f'[-] Extension déconnectée: {tv_name}')
-            await notify_watching(tv_id, json.dumps({'type': 'ext_status', 'connected': False}))
-            await broadcast_tv_list()
+            await broadcast_mobs(json.dumps({'type': 'ext_status', 'connected': False}))
 
     # ── Mobile client ──────────────────────────────────────────────────────────
     elif msg.get('type') == 'mobile':
         mob_clients.add(ws)
-        mob_tv_sel[id(ws)] = None
         print(f'[+] Mobile connecté ({len(mob_clients)} actif(s))')
         await ws.send_str(json.dumps({'type': 'auth_ok'}))
-        await ws.send_str(json.dumps({'type': 'tv_list', 'tvs': tv_snapshot()}))
+
+        # Send current extension status and last known state
+        connected = ext_ws is not None and not ext_ws.closed
+        await ws.send_str(json.dumps({'type': 'ext_status', 'connected': connected}))
+        if state:
+            await ws.send_str(json.dumps({**state, 'type': 'state'}))
 
         try:
             async for msg_data in ws:
@@ -392,47 +345,21 @@ async def handle_ws(request):
                 if d.get('type') == 'pong':
                     continue
 
-                if d.get('type') == 'select_tv':
-                    tv_id = d.get('id', '')
-                    mob_tv_sel[id(ws)] = tv_id
-                    info = ext_clients.get(tv_id, {})
-                    ext_ws = info.get('ws')
-                    connected = ext_ws is not None and not ext_ws.closed
-                    await ws.send_str(json.dumps({'type': 'ext_status', 'connected': connected}))
-                    state = info.get('state', {})
-                    if state:
-                        await ws.send_str(json.dumps({**state, 'type': 'state'}))
-
-                elif d.get('type') == 'deselect_tv':
-                    mob_tv_sel[id(ws)] = None
-                    await ws.send_str(json.dumps({'type': 'deselected'}))
-                    await ws.send_str(json.dumps({'type': 'tv_list', 'tvs': tv_snapshot()}))
-
-                elif d.get('type') == 'command':
-                    tv_id = mob_tv_sel.get(id(ws))
-                    if tv_id:
-                        info   = ext_clients.get(tv_id, {})
-                        ext_ws = info.get('ws')
-                        if ext_ws and not ext_ws.closed:
-                            try:
-                                await ext_ws.send_str(msg_data.data)
-                            except Exception:
-                                pass
-                        else:
-                            try:
-                                await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'ext_offline'}))
-                            except Exception:
-                                pass
+                if d.get('type') == 'command':
+                    if ext_ws and not ext_ws.closed:
+                        try:
+                            await ext_ws.send_str(msg_data.data)
+                        except Exception:
+                            pass
                     else:
                         try:
-                            await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'no_tv_selected'}))
+                            await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'ext_offline'}))
                         except Exception:
                             pass
         except Exception:
             pass
         finally:
             mob_clients.discard(ws)
-            mob_tv_sel.pop(id(ws), None)
             print(f'[-] Mobile déconnecté ({len(mob_clients)} actif(s))')
 
     return ws
@@ -479,7 +406,6 @@ async def main():
             except Exception:
                 pass
 
-    # Ensure channels file exists
     if not CHANNELS_FILE.exists():
         save_channels([])
 

@@ -23,7 +23,7 @@ function transformUrl(url) {
 function connectRemote() {
   if (remoteWs?.readyState === WebSocket.OPEN    ||
       remoteWs?.readyState === WebSocket.CONNECTING ||
-      remoteWs?.readyState === WebSocket.CLOSING) return;  // CLOSING fix: don't overlap
+      remoteWs?.readyState === WebSocket.CLOSING) return;
   clearTimeout(remoteReconnectTimer);
   try { remoteWs = new WebSocket('ws://localhost:8765'); } catch { scheduleReconnect(); return; }
 
@@ -59,6 +59,11 @@ function scheduleReconnect() {
   remoteReconnectTimer = setTimeout(connectRemote, 500);
 }
 
+function sendCmdAck(action, ok, reason) {
+  if (remoteWs?.readyState !== WebSocket.OPEN) return;
+  remoteWs.send(JSON.stringify({ type: 'cmd_ack', action, ok, reason: reason || null }));
+}
+
 async function sendStateToRemote() {
   if (remoteWs?.readyState !== WebSocket.OPEN) return;
   const data = await chrome.storage.local.get('config');
@@ -72,6 +77,7 @@ async function sendStateToRemote() {
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
+    hasTabs: config.tabIds.length > 0,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
     interval: config.interval
@@ -81,40 +87,59 @@ async function sendStateToRemote() {
 async function handleRemoteCommand(cmd) {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
+  let ok = true, reason = null;
 
   switch (cmd.action) {
     case 'pause':
+      if (!config.active) { ok = false; reason = 'not_running'; break; }
       config.active = false; config.remotePaused = true;
       chrome.alarms.clear('wt-rotate');
       await chrome.storage.local.set({ config });
       await log('remote — pause'); break;
 
-    case 'resume': {
+    // start / resume / release : ferment l'onglet externe éventuel puis
+    // reprennent la rotation — ou la (re)démarrent si les onglets ont disparu
+    case 'start': case 'resume': case 'release': {
       const tabToRemove = config.remoteTabId;
       config.remoteTabId = null;
-      config.active = true; config.remotePaused = false;
-      config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
       if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
-      if (config.tabIds.length) {
-        try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
+      if (config.active) { await chrome.storage.local.set({ config }); break; }
+
+      let tabsValid = config.tabIds.length > 0;
+      for (const tid of config.tabIds) {
+        try { await chrome.tabs.get(tid); } catch { tabsValid = false; break; }
       }
-      await setNextAlarm(config.currentAlarmSec || config.interval);
-      await log('remote — reprise'); break;
+      if (!tabsValid) {
+        const activeUrls = config.urls.filter(u => u?.url?.trim());
+        if (!activeUrls.length) {
+          await chrome.storage.local.set({ config });
+          ok = false; reason = 'no_urls'; break;
+        }
+        await autoStartRotation(config);
+        await log('remote — démarrage rotation');
+      } else {
+        config.active = true; config.remotePaused = false;
+        config.lastAlarmTime = Date.now();
+        await chrome.storage.local.set({ config });
+        try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
+        await setNextAlarm(config.currentAlarmSec || config.interval);
+        await log('remote — reprise');
+      }
+      break;
     }
 
     case 'open_url': {
-      if (!cmd.url || !config.windowId) break;
-      // Block non-http(s) schemes (data:, javascript:, etc.)
+      if (!cmd.url) { ok = false; reason = 'invalid_url'; break; }
+      if (!config.windowId) { ok = false; reason = 'no_window'; break; }
       let safeUrl;
       try {
         const parsed = new URL(cmd.url);
         if (!SAFE_URL_SCHEMES.includes(parsed.protocol)) {
           await log('remote open_url rejeté — schéma interdit: ' + parsed.protocol);
-          break;
+          ok = false; reason = 'blocked_scheme'; break;
         }
         safeUrl = transformUrl(cmd.url);
-      } catch { break; }
+      } catch { ok = false; reason = 'invalid_url'; break; }
       try {
         if (config.remoteTabId) { try { await chrome.tabs.remove(config.remoteTabId); } catch {} }
         const tab = await chrome.tabs.create({ windowId: config.windowId, url: safeUrl, active: true });
@@ -122,38 +147,47 @@ async function handleRemoteCommand(cmd) {
         chrome.alarms.clear('wt-rotate');
         await chrome.storage.local.set({ config });
         await log('remote — open_url: ' + cmd.url.slice(0, 60));
-      } catch (e) { await log('remote open_url ERR: ' + e.message); }
-      break;
-    }
-
-    case 'release': {
-      const tabToRemove = config.remoteTabId;
-      config.remoteTabId = null;
-      config.active = true; config.remotePaused = false; config.lastAlarmTime = Date.now();
-      await chrome.storage.local.set({ config });
-      if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
-      if (config.tabIds.length) {
-        try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
+      } catch (e) {
+        await log('remote open_url ERR: ' + e.message);
+        ok = false; reason = 'no_window';
       }
-      await setNextAlarm(config.currentAlarmSec || config.interval);
-      await log('remote — libération'); break;
+      break;
     }
 
     case 'next': case 'prev': {
       const urls = config.urls.filter(u => u?.url?.trim());
-      if (urls.length && config.tabIds.length) {
-        const n = cmd.action === 'next'
-          ? (config.currentIndex + 1) % urls.length
-          : (config.currentIndex - 1 + urls.length) % urls.length;
-        if (n < config.tabIds.length) {
-          try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch {}
-          config.currentIndex = n; config.lastAlarmTime = Date.now();
-          await chrome.storage.local.set({ config });
-          if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
-          await log('remote — ' + cmd.action);
-        }
-      } break;
+      if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
+      const n = cmd.action === 'next'
+        ? (config.currentIndex + 1) % urls.length
+        : (config.currentIndex - 1 + urls.length) % urls.length;
+      if (n >= config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
+      try { await chrome.tabs.update(config.tabIds[n], { active: true }); }
+      catch { ok = false; reason = 'rotation_stopped'; break; }
+      config.currentIndex = n; config.lastAlarmTime = Date.now();
+      await chrome.storage.local.set({ config });
+      if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+      await log('remote — ' + cmd.action);
+      break;
     }
+
+    case 'goto': {
+      const idx = Number.isInteger(cmd.index) ? cmd.index : -1;
+      const urls = config.urls.filter(u => u?.url?.trim());
+      if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
+      if (idx < 0 || idx >= urls.length || idx >= config.tabIds.length) { ok = false; reason = 'bad_index'; break; }
+      try { await chrome.tabs.update(config.tabIds[idx], { active: true }); }
+      catch { ok = false; reason = 'rotation_stopped'; break; }
+      config.currentIndex = idx; config.lastAlarmTime = Date.now();
+      await chrome.storage.local.set({ config });
+      if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+      await log('remote — goto ' + idx);
+      break;
+    }
+
+    default:
+      ok = false; reason = 'unknown_action';
   }
+
+  sendCmdAck(cmd.action, ok, reason);
   await sendStateToRemote();
 }

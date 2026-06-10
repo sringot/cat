@@ -2,380 +2,363 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="wt remote">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#F7F7F8">
 <link rel="manifest" href="/app.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon180.png">
-<title>wt · remote</title>
+<title>Kiosque</title>
 <style>
-*, *::before, *::after {
-  box-sizing: border-box; margin: 0; padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
 :root {
-  --black:  #0D0D0D;
-  --white:  #FFFFFF;
-  --bg:     #F5F5F7;
-  --card:   #FFFFFF;
-  --t1:     #0D0D0D;
-  --t2:     #6E6E73;
-  --t3:     #AEAEB2;
-  --bdr:    #E8E8ED;
-  --green:  #30D158;
-  --gbg:    #F0FFF5;
-  --red:    #FF3B30;
-  --rbg:    #FFF1F0;
-  --sh:     0 1px 1px rgba(0,0,0,.03), 0 4px 16px rgba(0,0,0,.06);
+  --bg:        #F7F7F8;
+  --card:      #FFFFFF;
+  --txt:       #111114;
+  --txt-2:     #8E8E93;
+  --txt-3:     #C7C7CC;
+  --line:      rgba(0,0,0,.05);
+  --accent:    #111114;
+  --accent-txt:#FFFFFF;
+  --green:     #30B14A;
+  --red:       #FF3B30;
+  --shadow:    0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.05);
+  --ease:      cubic-bezier(.25,.8,.25,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #0E0E10;
+    --card:      #1B1B1E;
+    --txt:       #F5F5F7;
+    --txt-2:     #98989F;
+    --txt-3:     #5A5A60;
+    --line:      rgba(255,255,255,.06);
+    --accent:    #F5F5F7;
+    --accent-txt:#111114;
+    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.25);
+  }
 }
 
-html { -webkit-font-smoothing: antialiased; }
-
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; }
 body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
-  color: var(--t1);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  min-height: 100vh;
-  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  color: var(--txt);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+button {
+  font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .18s var(--ease), opacity .18s var(--ease), background .18s var(--ease);
+}
+button:active { transform: scale(.94); }
+input { font: inherit; color: inherit; border: 0; outline: none; background: none; }
 
-/* ── HEADER ────────────────────────────────────────────── */
-.nav {
-  position: sticky; top: 0; z-index: 99;
-  background: rgba(245,245,247,.88);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  padding: 13px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+/* ── Screens ─────────────────────────────────────────────── */
+.screen {
+  position: fixed; inset: 0;
+  display: none;
+  opacity: 0;
+  transition: opacity .3s var(--ease);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
-.nav-brand {
-  display: flex; align-items: center; gap: 10px;
-}
-.brand-icon {
-  width: 32px; height: 32px; background: var(--black);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-}
-.brand-icon svg { width: 17px; height: 17px; }
-.brand-name {
-  font-size: 15px; font-weight: 700; letter-spacing: -.4px;
-  color: var(--t1);
-}
-.brand-name span { color: var(--t2); font-weight: 500; }
-
-.pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px; border-radius: 20px;
-  font-size: 11px; font-weight: 600; letter-spacing: -.1px;
-}
-.pill-dot { width: 6px; height: 6px; border-radius: 50%; }
-.pill.on  { background: var(--gbg); color: #1D7A3A; }
-.pill.on  .pill-dot { background: var(--green); }
-.pill.off { background: var(--rbg); color: var(--red); }
-.pill.off .pill-dot { background: var(--red); }
-.pill.wait { background: #F5F5F7; color: var(--t2); }
-.pill.wait .pill-dot { background: var(--t3); }
-
-/* ── SCREENS ────────────────────────────────────────────── */
-.screen { display: none; }
-.screen.show { display: flex; }
-
-#s-load, #s-err {
-  flex-direction: column;
+.screen.show { display: block; opacity: 1; }
+.center {
+  min-height: 100%;
+  display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  min-height: 72vh;
-  gap: 14px; padding: 40px 28px; text-align: center;
+  gap: 14px; padding: 32px; text-align: center;
 }
-.loader {
-  width: 38px; height: 38px;
-  border: 3px solid var(--bdr);
-  border-top-color: var(--black);
+
+/* spinner */
+.spin {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--line);
+  border-top-color: var(--txt-2);
   border-radius: 50%;
-  animation: spin .7s linear infinite;
+  animation: rot .8s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.err-icon  { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:var(--rbg); }
-.err-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
-.err-body  { font-size: 14px; color: var(--t2); line-height: 1.6; max-width: 300px; }
+@keyframes rot { to { transform: rotate(360deg); } }
 
-#s-main { flex-direction: column; }
-
-/* ── LAYOUT ─────────────────────────────────────────────── */
-.stack {
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 16px 16px 0;
-  max-width: 520px; margin: 0 auto;
+.err-ic {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--card); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--txt-2);
+}
+.err-t  { font-size: 19px; font-weight: 650; letter-spacing: -.3px; }
+.err-s  { font-size: 14px; color: var(--txt-2); max-width: 240px; line-height: 1.45; }
+.pill-btn {
+  margin-top: 6px;
+  background: var(--accent); color: var(--accent-txt);
+  padding: 13px 26px; border-radius: 100px;
+  font-size: 15px; font-weight: 600;
 }
 
-/* ── CARD ───────────────────────────────────────────────── */
+/* ── Main layout ─────────────────────────────────────────── */
+.wrap { max-width: 520px; margin: 0 auto; padding: 18px 18px 40px; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 4px 20px;
+}
+h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
+.chip {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 550; color: var(--txt-2);
+  background: var(--card); box-shadow: var(--shadow);
+  padding: 7px 13px; border-radius: 100px;
+  transition: color .3s var(--ease);
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--txt-3);
+  transition: background .3s var(--ease);
+}
+.chip.on .dot { background: var(--green); }
+.chip.on { color: var(--txt); }
+
 .card {
   background: var(--card);
-  border-radius: 18px;
-  box-shadow: var(--sh);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 14px;
   overflow: hidden;
 }
-.card-p { padding: 20px; }
 
-.sect-lbl {
-  font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1.4px;
-  color: var(--t2); margin-bottom: 14px;
+/* ext offline notice */
+#ext-note {
+  display: none;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.45;
+  color: var(--txt-2);
+}
+#ext-note.show { display: block; }
+
+/* now playing */
+.now { padding: 24px 22px 22px; }
+.now-label {
+  font-size: 11.5px; font-weight: 650; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--txt-2);
+  display: flex; align-items: center; gap: 7px;
+  transition: color .3s var(--ease);
+}
+.now-label .dot { width: 6px; height: 6px; }
+.now-label.live { color: var(--green); }
+.now-label.live .dot { background: var(--green); animation: pulse 2.2s var(--ease) infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.now-name {
+  font-size: 25px; font-weight: 700; letter-spacing: -.4px;
+  margin-top: 10px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: opacity .25s var(--ease);
+}
+.now-url {
+  font-size: 13px; color: var(--txt-2); margin-top: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* ── NOW PLAYING ────────────────────────────────────────── */
-.np-top {
-  display: flex; align-items: flex-start;
-  justify-content: space-between; gap: 12px;
-  margin-bottom: 6px;
-}
-.np-name {
-  font-size: 20px; font-weight: 800;
-  letter-spacing: -.5px; line-height: 1.2;
-  flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.np-url {
-  font-size: 11px; color: var(--t2);
-  font-family: 'SF Mono','Consolas','Courier New',monospace;
-  margin-bottom: 14px; word-break: break-all;
-  line-height: 1.5;
-}
-.status-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 13px; border-radius: 20px;
-  font-size: 12px; font-weight: 600;
-}
-.sb-dot { width: 7px; height: 7px; border-radius: 50%; }
-.status-badge.on  { background: var(--gbg); color: #1D7A3A; }
-.status-badge.on  .sb-dot { background: var(--green); }
-.status-badge.off { background: var(--rbg); color: var(--red); }
-.status-badge.off .sb-dot { background: var(--red); }
-.status-badge.ext { background: #FFF3E0; color: #E65100; }
-.status-badge.ext .sb-dot { background: #FF9800; }
-
-/* ── URL BAR ────────────────────────────────────────────── */
-.url-bar {
-  display: flex; align-items: stretch;
-  background: #F5F5F7; border-radius: 14px;
-  border: 1.5px solid var(--bdr);
-  overflow: hidden; transition: border-color .15s;
-}
-.url-bar:focus-within { border-color: var(--black); background: #fff; }
-.url-bar input {
-  flex: 1; min-width: 0;
-  background: transparent; border: none; outline: none;
-  font-family: inherit;
-  font-size: 14px; font-weight: 400; color: var(--t1);
-  padding: 15px 16px;
-}
-.url-bar input::placeholder { color: var(--t3); }
-.url-bar-btn {
-  background: var(--black); border: none; cursor: pointer;
-  padding: 0 20px; color: #fff;
-  font-family: inherit;
-  font-size: 13px; font-weight: 700;
-  white-space: nowrap; transition: background .15s;
-  border-radius: 0 12px 12px 0;
-}
-.url-bar-btn:hover  { background: #222; }
-.url-bar-btn:active { background: #444; transform: scale(.98); }
-
-/* ── BUTTONS ────────────────────────────────────────────── */
-.btn {
+/* transport */
+.transport {
   display: flex; align-items: center; justify-content: center;
-  gap: 8px; width: 100%; border: none; cursor: pointer;
-  font-family: inherit;
-  font-size: 15px; font-weight: 700; letter-spacing: -.2px;
-  padding: 17px 20px; border-radius: 14px;
-  transition: all .13s;
+  gap: 26px;
+  padding: 4px 0 26px;
+  transition: opacity .3s var(--ease);
 }
-.btn:active { transform: scale(.97); }
-
-.btn-k    { background: var(--black); color: #fff; }
-.btn-k:hover   { background: #222; }
-.btn-g    { background: var(--green); color: #fff; }
-.btn-g:hover   { background: #25b84e; }
-.btn-r    { background: var(--red);   color: #fff; }
-.btn-r:hover   { background: #e0332a; }
-.btn-line { background: #fff; color: var(--t1); border: 1.5px solid var(--bdr); }
-.btn-line:hover { border-color: #222; }
-.btn-line-r {
-  background: #fff; color: var(--red);
-  border: 1.5px solid #FFCDD2; border-radius: 14px;
+.transport.off { opacity: .3; pointer-events: none; }
+.t-side {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--txt);
 }
-.btn-line-r:hover { background: var(--rbg); border-color: var(--red); }
+.t-main {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-txt);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow);
+}
 
-.btn-sm { padding: 13px 14px; font-size: 13px; border-radius: 12px; flex: 1; }
-.row2 { display: flex; gap: 8px; }
+/* playlist */
+.sec-h {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 18px 22px 6px;
+}
+.sec-t { font-size: 15px; font-weight: 650; letter-spacing: -.2px; }
+.sec-n { font-size: 12.5px; color: var(--txt-2); font-weight: 550; }
+.pl { padding: 6px 8px 10px; }
+.pl-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  text-align: left;
+}
+.pl-item:active { background: var(--bg); transform: scale(.985); }
+.pl-ix {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 650; color: var(--txt-2);
+  flex-shrink: 0;
+  transition: background .25s var(--ease), color .25s var(--ease);
+}
+.pl-item.cur .pl-ix { background: var(--accent); color: var(--accent-txt); }
+.pl-txt { min-width: 0; flex: 1; }
+.pl-name {
+  font-size: 15px; font-weight: 550;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: font-weight .2s;
+}
+.pl-item.cur .pl-name { font-weight: 700; }
+.pl-url {
+  font-size: 12px; color: var(--txt-2); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pl-empty { padding: 18px 22px 22px; font-size: 14px; color: var(--txt-2); }
 
-/* ── SEP ────────────────────────────────────────────────── */
-.div  { border: none; border-top: 1px solid var(--bdr); margin: 14px 0; }
+/* open url */
+.open-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 12px 12px 20px;
+}
+.open-row input { flex: 1; min-width: 0; font-size: 15px; padding: 10px 0; }
+.open-row input::placeholder { color: var(--txt-3); }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-txt);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 
-/* ── INSTALL BANNER ──────────────────────────────────────── */
-.install-banner {
+/* release */
+#card-release { display: none; }
+#card-release.show { display: block; }
+.release-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 17px;
+  font-size: 15.5px; font-weight: 650;
+  color: var(--red);
+}
+
+/* install hint */
+#install-banner {
   display: none;
-  background: #EFF6FF; color: #1D4ED8;
-  border: 1px solid #BFDBFE;
-  border-radius: 14px; padding: 13px 16px;
-  font-size: 13px; font-weight: 600;
-  text-align: center; line-height: 1.6;
-  align-items: center; justify-content: center;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.5; color: var(--txt-2);
 }
-.install-banner.show { display: flex; }
+#install-banner.show { display: block; }
+#install-banner b { color: var(--txt); font-weight: 600; }
 
-/* ── EXT BANNER ─────────────────────────────────────────── */
-.ext-banner {
-  display: none;
-  background: #FFF3E0; color: #B45309;
-  border: 1px solid #FDE68A;
-  border-radius: 14px; padding: 13px 16px;
-  font-size: 13px; font-weight: 600;
-  text-align: center; line-height: 1.5;
-  align-items: center; justify-content: center;
-}
-.ext-banner.show { display: flex; }
-
-/* ── TOAST ──────────────────────────────────────────────── */
+/* toast */
 .toast {
-  position: fixed; bottom: 28px; left: 50%;
-  transform: translateX(-50%) translateY(60px);
-  background: #1C1C1E; color: #fff;
-  padding: 11px 22px; border-radius: 22px;
-  font-size: 13px; font-weight: 600;
-  opacity: 0; z-index: 9999;
-  transition: transform .22s, opacity .22s;
-  white-space: nowrap; pointer-events: none;
+  position: fixed;
+  left: 50%; bottom: calc(26px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 16px);
+  background: var(--accent); color: var(--accent-txt);
+  font-size: 14px; font-weight: 550;
+  padding: 12px 20px; border-radius: 100px;
+  box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+  max-width: calc(100vw - 48px);
+  text-align: center;
+  z-index: 100;
 }
-.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
 
-<div class="nav">
-  <div class="nav-brand">
-    <div class="brand-icon">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M4.5 7L8 17L12 9.5L16 17L19.5 7"
-              stroke="white" stroke-width="2.3"
-              stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Connexion -->
+<div class="screen show" id="s-boot">
+  <div class="center">
+    <div class="spin"></div>
+  </div>
+</div>
+
+<!-- Erreur -->
+<div class="screen" id="s-err">
+  <div class="center">
+    <div class="err-ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="28" height="28">
+        <path d="M1 9.5C4 6.5 7.8 5 12 5s8 1.5 11 4.5M4.5 13c2-2 4.6-3 7.5-3s5.5 1 7.5 3M8 16.5c1.1-1.1 2.5-1.6 4-1.6s2.9.5 4 1.6"/>
+        <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>
+        <line x1="3" y1="3" x2="21" y2="21"/>
       </svg>
     </div>
-    <div class="brand-name">wt<span> remote</span></div>
-  </div>
-  <div class="pill wait" id="cpill">
-    <div class="pill-dot"></div>
-    <span id="ctxt">Connexion…</span>
+    <div class="err-t" id="err-title">Serveur introuvable</div>
+    <div class="err-s" id="err-sub">Vérifiez que le PC du kiosque est allumé et connecté au réseau.</div>
+    <button class="pill-btn" id="err-retry" onclick="connect()">Réessayer</button>
   </div>
 </div>
 
-<!-- Loading -->
-<div id="s-load" class="screen show">
-  <div class="loader"></div>
-  <p style="font-size:14px;color:var(--t2);font-family:Poppins,sans-serif">
-    Connexion au serveur…
-  </p>
-</div>
+<!-- Main -->
+<div class="screen" id="s-main">
+  <div class="wrap">
 
-<!-- Error -->
-<div id="s-err" class="screen">
-  <div class="err-icon">
-    <svg viewBox="0 0 24 24" fill="var(--red)" width="30" height="30">
-      <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-    </svg>
-  </div>
-  <div class="err-title">Serveur introuvable</div>
-  <div class="err-body">
-    Lancez <strong>start_remote.bat</strong> sur le NUC et assurez-vous d'être
-    sur le même réseau Wi-Fi.
-  </div>
-  <button class="btn btn-k" style="max-width:240px;margin-top:10px" onclick="location.reload()">
-    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-    Réessayer
-  </button>
-</div>
+    <header>
+      <h1>Kiosque</h1>
+      <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Connexion…</span></div>
+    </header>
 
-<!-- Control -->
-<div id="s-main" class="screen">
-  <div class="stack">
-
-    <!-- iOS install hint (hidden once installed as PWA) -->
-    <div id="install-banner" class="install-banner">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4-3v-3h3l-4-4-4 4h3v3h2z"/></svg>
-      Installer l'appli : bouton <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong>
+    <div class="card" id="ext-note">
+      L'extension n'est pas connectée sur le PC du kiosque — les commandes sont indisponibles.
     </div>
 
-    <!-- Extension offline banner -->
-    <div id="ext-banner" class="ext-banner">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-      Extension hors ligne — reconnexion en cours…
+    <div class="card" id="install-banner">
+      Ajoutez cette page à l'écran d'accueil : <b>Partager → Sur l'écran d'accueil</b>
     </div>
 
-    <!-- Now playing -->
+    <!-- Now playing + transport -->
     <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">En cours d'affichage</div>
-        <div class="np-top">
-          <div class="np-name" id="np-n">—</div>
-        </div>
-        <div class="np-url" id="np-u">—</div>
-        <span class="status-badge on" id="sbadge">
-          <span class="sb-dot"></span>
-          <span id="sbtxt">Rotation active</span>
-        </span>
+      <div class="now">
+        <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
+        <div class="now-name" id="now-name">—</div>
+        <div class="now-url" id="now-url">&nbsp;</div>
       </div>
-    </div>
-
-    <!-- Send URL -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Afficher sur la TV</div>
-        <div class="url-bar">
-          <input id="urlin" type="url"
-                 placeholder="https://youtube.com/watch?v=…"
-                 autocomplete="off" autocorrect="off"
-                 autocapitalize="off" spellcheck="false">
-          <button class="url-bar-btn" onclick="sendUrl()">Envoyer</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="card">
-      <div class="card-p">
-        <div class="sect-lbl">Contrôles</div>
-        <button class="btn btn-r"   id="bpause"  onclick="cmd('pause')">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          Pause la rotation
+      <div class="transport" id="transport">
+        <button class="t-side" id="b-prev" aria-label="Précédent">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
         </button>
-        <button class="btn btn-g"   id="bresume" onclick="cmd('resume')" style="display:none">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M8 5v14l11-7z"/></svg>
-          Reprendre la rotation
+        <button class="t-main" id="b-main" aria-label="Lecture / pause">
+          <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" width="30" height="30" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
-        <div class="div"></div>
-        <div class="row2">
-          <button class="btn btn-line btn-sm" onclick="cmd('prev')">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
-            Précédent
-          </button>
-          <button class="btn btn-line btn-sm" onclick="cmd('next')">
-            Suivant
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
-          </button>
-        </div>
+        <button class="t-side" id="b-next" aria-label="Suivant">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
+        </button>
       </div>
     </div>
 
     <!-- Release -->
-    <div class="card" id="card-release" style="display:none;margin-bottom:0">
-      <div class="card-p">
-        <button class="btn btn-line-r" id="brelease" onclick="cmd('release')">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-          Libérer le contrôle
+    <div class="card" id="card-release">
+      <button class="release-btn" id="b-release">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        Revenir à la rotation
+      </button>
+    </div>
+
+    <!-- Playlist -->
+    <div class="card">
+      <div class="sec-h">
+        <div class="sec-t">Playlist</div>
+        <div class="sec-n" id="pl-count"></div>
+      </div>
+      <div class="pl" id="pl"></div>
+    </div>
+
+    <!-- Open URL -->
+    <div class="card">
+      <div class="open-row">
+        <input id="urlin" type="url" placeholder="Afficher une URL…"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="send-btn" id="b-send" aria-label="Afficher">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg>
         </button>
       </div>
     </div>
@@ -387,11 +370,26 @@ body {
 
 <script>
 let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
+let lastState = null;
+let reconnectTimer = null;
+
+const $ = id => document.getElementById(id);
+
+const REASONS = {
+  not_running:      'La rotation est déjà en pause',
+  rotation_stopped: 'Rotation arrêtée — appuyez sur lecture pour démarrer',
+  no_urls:          'Aucune URL configurée — ajoutez-en depuis le PC',
+  no_window:        'Le kiosque n\'est pas ouvert — appuyez sur lecture pour démarrer',
+  blocked_scheme:   'URL non autorisée',
+  invalid_url:      'URL invalide',
+  bad_index:        'Action impossible',
+  unknown_action:   'Action impossible'
+};
 
 function boot() {
   ip   = location.hostname;
   port = parseInt(location.port) || 8765;
-  // Token from URL (QR scan) takes priority; fall back to localStorage (PWA relaunch)
+  // Token depuis l'URL (scan QR) en priorité, sinon localStorage (relance PWA)
   const urlToken = new URLSearchParams(location.search).get('token') || '';
   if (urlToken) {
     wsToken = urlToken;
@@ -407,79 +405,135 @@ function show(id) {
     el.classList.toggle('show', el.id === id));
 }
 
-function badge(state) { // 'on' | 'off' | 'wait'
-  const p = document.getElementById('cpill');
-  const t = document.getElementById('ctxt');
-  p.className = 'pill ' + state;
-  t.textContent = { on: 'Connecté', off: 'Déconnecté', wait: 'Connexion…' }[state] || 'Connexion…';
+function chip(state) { // 'on' | 'off' | 'wait'
+  const c = $('chip');
+  c.classList.toggle('on', state === 'on');
+  $('chip-txt').textContent =
+    state === 'on' ? 'Connecté' : state === 'off' ? 'Reconnexion…' : 'Connexion…';
 }
 
 function showToast(msg) {
-  const el = document.getElementById('toast');
+  const el = $('toast');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-let reconnectTimer = null;
-
 function connect() {
   clearTimeout(reconnectTimer);
-  badge('wait');
+  chip('wait');
   authFailed = false;
   ws = new WebSocket(`ws://${ip}:${port}`);
   ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile', token: wsToken }));
   ws.onmessage = e => {
-    let m; try { m = JSON.parse(e.data); } catch(e) { return; }
+    let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.type === 'ping')       { ws.send(JSON.stringify({ type: 'pong' })); return; }
-    if (m.type === 'auth_error') { authFailed = true; badge('off'); showToast('Accès refusé — rescannez le QR code'); return; }
-    if (m.type === 'auth_ok')    { show('s-main'); badge('on'); return; }
-    if (m.type === 'ext_status') {
-      document.getElementById('ext-banner').classList.toggle('show', !m.connected);
+    if (m.type === 'auth_error') {
+      authFailed = true;
+      $('err-title').textContent = 'Accès refusé';
+      $('err-sub').textContent   = 'Rescannez le QR code affiché sur l\'écran du kiosque.';
+      $('err-retry').style.display = 'none';
+      show('s-err');
       return;
     }
+    if (m.type === 'auth_ok')    { show('s-main'); chip('on'); return; }
+    if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
+    if (m.type === 'cmd_ack')    { if (!m.ok) showToast(REASONS[m.reason] || 'Action impossible'); return; }
     if (m.type === 'cmd_error')  { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
     if (m.type === 'state')      sync(m);
   };
   ws.onclose = () => {
-    badge('off');
-    if (!document.getElementById('s-main').classList.contains('show')) show('s-err');
+    chip('off');
+    if (!$('s-main').classList.contains('show') && !authFailed) {
+      $('err-title').textContent = 'Serveur introuvable';
+      $('err-sub').textContent   = 'Vérifiez que le PC du kiosque est allumé et connecté au réseau.';
+      $('err-retry').style.display = '';
+      show('s-err');
+    }
     if (!authFailed) reconnectTimer = setTimeout(connect, 3000);
   };
   ws.onerror = () => {};
 }
 
-function sync(s) {
-  const urls = s.urls || [], c = urls[s.currentIndex || 0] || {};
-  const npn  = document.getElementById('np-n');
-  const npu  = document.getElementById('np-u');
-  const sb   = document.getElementById('sbadge');
-  const sbt  = document.getElementById('sbtxt');
-  const bp   = document.getElementById('bpause');
-  const br   = document.getElementById('bresume');
-  const crel = document.getElementById('card-release');
+function setExtOnline(on) {
+  $('ext-note').classList.toggle('show', !on);
+  $('transport').classList.toggle('off', !on);
+}
 
-  if (s.remotePaused && s.remoteUrl) {
-    // External URL open from remote
-    npn.textContent = s.remoteUrl;
-    npu.textContent = s.remoteUrl;
-    sb.className = 'status-badge ext';
-    sbt.textContent = 'URL externe';
-    bp.style.display = 'none'; br.style.display = ''; crel.style.display = '';
-  } else if (s.active) {
-    npn.textContent = c.name || c.url || '—';
-    npu.textContent = c.url || '—';
-    sb.className = 'status-badge on';
-    sbt.textContent = 'Rotation active';
-    bp.style.display = ''; br.style.display = 'none'; crel.style.display = 'none';
+// mode courant déduit de l'état : 'external' | 'running' | 'paused' | 'stopped'
+function modeOf(s) {
+  if (s.remotePaused && s.remoteUrl) return 'external';
+  if (s.active) return 'running';
+  if (s.remotePaused) return 'paused';
+  return 'stopped';
+}
+
+function sync(s) {
+  lastState = s;
+  const mode = modeOf(s);
+  const urls = s.urls || [];
+  const cur  = urls[s.currentIndex || 0] || {};
+
+  const label    = $('now-label');
+  const labelTxt = $('now-label-txt');
+  label.classList.toggle('live', mode === 'running');
+
+  if (mode === 'external') {
+    labelTxt.textContent = 'URL externe';
+    setNow(shortUrl(s.remoteUrl), s.remoteUrl);
   } else {
-    npn.textContent = c.name || c.url || '—';
-    npu.textContent = c.url || '—';
-    sb.className = 'status-badge off';
-    sbt.textContent = 'En pause';
-    bp.style.display = 'none'; br.style.display = ''; crel.style.display = 'none';
+    labelTxt.textContent =
+      mode === 'running' ? 'En rotation' :
+      mode === 'paused'  ? 'En pause'    : 'Arrêté';
+    setNow(cur.name || shortUrl(cur.url) || '—', cur.url || '');
   }
+
+  // bouton principal : pause si ça tourne, lecture sinon
+  const playing = mode === 'running';
+  $('ic-play').style.display  = playing ? 'none' : '';
+  $('ic-pause').style.display = playing ? '' : 'none';
+
+  $('card-release').classList.toggle('show', mode === 'external');
+  renderPlaylist(urls, s.currentIndex || 0, mode);
+}
+
+function setNow(name, url) {
+  const n = $('now-name'), u = $('now-url');
+  if (n.textContent !== name) {
+    n.style.opacity = '0';
+    setTimeout(() => { n.textContent = name; n.style.opacity = '1'; }, 120);
+  }
+  u.textContent = url || ' ';
+}
+
+function shortUrl(u) {
+  if (!u) return '';
+  try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; }
+}
+
+function renderPlaylist(urls, currentIndex, mode) {
+  const pl = $('pl');
+  $('pl-count').textContent = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : '';
+  if (!urls.length) {
+    pl.innerHTML = '<div class="pl-empty">Aucune URL configurée sur le PC.</div>';
+    return;
+  }
+  pl.innerHTML = '';
+  urls.forEach((u, i) => {
+    const b = document.createElement('button');
+    b.className = 'pl-item' + (i === currentIndex && mode !== 'external' ? ' cur' : '');
+    b.innerHTML = `
+      <div class="pl-ix">${i + 1}</div>
+      <div class="pl-txt">
+        <div class="pl-name"></div>
+        <div class="pl-url"></div>
+      </div>`;
+    b.querySelector('.pl-name').textContent = u.name || shortUrl(u.url);
+    b.querySelector('.pl-url').textContent  = u.url;
+    b.addEventListener('click', () => cmd('goto', { index: i }));
+    pl.appendChild(b);
+  });
 }
 
 function cmd(action, extra) {
@@ -489,26 +543,38 @@ function cmd(action, extra) {
     showToast('Connexion perdue — reconnexion en cours…');
 }
 
-function sendUrl() {
-  const u = document.getElementById('urlin').value.trim();
-  if (!u) return;
-  cmd('open_url', { url: u });
-  document.getElementById('urlin').value = '';
+function mainAction() {
+  if (!lastState) { cmd('start'); return; }
+  const mode = modeOf(lastState);
+  if (mode === 'running') cmd('pause');
+  else if (mode === 'external') cmd('release');
+  else cmd(mode === 'paused' && lastState.hasTabs ? 'resume' : 'start');
 }
 
-function go(url) { cmd('open_url', { url }); }
+function sendUrl() {
+  let u = ($('urlin').value || '').trim();
+  if (!u) return;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  cmd('open_url', { url: u });
+  $('urlin').value = '';
+  $('urlin').blur();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('urlin')
-    .addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
+  $('b-main').addEventListener('click', mainAction);
+  $('b-prev').addEventListener('click', () => cmd('prev'));
+  $('b-next').addEventListener('click', () => cmd('next'));
+  $('b-release').addEventListener('click', () => cmd('release'));
+  $('b-send').addEventListener('click', sendUrl);
+  $('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
+
+  // Bannière d'installation sur iOS Safari (hors mode PWA)
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
+    $('install-banner').classList.add('show');
+  }
+
+  boot();
 });
-
-// Show install hint on iOS Safari (not when already in standalone/PWA mode)
-if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
-  document.getElementById('install-banner').classList.add('show');
-}
-
-boot();
 </script>
 </body>
 </html>

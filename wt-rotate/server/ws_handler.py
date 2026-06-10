@@ -60,6 +60,8 @@ async def _handle_extension(ws) -> None:
                 if d.get('type') == 'state':
                     state.cached_state = d
                     await _broadcast_mobiles(msg_data.data)
+                elif d.get('type') == 'cmd_ack':
+                    await _broadcast_mobiles(msg_data.data)
                 # pong responses silently ignored
     except Exception:
         pass

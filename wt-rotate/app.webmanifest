@@ -1,11 +1,11 @@
 {
-  "name": "wt remote",
-  "short_name": "wt remote",
+  "name": "Kiosque",
+  "short_name": "Kiosque",
   "description": "Contrôle à distance wee rotate",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F5F7",
-  "theme_color": "#ffffff",
+  "background_color": "#F7F7F8",
+  "theme_color": "#F7F7F8",
   "orientation": "portrait",
   "icons": [
     {

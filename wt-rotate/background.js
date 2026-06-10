@@ -331,7 +331,7 @@ function connectRemote() {
 
 function scheduleReconnect() {
   clearTimeout(remoteReconnectTimer);
-  remoteReconnectTimer = setTimeout(connectRemote, 2000);
+  remoteReconnectTimer = setTimeout(connectRemote, 500);
 }
 
 async function sendStateToRemote() {
@@ -515,19 +515,24 @@ async function handleRemoteCommand(cmd) {
     }
 
     case 'next': case 'prev': {
-      const urls = config.urls.filter(u => u?.url?.trim());
-      if (urls.length && config.tabIds.length) {
-        const n = cmd.action === 'next'
-          ? (config.currentIndex + 1) % urls.length
-          : (config.currentIndex - 1 + urls.length) % urls.length;
-        if (n < config.tabIds.length) {
-          try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch {}
-          config.currentIndex = n; config.lastAlarmTime = Date.now();
-          await chrome.storage.local.set({ config });
-          if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
-          await log('remote — ' + cmd.action);
-        }
-      } break;
+      if (!config.tabIds.length) break;
+      const count = config.tabIds.length;
+      const n = cmd.action === 'next'
+        ? (config.currentIndex + 1) % count
+        : (config.currentIndex - 1 + count) % count;
+      // Exit manual URL mode and switch to playlist tab
+      const tabToRemove = config.remoteTabId;
+      config.remoteTabId = null;
+      if (config.remotePaused) { config.remotePaused = false; config.active = true; }
+      try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch { break; }
+      if (tabToRemove) { try { await chrome.tabs.remove(tabToRemove); } catch {} }
+      config.currentIndex = n; config.lastAlarmTime = Date.now();
+      const activeUrls = config.urls.filter(u => u?.url?.trim());
+      config.currentAlarmSec = (activeUrls[n]?.interval) || config.interval;
+      await chrome.storage.local.set({ config });
+      if (config.active) await setNextAlarm(config.currentAlarmSec);
+      await log('remote — ' + cmd.action);
+      break;
     }
 
     case 'set_volume': {
@@ -649,3 +654,8 @@ async function log(msg) {
 }
 
 connectRemote();
+
+// Keep service worker alive — prevents Chrome from terminating it between alarms
+try {
+  navigator.locks.request('wt-rotate-sw-alive', { mode: 'shared' }, () => new Promise(() => {}));
+} catch {}

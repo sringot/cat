@@ -145,8 +145,13 @@ html,body{height:100%;font-family:'Poppins',sans-serif;background:var(--bg);colo
 .release-btn:active{opacity:.7}
 
 /* ── PLAYLIST ── */
-.pl-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--card2);border-radius:12px;margin-bottom:6px}
-.pl-item:last-child{margin-bottom:0}
+.pl-wrap{position:relative;overflow:hidden;border-radius:12px;margin-bottom:6px}
+.pl-wrap:last-child{margin-bottom:0}
+.pl-del-zone{position:absolute;right:0;top:0;bottom:0;width:76px;display:flex;align-items:center;justify-content:center;background:var(--red);cursor:pointer;flex-direction:column;gap:4px}
+.pl-del-zone svg{color:#fff;width:20px;height:20px}
+.pl-del-zone span{color:rgba(255,255,255,.85);font-size:9px;font-weight:700;letter-spacing:.4px}
+.pl-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--card2);border-radius:12px;margin-bottom:0;transition:transform .26s cubic-bezier(.4,0,.2,1);will-change:transform}
+.pl-item.swiped{transform:translateX(-76px);border-radius:12px 0 0 12px}
 .pl-item.now{background:rgba(0,122,255,.08);border:1px solid rgba(0,122,255,.22)}
 .pl-drag{cursor:grab;color:var(--t3);touch-action:none;display:flex;align-items:center;flex-shrink:0;padding:2px}
 .pl-drag svg{width:14px;height:14px}
@@ -508,6 +513,7 @@ let _volT = null;
 let _dragSrc = null, _touchDragIdx = null;
 let _feedLoaded = false, _feedT = null;
 let _rafId = null, _cdEnd = 0, _cdTotal = 0;
+let _sw = { el: null, sx: 0, baseX: 0, moved: false };
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
 function boot() {
@@ -578,7 +584,7 @@ function connect() {
   ws.onerror = () => {};
 }
 
-function schedReco() { clearTimeout(_rt); _rt = setTimeout(connect, 3000); }
+function schedReco() { clearTimeout(_rt); _rt = setTimeout(connect, 1000); }
 
 // ── Splash ─────────────────────────────────────────────────────────────────────
 function hideSplash() {
@@ -731,6 +737,12 @@ function switchTab(name, btn) {
 }
 
 // ── Playlist ───────────────────────────────────────────────────────────────────
+function closeAllSwipes(except) {
+  id('pl-list')?.querySelectorAll('.pl-item.swiped').forEach(r => {
+    if (r !== except) { r.style.transform = ''; r.classList.remove('swiped'); }
+  });
+}
+
 function renderPlaylist() {
   const urls = _state.urls || [];
   const cur  = _state.currentIndex || 0;
@@ -749,7 +761,6 @@ function renderPlaylist() {
       '<div class="pl-info"><div class="pl-name">' + esc(e.name || e.url) + '</div><div class="pl-url">' + esc(e.url) + '</div></div>' +
       '<div class="pl-btns">' +
         '<button class="ico-btn" onclick="plEdit(' + i + ')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>' +
-        '<button class="ico-btn del" onclick="plDel(' + i + ')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>' +
       '</div>';
 
     // Desktop DnD
@@ -763,9 +774,12 @@ function renderPlaylist() {
     });
     row.addEventListener('dragend', () => { row.style.opacity = ''; _dragSrc = null; });
 
-    // iOS touch
+    // iOS touch drag (reorder via handle)
     const handle = row.querySelector('.pl-drag');
-    handle.addEventListener('touchstart', e2 => { _touchDragIdx = i; e2.stopPropagation(); }, { passive: true });
+    handle.addEventListener('touchstart', e2 => {
+      _sw.el = null; // cancel any swipe when drag starts
+      _touchDragIdx = i; e2.stopPropagation();
+    }, { passive: true });
     handle.addEventListener('touchmove', e2 => {
       if (_touchDragIdx === null) return;
       const touch = e2.touches[0];
@@ -787,7 +801,48 @@ function renderPlaylist() {
       _touchDragIdx = null;
     });
 
-    list.appendChild(row);
+    // Swipe-to-delete
+    row.addEventListener('touchstart', e2 => {
+      if (e2.target.closest('.pl-drag')) return;
+      _sw.el    = row;
+      _sw.sx    = e2.touches[0].clientX;
+      _sw.baseX = row.classList.contains('swiped') ? -76 : 0;
+      _sw.moved = false;
+      row.style.transition = 'none';
+    }, { passive: true });
+    row.addEventListener('touchmove', e2 => {
+      if (_sw.el !== row) return;
+      const dx = e2.touches[0].clientX - _sw.sx;
+      if (Math.abs(dx) > 6) _sw.moved = true;
+      if (!_sw.moved) return;
+      row.style.transform = 'translateX(' + Math.max(-76, Math.min(0, _sw.baseX + dx)) + 'px)';
+    }, { passive: true });
+    row.addEventListener('touchend', e2 => {
+      if (_sw.el !== row) { _sw.el = null; return; }
+      _sw.el = null;
+      row.style.transition = '';
+      if (!_sw.moved) { closeAllSwipes(null); return; }
+      const dx = e2.changedTouches[0].clientX - _sw.sx;
+      if (_sw.baseX + dx < -38) {
+        row.style.transform = '';
+        row.classList.add('swiped');
+        closeAllSwipes(row);
+      } else {
+        row.style.transform = '';
+        row.classList.remove('swiped');
+      }
+    });
+
+    // Wrap with swipe-to-delete zone
+    const wrap = document.createElement('div');
+    wrap.className = 'pl-wrap';
+    const delZone = document.createElement('div');
+    delZone.className = 'pl-del-zone';
+    delZone.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span>Suppr.</span>';
+    delZone.addEventListener('click', () => plDel(i));
+    wrap.appendChild(delZone);
+    wrap.appendChild(row);
+    list.appendChild(wrap);
   });
 }
 
@@ -802,6 +857,7 @@ function plDel(i) { sendCmd('remove_url', { index: i }); }
 function plEdit(i) {
   const list = id('pl-list');
   list.querySelector('.edit-form')?.remove();
+  closeAllSwipes(null);
   const e = (_state.urls || [])[i];
   if (!e) return;
   const rows = list.querySelectorAll('.pl-item');
@@ -815,8 +871,10 @@ function plEdit(i) {
       '<button class="edit-save" onclick="plSave(' + i + ')">Enregistrer</button>' +
       '<button class="edit-cancel" onclick="renderPlaylist()">Annuler</button>' +
     '</div>';
-  rows[i].after(form);
-  id('eu-' + i).focus();
+  // Insert after the pl-wrap (not inside it) to avoid clipping by overflow:hidden
+  const wrap = rows[i].closest('.pl-wrap') || rows[i];
+  wrap.after(form);
+  id('eu-' + i)?.focus();
 }
 function plSave(i) {
   const u = id('eu-' + i), n = id('en-' + i);

@@ -4,7 +4,7 @@ const DEFAULT_CONFIG = {
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
   remotePaused: false, remoteTabId: null,
   canvaRefreshMin: 5,
-  volume: 1.0
+  tabRefreshHours: 4
 };
 
 const MAX_LOGS = 60;
@@ -70,7 +70,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-rotate')   await rotateToNext();
-  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await injectOverlayAll(); await refreshCanvaTabsIfNeeded(); }
+  if (alarm.name === 'wt-watchdog') { await checkSchedule(); connectRemote(); await injectOverlayAll(); await refreshCanvaTabsIfNeeded(); await refreshStaleTabsIfNeeded(); }
 });
 
 chrome.tabs.onRemoved.addListener(async tabId => {
@@ -343,24 +343,13 @@ async function sendStateToRemote() {
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
-  const now     = Date.now();
-  const total   = config.currentAlarmSec || config.interval;
-  const elapsed = config.lastAlarmTime ? (now - config.lastAlarmTime) / 1000 : 0;
-  const remaining = (config.active && !config.remotePaused) ? Math.max(0, total - elapsed) : 0;
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
     remoteUrl,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
-    interval: config.interval,
-    volume: config.volume !== undefined ? config.volume : 1.0,
-    scheduleEnabled: config.scheduleEnabled || false,
-    scheduleStart: config.scheduleStart || '08:00',
-    scheduleEnd: config.scheduleEnd || '18:00',
-    scheduleDays: config.scheduleDays || [1,2,3,4,5],
-    remaining,
-    total
+    interval: config.interval
   }));
 }
 
@@ -454,16 +443,6 @@ async function injectYouTubeMaximize(tabId) {
   } catch {}
 }
 
-async function injectVolume(tabId, level) {
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (lv) => { document.querySelectorAll('video,audio').forEach(el => el.volume = lv); },
-      args: [level]
-    });
-  } catch {}
-}
-
 async function handleRemoteCommand(cmd) {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
@@ -515,102 +494,49 @@ async function handleRemoteCommand(cmd) {
     }
 
     case 'next': case 'prev': {
-      if (!config.tabIds.length) break;
-      const count = config.tabIds.length;
-      const n = cmd.action === 'next'
-        ? (config.currentIndex + 1) % count
-        : (config.currentIndex - 1 + count) % count;
-      // Exit manual URL mode and switch to playlist tab
-      const tabToRemove = config.remoteTabId;
-      config.remoteTabId = null;
-      if (config.remotePaused) { config.remotePaused = false; config.active = true; }
-      try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch { break; }
-      if (tabToRemove) { try { await chrome.tabs.remove(tabToRemove); } catch {} }
-      config.currentIndex = n; config.lastAlarmTime = Date.now();
-      const activeUrls = config.urls.filter(u => u?.url?.trim());
-      config.currentAlarmSec = (activeUrls[n]?.interval) || config.interval;
-      await chrome.storage.local.set({ config });
-      if (config.active) await setNextAlarm(config.currentAlarmSec);
-      await log('remote — ' + cmd.action);
-      break;
-    }
-
-    case 'set_volume': {
-      const level = Math.max(0, Math.min(1, parseFloat(cmd.level) || 0));
-      config.volume = level;
-      await chrome.storage.local.set({ config });
-      for (const tid of config.tabIds) await injectVolume(tid, level);
-      if (config.remoteTabId) await injectVolume(config.remoteTabId, level);
-      await log('remote — volume: ' + Math.round(level * 100) + '%');
-      break;
-    }
-
-    case 'add_url': {
-      const url = (cmd.url || '').trim();
-      if (url) {
-        config.urls.push({ url, name: (cmd.name || '').trim(), interval: null });
-        await chrome.storage.local.set({ config });
-        await log('remote — add_url: ' + url.slice(0, 60));
-      }
-      break;
-    }
-
-    case 'remove_url': {
-      const idx = parseInt(cmd.index);
-      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
-        config.urls.splice(idx, 1);
-        if (config.currentIndex >= config.urls.length) config.currentIndex = Math.max(0, config.urls.length - 1);
-        await chrome.storage.local.set({ config });
-        await log('remote — remove_url idx=' + idx);
-      }
-      break;
-    }
-
-    case 'update_url': {
-      const idx = parseInt(cmd.index);
-      if (!isNaN(idx) && idx >= 0 && idx < config.urls.length) {
-        if (cmd.url  !== undefined) config.urls[idx].url  = (cmd.url  || '').trim();
-        if (cmd.name !== undefined) config.urls[idx].name = (cmd.name || '').trim();
-        await chrome.storage.local.set({ config });
-        await log('remote — update_url idx=' + idx);
-      }
-      break;
-    }
-
-    case 'reorder_url': {
-      const from = parseInt(cmd.from), to = parseInt(cmd.to);
-      if (!isNaN(from) && !isNaN(to) && from !== to &&
-          from >= 0 && to >= 0 && from < config.urls.length && to < config.urls.length) {
-        const [item] = config.urls.splice(from, 1);
-        config.urls.splice(to, 0, item);
-        if (config.currentIndex === from) config.currentIndex = to;
-        else if (from < config.currentIndex && to >= config.currentIndex) config.currentIndex--;
-        else if (from > config.currentIndex && to <= config.currentIndex) config.currentIndex++;
-        await chrome.storage.local.set({ config });
-        await log('remote — reorder ' + from + '→' + to);
-      }
-      break;
-    }
-
-    case 'set_interval': {
-      const interval = Math.max(5, parseInt(cmd.interval) || 30);
-      config.interval = interval;
-      await chrome.storage.local.set({ config });
-      await log('remote — set_interval: ' + interval);
-      break;
-    }
-
-    case 'set_schedule': {
-      config.scheduleEnabled = !!cmd.scheduleEnabled;
-      if (cmd.scheduleStart) config.scheduleStart = cmd.scheduleStart;
-      if (cmd.scheduleEnd)   config.scheduleEnd   = cmd.scheduleEnd;
-      if (Array.isArray(cmd.scheduleDays)) config.scheduleDays = cmd.scheduleDays;
-      await chrome.storage.local.set({ config });
-      await log('remote — set_schedule');
-      break;
+      const urls = config.urls.filter(u => u?.url?.trim());
+      if (urls.length && config.tabIds.length) {
+        const n = cmd.action === 'next'
+          ? (config.currentIndex + 1) % urls.length
+          : (config.currentIndex - 1 + urls.length) % urls.length;
+        if (n < config.tabIds.length) {
+          try { await chrome.tabs.update(config.tabIds[n], { active: true }); } catch {}
+          config.currentIndex = n; config.lastAlarmTime = Date.now();
+          await chrome.storage.local.set({ config });
+          if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+          await log('remote — ' + cmd.action);
+        }
+      } break;
     }
   }
   await sendStateToRemote();
+}
+
+// ── Auto-refresh des onglets kiosque (sessions expirantes type WithSecure) ─────
+
+async function refreshStaleTabsIfNeeded() {
+  const data = await chrome.storage.local.get(['config', 'tabRefreshTimes']);
+  const config = migrateConfig(data.config);
+  if (!config.active || !config.tabIds.length) return;
+  const hours = config.tabRefreshHours ?? 4;
+  if (hours <= 0) return;
+  const intervalMs = hours * 3600 * 1000;
+  const times = data.tabRefreshTimes || {};
+  const now = Date.now();
+  let changed = false;
+  for (let i = 0; i < config.tabIds.length; i++) {
+    if (i === config.currentIndex) continue; // ne jamais recharger l'onglet actif
+    const tabId = config.tabIds[i];
+    if (now - (times[tabId] || 0) >= intervalMs) {
+      try {
+        await chrome.tabs.reload(tabId);
+        times[tabId] = now;
+        changed = true;
+        await log('session-refresh tab ' + tabId + ' (intervalle ' + hours + 'h)');
+      } catch {}
+    }
+  }
+  if (changed) await chrome.storage.local.set({ tabRefreshTimes: times });
 }
 
 // ── Canva auto-refresh ────────────────────────────────────────────────────────
@@ -655,7 +581,7 @@ async function log(msg) {
 
 connectRemote();
 
-// Keep service worker alive — prevents Chrome from terminating it between alarms
+// Empêche Chrome de tuer le service worker entre les alarmes (astuce MV3)
 try {
   navigator.locks.request('wt-rotate-sw-alive', { mode: 'shared' }, () => new Promise(() => {}));
 } catch {}

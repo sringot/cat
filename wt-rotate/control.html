@@ -389,9 +389,16 @@ body {
 let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
 
 function boot() {
-  ip       = location.hostname;
-  port     = parseInt(location.port) || 8765;
-  wsToken  = new URLSearchParams(location.search).get('token') || '';
+  ip   = location.hostname;
+  port = parseInt(location.port) || 8765;
+  // Token from URL (QR scan) takes priority; fall back to localStorage (PWA relaunch)
+  const urlToken = new URLSearchParams(location.search).get('token') || '';
+  if (urlToken) {
+    wsToken = urlToken;
+    try { localStorage.setItem('wt_token', wsToken); } catch {}
+  } else {
+    try { wsToken = localStorage.getItem('wt_token') || ''; } catch {}
+  }
   connect();
 }
 

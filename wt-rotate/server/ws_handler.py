@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from aiohttp import web, WSMsgType
 from server import state, auth
 
@@ -46,7 +47,24 @@ async def handle_ws(request):
 
 
 async def _handle_extension(ws) -> None:
+    # Un seul kiosque à la fois : la nouvelle connexion évince l'ancienne,
+    # sinon les deux diffusent leurs états et le téléphone voit la config
+    # de l'une puis de l'autre (doublon d'extension, Chrome + Edge…).
+    prev = state.ext_ws
     state.ext_ws = ws
+    if prev is not None and not prev.closed:
+        # Éviction d'une connexion encore vivante : si ça se répète, c'est
+        # que DEUX extensions se battent — on prévient les téléphones.
+        now = time.time()
+        state.ext_takeovers = [t for t in state.ext_takeovers if now - t < 30]
+        state.ext_takeovers.append(now)
+        try:
+            await prev.close()
+        except Exception:
+            pass
+        if len(state.ext_takeovers) >= 3:
+            print('[!] CONFLIT : plusieurs extensions kiosque connectées en même temps')
+            await _broadcast_mobiles(json.dumps({'type': 'warn_dual_ext'}))
     print('[+] Extension connectée')
     await ws.send_str(json.dumps({
         'type': 'ack', 'ip': state.local_ip, 'http_port': state.PORT,
@@ -55,6 +73,8 @@ async def _handle_extension(ws) -> None:
     await _broadcast_mobiles(json.dumps({'type': 'ext_status', 'connected': True}))
     try:
         async for msg_data in ws:
+            if state.ext_ws is not ws:
+                break  # connexion évincée : elle ne diffuse plus rien
             if msg_data.type == WSMsgType.TEXT:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'state':

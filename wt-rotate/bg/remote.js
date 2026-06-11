@@ -1,5 +1,6 @@
 let remoteWs             = null;
 let remoteReconnectTimer = null;
+let remoteLastMsg        = 0;
 
 const SAFE_URL_SCHEMES = ['http:', 'https:'];
 
@@ -21,15 +22,24 @@ function transformUrl(url) {
 }
 
 function connectRemote() {
-  if (remoteWs?.readyState === WebSocket.OPEN    ||
-      remoteWs?.readyState === WebSocket.CONNECTING ||
-      remoteWs?.readyState === WebSocket.CLOSING) return;
+  if (remoteWs) {
+    const rs = remoteWs.readyState;
+    if (rs === WebSocket.CONNECTING || rs === WebSocket.CLOSING) return;
+    if (rs === WebSocket.OPEN) {
+      // Le serveur ping toutes les 20 s : une socket « ouverte » mais muette
+      // depuis 50 s est un zombie (serveur tué, veille…) — on la remplace.
+      if (Date.now() - remoteLastMsg < 50000) return;
+      remoteWs.onclose = remoteWs.onmessage = remoteWs.onerror = null;
+      try { remoteWs.close(); } catch {}
+    }
+  }
   clearTimeout(remoteReconnectTimer);
   try { remoteWs = new WebSocket('ws://localhost:8765'); } catch { scheduleReconnect(); return; }
 
-  remoteWs.onopen = () => remoteWs.send(JSON.stringify({ type: 'extension' }));
+  remoteWs.onopen = () => { remoteLastMsg = Date.now(); remoteWs.send(JSON.stringify({ type: 'extension' })); };
 
   remoteWs.onmessage = async evt => {
+    remoteLastMsg = Date.now();
     try {
       const msg = JSON.parse(evt.data);
       if (msg.type === 'ping') {

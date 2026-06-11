@@ -149,6 +149,19 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   #ext-note { color: #F2B8B5; background: rgba(242,184,181,.07); }
 }
 
+#dual-banner {
+  display: none;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.45;
+  color: #B3261E;
+  background: rgba(224,56,46,.07);
+}
+#dual-banner.show { display: block; }
+#dual-banner b { font-weight: 700; }
+@media (prefers-color-scheme: dark) {
+  #dual-banner { color: #F2B8B5; background: rgba(242,184,181,.07); }
+}
+
 #warn-banner {
   display: none;
   padding: 13px 18px;
@@ -537,6 +550,14 @@ nav {
         Ajoutez cette page à l'écran d'accueil : <b>Partager → Sur l'écran d'accueil</b>
       </div>
 
+      <div class="card" id="dual-banner">
+        ⚠️ <b>Deux extensions kiosque sont connectées en même temps</b> — le
+        kiosque reçoit des ordres contradictoires (ancienne et nouvelle config).
+        Sur le PC, gardez une seule extension : vérifiez
+        <b>chrome://extensions</b> (et Edge si installé), supprimez le doublon,
+        puis redémarrez le serveur.
+      </div>
+
       <div class="card" id="warn-banner"></div>
 
       <!-- Lecteur -->
@@ -655,7 +676,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.0</div>
+          <div class="row-v">wee rotate 1.10.1</div>
         </div>
       </div>
     </div>
@@ -800,6 +821,7 @@ function connect() {
     }
     if (m.type === 'auth_ok')    { show('s-main'); chip('on'); return; }
     if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
+    if (m.type === 'warn_dual_ext') { $('dual-banner').classList.add('show'); return; }
     if (m.type === 'cmd_ack')    {
       if (!m.ok) showToast(REASONS[m.reason] || 'Action impossible');
       else if (ACK_OK[m.action]) showToast(ACK_OK[m.action]);

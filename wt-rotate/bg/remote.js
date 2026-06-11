@@ -294,6 +294,25 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
+    // Réglage du volume — injecté dans tous les <video> de l'onglet actif
+    case 'volume': {
+      const level = Math.round(Math.min(100, Math.max(0, Number(cmd.level) || 0)));
+      let target = config.remoteTabId;
+      if (!target && config.tabIds.length)
+        target = config.tabIds[config.currentIndex % config.tabIds.length];
+      if (target) {
+        try {
+          const vol = level / 100;
+          await chrome.scripting.executeScript({
+            target: { tabId: target, allFrames: true },
+            func: v => { document.querySelectorAll('video').forEach(el => { el.volume = v; el.muted = false; }); },
+            args: [vol]
+          });
+        } catch {}
+      }
+      return; // contrôle continu — pas d'ack ni de push d'état
+    }
+
     // ── Édition de la playlist depuis le téléphone ───────────────────────────
     case 'pl_add': {
       const url = (cmd.url || '').trim();

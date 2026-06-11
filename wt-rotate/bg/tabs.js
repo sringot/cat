@@ -92,8 +92,12 @@ async function autoStartRotation(config) {
         await keepTabAlive(tab.id);
       }
     } else {
-      for (const tid of config.tabIds) { try { await chrome.tabs.remove(tid); } catch {} }
+      // tabIds vidés en storage AVANT la fermeture des anciens onglets :
+      // le listener onRemoved les prendrait pour une fermeture manuelle
+      const oldTabs = config.tabIds;
       config.tabIds = [];
+      await chrome.storage.local.set({ config });
+      for (const tid of oldTabs) { try { await chrome.tabs.remove(tid); } catch {} }
       for (let i = 0; i < activeUrls.length; i++) {
         const tab = await chrome.tabs.create({ windowId: config.windowId, url: activeUrls[i].url, active: i === 0 });
         config.tabIds.push(tab.id);

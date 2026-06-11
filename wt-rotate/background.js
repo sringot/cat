@@ -56,9 +56,29 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 chrome.tabs.onRemoved.addListener(async tabId => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
+  // Les fermetures faites par l'extension elle-même (release, open_url,
+  // pl_remove…) effacent l'id en storage AVANT tabs.remove : si on retrouve
+  // l'id ici, c'est forcément une fermeture manuelle sur le PC.
   if (config.remoteTabId === tabId) {
-    config.remoteTabId = null; config.remoteUntil = null;
-    chrome.alarms.clear('wt-spotlight');
+    config.remoteTabId = null;
+    let kioskAlive = false;
+    for (const tid of config.tabIds) {
+      try { await chrome.tabs.get(tid); kioskAlive = true; break; } catch {}
+    }
+    if (kioskAlive) {
+      await log('spotlight fermé à la main — reprise rotation');
+      await resumeRotation(config);
+    } else {
+      // fenêtre fermée en entier : arrêt propre, pas de résurrection
+      await log('spotlight fermé, kiosque disparu — arrêt');
+      config.active = false; config.remotePaused = false; config.remoteUntil = null;
+      config.tabIds = []; config.windowId = null;
+      chrome.alarms.clear('wt-rotate');
+      chrome.alarms.clear('wt-spotlight');
+      await chrome.storage.local.set({ config });
+    }
+    await sendStateToRemote();
+    return;
   }
   if (config.tabIds.includes(tabId)) {
     await log('onglet fermé — arrêt');
@@ -68,9 +88,9 @@ chrome.tabs.onRemoved.addListener(async tabId => {
     chrome.alarms.clear('wt-spotlight');
     await chrome.storage.local.set({ config });
     await sendStateToRemote();
-  } else {
-    await chrome.storage.local.set({ config });
   }
+  // onglet quelconque : ne rien réécrire, une config relue ici peut être
+  // périmée et écraserait une mutation en cours (resume, autoStart…)
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {

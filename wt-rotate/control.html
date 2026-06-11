@@ -655,7 +655,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.9</div>
+          <div class="row-v">wee rotate 1.9.1</div>
         </div>
       </div>
     </div>
@@ -1016,18 +1016,44 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
 }
 
 function cmd(action, extra) {
-  if (ws?.readyState === 1)
+  if (ws?.readyState === 1) {
     ws.send(JSON.stringify({ type: 'command', action, ...extra }));
-  else
-    showToast('Connexion perdue — reconnexion en cours…');
+    return true;
+  }
+  showToast('Connexion perdue — reconnexion en cours…');
+  return false;
+}
+
+// Retour visuel immédiat au tap — l'état réel renvoyé par le kiosque
+// reconfirme (ou corrige) quelques centaines de ms plus tard.
+function flipMain(playing, label) {
+  $('ic-play').style.display  = playing ? 'none' : '';
+  $('ic-pause').style.display = playing ? '' : 'none';
+  $('now-label-txt').textContent = label;
+  $('now-label').classList.toggle('live', playing);
+  if (playing) {
+    $('card-release').classList.remove('show');
+    $('release-sub').classList.remove('show');
+  }
 }
 
 function mainAction() {
   if (!lastState) { cmd('start'); return; }
   const mode = modeOf(lastState);
-  if (mode === 'running') cmd('pause');
-  else if (mode === 'external') cmd('release');
-  else cmd(mode === 'paused' && lastState.hasTabs ? 'resume' : 'start');
+  if (mode === 'running') {
+    if (cmd('pause')) {
+      lastState.active = false; lastState.remotePaused = true;
+      flipMain(false, 'En pause');
+    }
+  } else if (mode === 'external') {
+    if (cmd('release')) {
+      lastState.active = true; lastState.remotePaused = false; lastState.remoteUrl = null;
+      flipMain(true, 'En rotation');
+    }
+  } else if (cmd(mode === 'paused' && lastState.hasTabs ? 'resume' : 'start')) {
+    lastState.active = true; lastState.remotePaused = false;
+    flipMain(true, 'En rotation');
+  }
 }
 
 function sendUrl() {
@@ -1065,7 +1091,12 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-main').addEventListener('click', mainAction);
   $('b-prev').addEventListener('click', () => cmd('prev'));
   $('b-next').addEventListener('click', () => cmd('next'));
-  $('b-release').addEventListener('click', () => cmd('release'));
+  $('b-release').addEventListener('click', () => {
+    if (cmd('release') && lastState) {
+      lastState.active = true; lastState.remotePaused = false; lastState.remoteUrl = null;
+      flipMain(true, 'En rotation');
+    }
+  });
   $('b-send').addEventListener('click', sendUrl);
   $('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
 

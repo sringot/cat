@@ -98,9 +98,13 @@ async function resumeRotation(config) {
   const tabToRemove = config.remoteTabId;
   config.remoteTabId = null;
   config.remoteUntil = null;
+  config.remotePaused = false;
   chrome.alarms.clear('wt-spotlight');
+  // config sauvée AVANT tabs.remove : sinon le listener onRemoved relit
+  // l'ancien remoteTabId et réécrit la config périmée par-dessus la nôtre
+  await chrome.storage.local.set({ config });
   if (tabToRemove) try { await chrome.tabs.remove(tabToRemove); } catch {}
-  if (config.active) { await chrome.storage.local.set({ config }); return { ok: true }; }
+  if (config.active) return { ok: true };
 
   let tabsValid = config.tabIds.length > 0;
   for (const tid of config.tabIds) {
@@ -108,14 +112,11 @@ async function resumeRotation(config) {
   }
   if (!tabsValid) {
     const activeUrls = config.urls.filter(u => u?.url?.trim());
-    if (!activeUrls.length) {
-      await chrome.storage.local.set({ config });
-      return { ok: false, reason: 'no_urls' };
-    }
+    if (!activeUrls.length) return { ok: false, reason: 'no_urls' };
     await autoStartRotation(config);
     await log('remote — démarrage rotation');
   } else {
-    config.active = true; config.remotePaused = false;
+    config.active = true;
     config.lastAlarmTime = Date.now();
     await chrome.storage.local.set({ config });
     try { await chrome.tabs.update(config.tabIds[config.currentIndex % config.tabIds.length], { active: true }); } catch {}
@@ -172,7 +173,14 @@ async function handleRemoteCommand(cmd) {
         safeUrl = transformUrl(cmd.url);
       } catch { ok = false; reason = 'invalid_url'; break; }
       try {
-        if (config.remoteTabId) { try { await chrome.tabs.remove(config.remoteTabId); } catch {} config.remoteTabId = null; }
+        if (config.remoteTabId) {
+          // remoteTabId effacé en storage AVANT la fermeture, pour que le
+          // listener onRemoved ne la prenne pas pour une fermeture manuelle
+          const old = config.remoteTabId;
+          config.remoteTabId = null;
+          await chrome.storage.local.set({ config });
+          try { await chrome.tabs.remove(old); } catch {}
+        }
         let tab;
         if (config.windowId) {
           // Essai d'ajout dans la fenêtre kiosque existante
@@ -213,6 +221,11 @@ async function handleRemoteCommand(cmd) {
     }
 
     case 'next': case 'prev': {
+      // Pendant un spotlight, suivant/précédent ferme l'URL externe et reprend
+      if (config.remoteTabId || config.remoteUntil) {
+        const r = await resumeRotation(config);
+        if (!r.ok) { ok = false; reason = r.reason || null; break; }
+      }
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
       const n = cmd.action === 'next'
@@ -229,6 +242,11 @@ async function handleRemoteCommand(cmd) {
     }
 
     case 'goto': {
+      // Pendant un spotlight, choisir une page ferme l'URL externe et reprend
+      if (config.remoteTabId || config.remoteUntil) {
+        const r = await resumeRotation(config);
+        if (!r.ok) { ok = false; reason = r.reason || null; break; }
+      }
       const idx = Number.isInteger(cmd.index) ? cmd.index : -1;
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }

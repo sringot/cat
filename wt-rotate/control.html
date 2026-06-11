@@ -462,7 +462,7 @@ nav {
       <!-- Écrans configurés (toujours visible si playlist non vide) -->
       <div class="card" id="card-upnext" style="display:none">
         <div class="upnext-hdr">
-          <span id="upnext-label">ÉCRANS</span>
+          <span id="upnext-label">PAGES</span>
         </div>
         <div class="upnext-scroll" id="upnext-list"></div>
       </div>
@@ -504,7 +504,7 @@ nav {
         <div class="row">Extension kiosque
           <div class="row-v"><span id="set-ext">—</span><div class="dot" id="set-ext-dot"></div></div>
         </div>
-        <div class="row">Écrans configurés
+        <div class="row">Pages en rotation
           <div class="row-v" id="set-screens">—</div>
         </div>
         <div class="row">Intervalle de rotation
@@ -562,7 +562,7 @@ const $ = id => document.getElementById(id);
 const REASONS = {
   not_running:      'La rotation est déjà en pause',
   rotation_stopped: 'Rotation arrêtée — appuyez sur lecture pour démarrer',
-  no_urls:          'Aucune URL configurée — ajoutez-en depuis le PC',
+  no_urls:          'Aucune page configurée — ajoutez-en depuis le PC',
   no_window:        'Le kiosque n\'est pas ouvert — appuyez sur lecture pour démarrer',
   create_failed:    'Impossible d\'ouvrir la fenêtre — vérifiez le kiosque',
   blocked_scheme:   'URL non autorisée',
@@ -719,7 +719,7 @@ function sync(s) {
   }
 
   // Réglages — infos système
-  $('set-screens').textContent  = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : 'Aucun';
+  $('set-screens').textContent  = urls.length ? urls.length + (urls.length > 1 ? ' pages' : ' page') : 'Aucune';
   $('set-interval').textContent = (s.interval || 30) + ' s';
 
   renderUpNext(urls, s.currentIndex || 0, mode);
@@ -747,7 +747,7 @@ function renderUpNext(urls, currentIndex, mode) {
   if (!urls.length) { card.style.display = 'none'; return; }
   card.style.display = '';
   const running = mode === 'running';
-  $('upnext-label').textContent = running ? 'À VENIR' : 'ÉCRANS';
+  $('upnext-label').textContent = running ? 'À VENIR' : 'PAGES';
   const list = $('upnext-list');
   list.innerHTML = '';
   const count = Math.min(urls.length, running ? 4 : 5);
@@ -769,9 +769,9 @@ function renderUpNext(urls, currentIndex, mode) {
 
 function renderPlaylist(urls, currentIndex, mode, warns = []) {
   const pl = $('pl');
-  $('pl-count').textContent = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : '';
+  $('pl-count').textContent = urls.length ? urls.length + (urls.length > 1 ? ' pages' : ' page') : '';
   if (!urls.length) {
-    pl.innerHTML = '<div class="pl-empty">Aucune URL configurée sur le PC.</div>';
+    pl.innerHTML = '<div class="pl-empty">Aucune page configurée sur le PC.</div>';
     return;
   }
   pl.innerHTML = '';

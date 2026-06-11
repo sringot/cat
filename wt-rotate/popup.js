@@ -168,7 +168,7 @@ function renderUrls() {
   urlList.innerHTML = '';
 
   if (!config.urls.length) {
-    urlList.innerHTML = '<div class="empty-hint">Aucune URL — cliquez sur + pour commencer</div>';
+    urlList.innerHTML = '<div class="empty-hint">Aucune page — cliquez sur + pour commencer</div>';
     $('pl-count').textContent = '';
     return;
   }
@@ -263,7 +263,7 @@ function renderUrls() {
 
 function updatePlCount() {
   const n = config.urls.filter(u => u?.url?.trim()).length;
-  $('pl-count').textContent = config.urls.length ? n + ' URL' + (n > 1 ? 's' : '') : '';
+  $('pl-count').textContent = config.urls.length ? n + ' page' + (n > 1 ? 's' : '') : '';
 }
 
 // ── Status UI ─────────────────────────────────────────────────────────────────
@@ -332,11 +332,11 @@ function renderHomeCards() {
     nextCard.style.display = 'none';
     const n = activeUrls.length;
     if (n > 0) {
-      $('stopped-title').textContent = n + ' écran' + (n > 1 ? 's' : '') + ' configuré' + (n > 1 ? 's' : '');
+      $('stopped-title').textContent = n + ' page' + (n > 1 ? 's' : '') + ' configurée' + (n > 1 ? 's' : '');
       $('stopped-sub').textContent   = 'Appuyez sur ▶ pour démarrer la rotation';
     } else {
-      $('stopped-title').textContent = 'Aucune URL configurée';
-      $('stopped-sub').textContent   = 'Allez dans Playlist pour ajouter des écrans';
+      $('stopped-title').textContent = 'Aucune page configurée';
+      $('stopped-sub').textContent   = 'Allez dans Playlist pour ajouter des pages';
     }
     stopCard.style.display = '';
   } else {

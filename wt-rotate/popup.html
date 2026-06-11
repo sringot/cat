@@ -5,58 +5,69 @@
 <title>wee rotate</title>
 <style>
 :root {
-  --bg:      #F7F7F8;
+  --bg:      #F3F1ED;
   --card:    #FFFFFF;
-  --txt:     #111114;
-  --txt-2:   #8E8E93;
-  --txt-3:   #C7C7CC;
+  --txt:     #131312;
+  --txt-2:   #8B8A86;
+  --txt-3:   #C9C7C2;
   --line:    rgba(0,0,0,.06);
-  --accent:  #111114;
+  --accent:  #131312;
   --acc-txt: #FFFFFF;
-  --green:   #30B14A;
-  --red:     #FF3B30;
-  --sh:      0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.06);
+  --green:   #2EAE4A;
+  --red:     #E0382E;
+  --nav-bg:  rgba(255,255,255,.86);
+  --sh:      0 1px 2px rgba(20,18,14,.03), 0 8px 24px rgba(20,18,14,.06);
   --ease:    cubic-bezier(.25,.8,.25,1);
-  --r:       16px;
+  --r:       18px;
 }
 @media (prefers-color-scheme:dark) {
   :root {
-    --bg:    #0E0E10; --card: #1B1B1E;
-    --txt:   #F5F5F7; --txt-2:#98989F; --txt-3:#5A5A60;
-    --line:  rgba(255,255,255,.06);
-    --accent:#F5F5F7; --acc-txt:#111114;
-    --sh:    0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    --bg:    #121212; --card: #1D1D1D;
+    --txt:   #F4F3F1; --txt-2:#9C9B97; --txt-3:#555450;
+    --line:  rgba(255,255,255,.07);
+    --accent:#F4F3F1; --acc-txt:#131312;
+    --nav-bg:rgba(24,24,24,.86);
+    --sh:    0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.28);
   }
 }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 body {
-  width: 400px;
+  width: 400px; height: 580px;
+  display: flex; flex-direction: column;
   background: var(--bg);
   color: var(--txt);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
-  transition: transform .14s var(--ease), opacity .14s var(--ease); }
+  transition: transform .15s var(--ease), opacity .15s var(--ease), background .15s var(--ease); }
 button:active { transform: scale(.94); }
 input { font:inherit; color:inherit; background:none; border:0; outline:none; }
 
-/* ── Header ── */
-.hd {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 16px 11px;
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
+/* ── Progress (haut) ── */
+#prog-wrap { height:2px; background:var(--line); overflow:hidden; flex-shrink:0; }
+#prog-wrap.hidden { visibility:hidden; }
+#prog-bar { height:100%; background:var(--accent); width:100%; }
+
+/* ── Pages ── */
+.pages { flex:1; overflow-y:auto; overflow-x:hidden; }
+.page { display:none; padding:6px 14px 18px; }
+.page.show { display:block; animation:pgin .22s var(--ease); }
+@keyframes pgin { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+
+.pg-head {
+  display:flex; align-items:flex-end; justify-content:space-between;
+  padding: 12px 4px 14px;
 }
-.logo { display:flex; align-items:center; gap:8px;
-  font-size:14px; font-weight:750; letter-spacing:-.3px; }
-.logo svg { flex-shrink:0; }
-.hd-right { display:flex; align-items:center; gap:8px; }
+h1 { font-size:24px; font-weight:800; letter-spacing:-.6px; line-height:1; }
+.pg-sub { font-size:11.5px; font-weight:550; color:var(--txt-2); padding-bottom:2px; }
+
 .chip {
   display:flex; align-items:center; gap:6px;
-  padding: 5px 11px; border-radius:100px;
-  background: var(--bg);
+  padding: 6px 12px; border-radius:100px;
+  background: var(--card); box-shadow:var(--sh);
   font-size:11.5px; font-weight:550; color:var(--txt-2);
   transition: color .3s var(--ease);
 }
@@ -67,71 +78,45 @@ input { font:inherit; color:inherit; background:none; border:0; outline:none; }
 }
 .chip.on .dot { background:var(--green); }
 .chip.on { color:var(--txt); }
-/* next button in header */
-.hd-next {
-  width:30px; height:30px; border-radius:50%;
-  background:var(--bg);
-  display:flex; align-items:center; justify-content:center;
-  color:var(--txt-2);
-}
-.hd-next.hidden { display:none; }
-
-/* ── Progress ── */
-#prog-wrap { height:2px; background:var(--line); overflow:hidden; }
-#prog-wrap.hidden { display:none; }
-#prog-bar { height:100%; background:var(--accent); width:100%; }
-
-/* ── Tabs ── */
-.tabs {
-  display:flex;
-  background:var(--card);
-  border-bottom:1px solid var(--line);
-  padding: 0 12px;
-  gap: 2px;
-}
-.tab-btn {
-  padding: 9px 12px;
-  font-size:12px; font-weight:600; color:var(--txt-2);
-  border-bottom:2px solid transparent;
-  margin-bottom:-1px;
-  transition: color .15s, border-color .15s;
-}
-.tab-btn.active { color:var(--txt); border-bottom-color:var(--accent); }
-
-/* ── Scroll area ── */
-.panes { max-height:492px; overflow-y:auto; overflow-x:hidden; }
-.pane { display:none; padding:14px 14px 18px; }
-.pane.active { display:block; }
 
 /* ── Cards ── */
 .card {
   background:var(--card); border-radius:var(--r);
-  box-shadow:var(--sh); margin-bottom:10px; overflow:hidden;
+  box-shadow:var(--sh); margin-bottom:11px; overflow:hidden;
 }
 
-/* ── Now playing ── */
-.now { padding:20px 18px 4px; }
+/* ── Lecteur (Accueil) ── */
+.now { display:flex; align-items:center; gap:14px; padding:18px 18px 16px; }
+.art {
+  width:64px; height:64px; border-radius:16px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; font-weight:750; color:#fff;
+  text-shadow:0 1px 6px rgba(0,0,0,.16);
+  background:linear-gradient(140deg,#C9C7C2,#8B8A86);
+  transition:background .4s var(--ease);
+}
+.now-meta { min-width:0; flex:1; }
 .now-lbl {
-  font-size:11px; font-weight:650; letter-spacing:1.1px;
+  font-size:10.5px; font-weight:700; letter-spacing:1.1px;
   text-transform:uppercase; color:var(--txt-2);
   display:flex; align-items:center; gap:6px;
 }
 .now-lbl .dot { width:6px; height:6px; border-radius:50%; background:var(--txt-3); }
 .now-lbl.live { color:var(--green); }
-.now-lbl.live .dot { background:var(--green); animation:pulse 2s ease infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.now-lbl.live .dot { background:var(--green); animation:pulse 2.2s var(--ease) infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 .now-name {
-  font-size:21px; font-weight:700; letter-spacing:-.3px;
-  margin-top:8px;
+  font-size:17px; font-weight:750; letter-spacing:-.3px;
+  margin-top:6px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.now-url { font-size:12px; color:var(--txt-2); margin-top:3px;
+.now-url { font-size:11.5px; color:var(--txt-2); margin-top:2px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-/* transport */
 .transport {
   display:flex; align-items:center; justify-content:center;
-  gap:20px; padding:16px 0 20px;
+  gap:22px; padding:15px 0 19px;
+  border-top:1px solid var(--line);
 }
 .t-side {
   width:46px; height:46px; border-radius:50%;
@@ -139,36 +124,29 @@ input { font:inherit; color:inherit; background:none; border:0; outline:none; }
   display:flex; align-items:center; justify-content:center;
 }
 .t-main {
-  width:60px; height:60px; border-radius:50%;
+  width:62px; height:62px; border-radius:50%;
   background:var(--accent); color:var(--acc-txt);
   display:flex; align-items:center; justify-content:center;
   box-shadow:var(--sh);
 }
 
 /* ── Playlist ── */
-.sec-h {
-  display:flex; align-items:baseline; justify-content:space-between;
-  padding:14px 16px 4px;
-}
-.sec-t { font-size:13.5px; font-weight:650; }
-.sec-n { font-size:11.5px; color:var(--txt-2); }
-.pl { padding:4px 8px 8px; }
-
+.pl { padding:6px 8px 8px; }
 .url-row {
   display:grid; grid-template-columns:16px 1fr auto;
-  align-items:center; gap:0 8px;
-  padding:9px 10px; border-radius:10px;
+  align-items:center; gap:0 9px;
+  padding:10px 10px; border-radius:13px;
   border:1.5px solid transparent;
   transition:background .15s, border-color .15s;
   cursor:default;
 }
 .url-row:focus-within { background:var(--bg); border-color:var(--accent); }
-.url-row.active-url   { background:rgba(48,177,74,.06); border-color:rgba(48,177,74,.35); }
+.url-row.active-url   { background:rgba(46,174,74,.06); border-color:rgba(46,174,74,.35); }
 .url-row.drag-over    { background:var(--bg); border-color:var(--accent); }
 .drag-handle { color:var(--txt-3); font-size:13px; cursor:grab; user-select:none; }
 .drag-handle:active { cursor:grabbing; }
 .url-fields { display:flex; flex-direction:column; gap:2px; min-width:0; }
-.name-input { font-size:12px; font-weight:600; width:100%; }
+.name-input { font-size:12.5px; font-weight:600; width:100%; }
 .name-input::placeholder { color:var(--txt-3); font-weight:400; }
 .url-input  { font-size:11px; font-family:'Consolas',monospace; color:var(--txt-2); width:100%; }
 .url-input::placeholder { color:var(--txt-3); }
@@ -185,7 +163,7 @@ input { font:inherit; color:inherit; background:none; border:0; outline:none; }
 }
 .url-dur-btn.on { background:var(--accent); border-color:var(--accent); color:var(--acc-txt); }
 .url-int {
-  width:34px; border:1.5px solid var(--line); border-radius:5px;
+  width:34px; border:1.5px solid var(--line); border-radius:6px;
   padding:1px 3px; font-size:10px; text-align:center; font-weight:700;
   background:var(--bg);
 }
@@ -193,16 +171,21 @@ input { font:inherit; color:inherit; background:none; border:0; outline:none; }
 .url-int-s { font-size:9px; color:var(--txt-3); }
 
 .btn-add {
-  width:100%; padding:10px; margin-top:2px;
-  border:1.5px dashed var(--line); border-radius:10px;
+  width:100%; padding:11px; margin-top:2px;
+  border:1.5px dashed var(--txt-3); border-radius:13px;
   font-size:12px; font-weight:600; color:var(--txt-2);
   transition:all .15s;
 }
 .btn-add:hover { border-color:var(--accent); color:var(--txt); background:var(--card); }
 .pl-add { padding:4px 8px 10px; }
-.empty-hint { padding:18px; text-align:center; color:var(--txt-3); font-size:12px; }
+.empty-hint { padding:20px; text-align:center; color:var(--txt-2); font-size:12px; }
 
-/* ── Settings ── */
+/* ── Réglages ── */
+.sec-lbl {
+  font-size:11px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--txt-2);
+  padding:8px 8px 8px;
+}
 .setting {
   display:flex; align-items:center; justify-content:space-between;
   gap:10px; padding:13px 16px;
@@ -213,10 +196,10 @@ input { font:inherit; color:inherit; background:none; border:0; outline:none; }
 .s-sub { font-size:11px; color:var(--txt-2); margin-top:2px; }
 .s-ctrl { display:flex; align-items:center; gap:6px; flex-shrink:0; }
 
-input[type=range] { width:80px; accent-color:var(--accent); cursor:pointer; }
+input[type=range] { width:78px; accent-color:var(--accent); cursor:pointer; }
 .num-in {
   width:52px; padding:4px 6px;
-  border:1.5px solid var(--line); border-radius:8px;
+  border:1.5px solid var(--line); border-radius:9px;
   font-size:12px; text-align:center; font-weight:600;
   background:var(--bg);
 }
@@ -224,11 +207,11 @@ input[type=range] { width:80px; accent-color:var(--accent); cursor:pointer; }
 .unit { font-size:11px; color:var(--txt-2); }
 
 /* toggle */
-.tog { position:relative; width:36px; height:20px; flex-shrink:0; cursor:pointer; }
+.tog { position:relative; width:38px; height:22px; flex-shrink:0; cursor:pointer; }
 .tog input { opacity:0; position:absolute; }
-.tog-track { position:absolute; inset:0; background:var(--txt-3); border-radius:20px; transition:background .2s; }
-.tog-thumb { position:absolute; width:14px; height:14px; top:3px; left:3px;
-  background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,.2);
+.tog-track { position:absolute; inset:0; background:var(--txt-3); border-radius:22px; transition:background .2s; }
+.tog-thumb { position:absolute; width:16px; height:16px; top:3px; left:3px;
+  background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,.25);
   transition:transform .2s; pointer-events:none; }
 .tog input:checked ~ .tog-track { background:var(--green); }
 .tog input:checked ~ .tog-thumb { transform:translateX(16px); }
@@ -238,23 +221,23 @@ input[type=range] { width:80px; accent-color:var(--accent); cursor:pointer; }
 .sched-block.show { display:block; }
 .time-row { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--txt-2); }
 input[type=time] {
-  background:var(--bg); border:1.5px solid var(--line); border-radius:7px;
+  background:var(--bg); border:1.5px solid var(--line); border-radius:8px;
   padding:3px 7px; font-size:12px; font-family:inherit; color:var(--txt); cursor:pointer;
 }
 input[type=time]:focus { border-color:var(--accent); }
-.days { display:flex; gap:4px; margin-top:8px; }
+.days { display:flex; gap:4px; margin-top:9px; }
 .day-btn {
-  width:28px; height:26px; border:1.5px solid var(--line); border-radius:6px;
+  width:28px; height:26px; border:1.5px solid var(--line); border-radius:8px;
   background:var(--bg); color:var(--txt-2);
   font-size:10px; font-weight:700; transition:all .15s;
 }
 .day-btn.on { background:var(--accent); border-color:var(--accent); color:var(--acc-txt); }
 
 /* config buttons */
-.cfg-row { display:flex; gap:6px; padding:10px 12px; }
+.cfg-row { display:flex; gap:6px; padding:11px 12px; }
 .cfg-btn {
-  flex:1; padding:8px 6px;
-  border:1.5px solid var(--line); border-radius:9px;
+  flex:1; padding:9px 6px;
+  border:1.5px solid var(--line); border-radius:11px;
   background:var(--bg); font-size:11.5px; font-weight:600;
   transition:all .15s;
 }
@@ -263,21 +246,19 @@ input[type=time]:focus { border-color:var(--accent); }
 
 /* debug */
 #debug-box { display:none; margin:0 12px 12px;
-  background:#0D1117; border-radius:8px;
-  padding:8px; max-height:120px; overflow-y:auto; }
+  background:#0D1117; border-radius:10px;
+  padding:8px; max-height:110px; overflow-y:auto; }
 #debug-box.open { display:block; }
 #debug-log { font-family:'Consolas',monospace; font-size:10px;
   color:#7EE787; white-space:pre-wrap; word-break:break-all; }
-#debug-clear { margin:6px 0 0; font-size:10px; color:var(--red);
-  background:none; border:none; cursor:pointer; font-family:inherit; }
 
-/* remote tab */
+/* remote */
 .remote-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0;
   background:var(--txt-3); transition:background .3s; }
-.remote-dot.on { background:var(--green); box-shadow:0 0 5px rgba(48,177,74,.5); }
+.remote-dot.on { background:var(--green); box-shadow:0 0 5px rgba(46,174,74,.5); }
 .qr-wrap { padding:14px 16px 6px; text-align:center; }
 .qr-box {
-  width:140px; height:140px; border-radius:10px;
+  width:138px; height:138px; border-radius:14px;
   border:1.5px solid var(--line); margin:0 auto 8px;
   background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden;
 }
@@ -285,80 +266,94 @@ input[type=time]:focus { border-color:var(--accent); }
 .qr-hint { font-size:11px; color:var(--txt-2); margin-bottom:10px; }
 .url-box {
   background:var(--bg); border:1.5px solid var(--line);
-  border-radius:8px; padding:7px 10px; font-size:11px;
+  border-radius:9px; padding:7px 10px; font-size:11px;
   font-family:'Consolas',monospace; word-break:break-all;
 }
+
+/* ── Nav basse ── */
+nav {
+  flex-shrink:0;
+  display:flex;
+  background:var(--nav-bg);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-top:1px solid var(--line);
+}
+.tab-btn {
+  flex:1;
+  display:flex; flex-direction:column; align-items:center;
+  gap:3px;
+  padding:8px 0 7px;
+  font-size:10px; font-weight:600;
+  color:var(--txt-3);
+  transition:color .2s var(--ease);
+}
+.tab-btn:active { transform:none; }
+.tab-btn.active { color:var(--txt); }
+.tab-btn svg { display:block; }
+
 .hidden { display:none !important; }
 </style>
 </head>
 <body>
 
-<div class="hd">
-  <div class="logo">
-    <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
-      <circle cx="13" cy="13" r="13" fill="var(--accent)"/>
-      <path d="M7 9l3.2 8.5 2.8-6 2.8 6L19 9" stroke="var(--acc-txt)"
-            stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    wee rotate
-  </div>
-  <div class="hd-right">
-    <button class="hd-next hidden" id="btn-next" title="URL suivante">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
-    </button>
-    <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Arrêté</span></div>
-  </div>
-</div>
-
 <div id="prog-wrap" class="hidden"><div id="prog-bar"></div></div>
 
-<div class="tabs">
-  <button class="tab-btn active" data-tab="rotation">Rotation</button>
-  <button class="tab-btn" data-tab="settings">Paramètres</button>
-  <button class="tab-btn" data-tab="remote">Remote</button>
-</div>
+<div class="pages">
 
-<div class="panes">
-
-  <!-- Rotation -->
-  <div class="pane active" id="tab-rotation">
+  <!-- ════ Accueil ════ -->
+  <div class="page show" id="tab-home">
+    <div class="pg-head">
+      <h1>Kiosque</h1>
+      <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Arrêté</span></div>
+    </div>
 
     <div class="card">
       <div class="now">
-        <div class="now-lbl" id="now-lbl"><div class="dot"></div><span id="now-lbl-txt">Arrêté</span></div>
-        <div class="now-name" id="now-name">—</div>
-        <div class="now-url"  id="now-url">&nbsp;</div>
+        <div class="art" id="art">—</div>
+        <div class="now-meta">
+          <div class="now-lbl" id="now-lbl"><div class="dot"></div><span id="now-lbl-txt">Arrêté</span></div>
+          <div class="now-name" id="now-name">—</div>
+          <div class="now-url"  id="now-url">&nbsp;</div>
+        </div>
       </div>
       <div class="transport">
-        <button class="t-side" id="b-prev">
+        <button class="t-side" id="b-prev" title="Précédent">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
         </button>
-        <button class="t-main" id="b-main">
+        <button class="t-main" id="b-main" title="Démarrer / arrêter">
           <svg id="ic-play"  viewBox="0 0 24 24" fill="currentColor" width="26" height="26"><path d="M8 5v14l11-7z"/></svg>
           <svg id="ic-stop"  viewBox="0 0 24 24" fill="currentColor" width="26" height="26" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
         </button>
-        <button class="t-side" id="b-next-t">
+        <button class="t-side" id="b-next-t" title="Suivant">
           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ════ Playlist ════ -->
+  <div class="page" id="tab-playlist">
+    <div class="pg-head">
+      <h1>Playlist</h1>
+      <div class="pg-sub" id="pl-count"></div>
+    </div>
 
     <div class="card">
-      <div class="sec-h">
-        <div class="sec-t">Playlist</div>
-        <div class="sec-n" id="pl-count"></div>
-      </div>
       <div class="pl" id="url-list"></div>
       <div class="pl-add">
         <button class="btn-add" id="btn-add">+ Ajouter une URL</button>
       </div>
     </div>
-
   </div>
 
-  <!-- Paramètres -->
-  <div class="pane" id="tab-settings">
+  <!-- ════ Réglages ════ -->
+  <div class="page" id="tab-settings">
+    <div class="pg-head">
+      <h1>Réglages</h1>
+    </div>
 
+    <div class="sec-lbl">Rotation</div>
     <div class="card">
       <div class="setting">
         <div><div class="s-lbl">Durée globale</div><div class="s-sub">Par défaut pour chaque URL</div></div>
@@ -384,9 +379,10 @@ input[type=time]:focus { border-color:var(--accent); }
       </div>
     </div>
 
+    <div class="sec-lbl">Plages horaires</div>
     <div class="card">
       <div class="setting">
-        <div><div class="s-lbl">Plages horaires</div><div class="s-sub">Démarre/arrête selon l'horaire</div></div>
+        <div><div class="s-lbl">Activer</div><div class="s-sub">Démarre/arrête selon l'horaire</div></div>
         <label class="tog">
           <input type="checkbox" id="schedule-enabled">
           <span class="tog-track"></span><span class="tog-thumb"></span>
@@ -411,27 +407,7 @@ input[type=time]:focus { border-color:var(--accent); }
       </div>
     </div>
 
-    <div class="card">
-      <div class="cfg-row">
-        <button class="cfg-btn" id="btn-export">Exporter</button>
-        <button class="cfg-btn" id="btn-import">Importer</button>
-        <button class="cfg-btn cfg-btn-red" id="btn-reset">Réinit.</button>
-      </div>
-      <input type="file" id="import-file" accept=".json" class="hidden">
-    </div>
-
-    <div class="card">
-      <div class="setting">
-        <div class="s-lbl" style="cursor:pointer" id="debug-toggle">Logs background</div>
-        <button id="debug-clear" style="font-size:11px;color:var(--red)">Effacer</button>
-      </div>
-      <div id="debug-box"><div id="debug-log">(aucun log)</div></div>
-    </div>
-
-  </div>
-
-  <!-- Remote -->
-  <div class="pane" id="tab-remote">
+    <div class="sec-lbl">Contrôle mobile</div>
     <div class="card">
       <div class="setting">
         <div><div class="s-lbl">Serveur remote</div></div>
@@ -451,9 +427,50 @@ input[type=time]:focus { border-color:var(--accent); }
         <div class="s-sub">Lancez <code style="font-weight:700;color:var(--txt)">start_remote.bat</code> pour activer le contrôle mobile</div>
       </div>
     </div>
+
+    <div class="sec-lbl">Configuration</div>
+    <div class="card">
+      <div class="cfg-row">
+        <button class="cfg-btn" id="btn-export">Exporter</button>
+        <button class="cfg-btn" id="btn-import">Importer</button>
+        <button class="cfg-btn cfg-btn-red" id="btn-reset">Réinit.</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" class="hidden">
+    </div>
+
+    <div class="card">
+      <div class="setting">
+        <div class="s-lbl" style="cursor:pointer" id="debug-toggle">Logs background</div>
+        <button id="debug-clear" style="font-size:11px;color:var(--red)">Effacer</button>
+      </div>
+      <div id="debug-box"><div id="debug-log">(aucun log)</div></div>
+    </div>
   </div>
 
-</div><!-- /panes -->
+</div><!-- /pages -->
+
+<!-- Nav basse -->
+<nav>
+  <button class="tab-btn active" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="21" height="21">
+      <path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 8.8V20h13V8.8"/>
+    </svg>
+    Accueil
+  </button>
+  <button class="tab-btn" data-tab="playlist">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" width="21" height="21">
+      <path d="M4 6.5h16M4 12h16M4 17.5h9"/>
+    </svg>
+    Playlist
+  </button>
+  <button class="tab-btn" data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" width="21" height="21">
+      <path d="M4 7h2.4M11.6 7H20M4 17h8.4M17.6 17H20"/>
+      <circle cx="9" cy="7" r="2.6"/><circle cx="15" cy="17" r="2.6"/>
+    </svg>
+    Réglages
+  </button>
+</nav>
 
 <script src="popup.js"></script>
 </body>

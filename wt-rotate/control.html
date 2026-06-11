@@ -5,36 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F7F7F8">
+<meta name="theme-color" content="#F3F1ED">
 <link rel="manifest" href="/app.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon180.png">
 <title>Kiosque</title>
 <style>
 :root {
-  --bg:        #F7F7F8;
+  --bg:        #F3F1ED;
   --card:      #FFFFFF;
-  --txt:       #111114;
-  --txt-2:     #8E8E93;
-  --txt-3:     #C7C7CC;
-  --line:      rgba(0,0,0,.05);
-  --accent:    #111114;
+  --txt:       #131312;
+  --txt-2:     #8B8A86;
+  --txt-3:     #C9C7C2;
+  --line:      rgba(0,0,0,.06);
+  --accent:    #131312;
   --accent-txt:#FFFFFF;
-  --green:     #30B14A;
-  --red:       #FF3B30;
-  --shadow:    0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.05);
+  --green:     #2EAE4A;
+  --red:       #E0382E;
+  --nav-bg:    rgba(255,255,255,.84);
+  --shadow:    0 1px 2px rgba(20,18,14,.03), 0 10px 32px rgba(20,18,14,.06);
   --ease:      cubic-bezier(.25,.8,.25,1);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:        #0E0E10;
-    --card:      #1B1B1E;
-    --txt:       #F5F5F7;
-    --txt-2:     #98989F;
-    --txt-3:     #5A5A60;
-    --line:      rgba(255,255,255,.06);
-    --accent:    #F5F5F7;
-    --accent-txt:#111114;
-    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.25);
+    --bg:        #121212;
+    --card:      #1D1D1D;
+    --txt:       #F4F3F1;
+    --txt-2:     #9C9B97;
+    --txt-3:     #555450;
+    --line:      rgba(255,255,255,.07);
+    --accent:    #F4F3F1;
+    --accent-txt:#131312;
+    --nav-bg:    rgba(24,24,24,.84);
+    --shadow:    0 1px 2px rgba(0,0,0,.35), 0 10px 32px rgba(0,0,0,.3);
   }
 }
 
@@ -46,7 +48,6 @@ body {
   color: var(--txt);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: contain;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 button {
   font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
@@ -56,7 +57,7 @@ button {
 button:active { transform: scale(.94); }
 input { font: inherit; color: inherit; border: 0; outline: none; background: none; }
 
-/* ── Screens ─────────────────────────────────────────────── */
+/* ── Screens (boot / erreur / main) ───────────────────────── */
 .screen {
   position: fixed; inset: 0;
   display: none;
@@ -72,8 +73,6 @@ input { font: inherit; color: inherit; border: 0; outline: none; background: non
   align-items: center; justify-content: center;
   gap: 14px; padding: 32px; text-align: center;
 }
-
-/* spinner */
 .spin {
   width: 28px; height: 28px;
   border: 2.5px solid var(--line);
@@ -82,7 +81,6 @@ input { font: inherit; color: inherit; border: 0; outline: none; background: non
   animation: rot .8s linear infinite;
 }
 @keyframes rot { to { transform: rotate(360deg); } }
-
 .err-ic {
   width: 64px; height: 64px; border-radius: 50%;
   background: var(--card); box-shadow: var(--shadow);
@@ -98,14 +96,22 @@ input { font: inherit; color: inherit; border: 0; outline: none; background: non
   font-size: 15px; font-weight: 600;
 }
 
-/* ── Main layout ─────────────────────────────────────────── */
-.wrap { max-width: 520px; margin: 0 auto; padding: 18px 18px 40px; }
-
-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 4px 20px;
+/* ── Layout des pages ─────────────────────────────────────── */
+.wrap {
+  max-width: 520px; margin: 0 auto;
+  padding: calc(14px + env(safe-area-inset-top)) 18px calc(96px + env(safe-area-inset-bottom));
 }
-h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
+.page { display: none; }
+.page.show { display: block; animation: pgin .28s var(--ease); }
+@keyframes pgin { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+.pg-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 16px 4px 18px;
+}
+h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
+.pg-sub { font-size: 13px; font-weight: 550; color: var(--txt-2); padding-bottom: 3px; }
+
 .chip {
   display: flex; align-items: center; gap: 7px;
   font-size: 12.5px; font-weight: 550; color: var(--txt-2);
@@ -129,7 +135,7 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
   overflow: hidden;
 }
 
-/* ext offline notice */
+/* ── Bandeaux ─────────────────────────────────────────────── */
 #ext-note {
   display: none;
   padding: 13px 18px;
@@ -138,10 +144,43 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
 }
 #ext-note.show { display: block; }
 
-/* now playing */
-.now { padding: 24px 22px 22px; }
+#warn-banner {
+  display: none;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.45;
+  color: #B45309;
+  background: rgba(245,158,11,.08);
+}
+#warn-banner.show { display: block; }
+@media (prefers-color-scheme: dark) {
+  #warn-banner { color: #FBBF24; background: rgba(251,191,36,.07); }
+}
+
+#install-banner {
+  display: none;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.5; color: var(--txt-2);
+}
+#install-banner.show { display: block; }
+#install-banner b { color: var(--txt); font-weight: 600; }
+
+/* ── Lecteur (Accueil) ────────────────────────────────────── */
+.now {
+  display: flex; align-items: center; gap: 17px;
+  padding: 22px 22px 20px;
+}
+.art {
+  width: 86px; height: 86px; border-radius: 20px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 750; color: #FFFFFF;
+  text-shadow: 0 1px 8px rgba(0,0,0,.16);
+  background: linear-gradient(140deg, #C9C7C2, #8B8A86);
+  transition: background .4s var(--ease);
+}
+.now-meta { min-width: 0; flex: 1; }
 .now-label {
-  font-size: 11.5px; font-weight: 650; letter-spacing: 1.2px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.3px;
   text-transform: uppercase; color: var(--txt-2);
   display: flex; align-items: center; gap: 7px;
   transition: color .3s var(--ease);
@@ -151,21 +190,21 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
 .now-label.live .dot { background: var(--green); animation: pulse 2.2s var(--ease) infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 .now-name {
-  font-size: 25px; font-weight: 700; letter-spacing: -.4px;
-  margin-top: 10px;
+  font-size: 21px; font-weight: 750; letter-spacing: -.4px;
+  margin-top: 7px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: opacity .25s var(--ease);
 }
 .now-url {
-  font-size: 13px; color: var(--txt-2); margin-top: 4px;
+  font-size: 13px; color: var(--txt-2); margin-top: 3px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* transport */
 .transport {
   display: flex; align-items: center; justify-content: center;
   gap: 26px;
-  padding: 4px 0 26px;
+  padding: 19px 0 24px;
+  border-top: 1px solid var(--line);
   transition: opacity .3s var(--ease);
 }
 .transport.off { opacity: .3; pointer-events: none; }
@@ -176,49 +215,22 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
   color: var(--txt);
 }
 .t-main {
-  width: 72px; height: 72px; border-radius: 50%;
+  width: 74px; height: 74px; border-radius: 50%;
   background: var(--accent); color: var(--accent-txt);
   display: flex; align-items: center; justify-content: center;
   box-shadow: var(--shadow);
 }
 
-/* playlist */
-.sec-h {
-  display: flex; align-items: baseline; justify-content: space-between;
-  padding: 18px 22px 6px;
-}
-.sec-t { font-size: 15px; font-weight: 650; letter-spacing: -.2px; }
-.sec-n { font-size: 12.5px; color: var(--txt-2); font-weight: 550; }
-.pl { padding: 6px 8px 10px; }
-.pl-item {
+/* release */
+#card-release { display: none; }
+#card-release.show { display: block; }
+.release-btn {
   width: 100%;
-  display: flex; align-items: center; gap: 14px;
-  padding: 13px 14px;
-  border-radius: 14px;
-  text-align: left;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 17px;
+  font-size: 15.5px; font-weight: 650;
+  color: var(--red);
 }
-.pl-item:active { background: var(--bg); transform: scale(.985); }
-.pl-ix {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 650; color: var(--txt-2);
-  flex-shrink: 0;
-  transition: background .25s var(--ease), color .25s var(--ease);
-}
-.pl-item.cur .pl-ix { background: var(--accent); color: var(--accent-txt); }
-.pl-txt { min-width: 0; flex: 1; }
-.pl-name {
-  font-size: 15px; font-weight: 550;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transition: font-weight .2s;
-}
-.pl-item.cur .pl-name { font-weight: 700; }
-.pl-url {
-  font-size: 12px; color: var(--txt-2); margin-top: 1px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.pl-empty { padding: 18px 22px 22px; font-size: 14px; color: var(--txt-2); }
 
 /* open url */
 .open-row {
@@ -234,44 +246,95 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
   flex-shrink: 0;
 }
 
-/* release */
-#card-release { display: none; }
-#card-release.show { display: block; }
-.release-btn {
+/* ── Playlist ─────────────────────────────────────────────── */
+.pl { padding: 8px; }
+.pl-item {
   width: 100%;
-  display: flex; align-items: center; justify-content: center; gap: 9px;
-  padding: 17px;
-  font-size: 15.5px; font-weight: 650;
-  color: var(--red);
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  text-align: left;
 }
-
-/* session expirée */
-#warn-banner {
-  display: none;
-  padding: 13px 18px;
-  font-size: 13.5px; line-height: 1.45;
-  color: #B45309;
-  background: rgba(245,158,11,.08);
+.pl-item:active { background: var(--bg); transform: scale(.985); }
+.pl-art {
+  width: 44px; height: 44px; border-radius: 12px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #FFFFFF;
+  text-shadow: 0 1px 5px rgba(0,0,0,.15);
 }
-#warn-banner.show { display: block; }
+.pl-txt { min-width: 0; flex: 1; }
+.pl-name {
+  font-size: 15px; font-weight: 550;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pl-item.cur .pl-name { font-weight: 750; }
+.pl-url {
+  font-size: 12px; color: var(--txt-2); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .pl-item.warn .pl-name::after { content: ' ⚠️'; font-size: 11px; }
-@media (prefers-color-scheme: dark) {
-  #warn-banner { color: #FBBF24; background: rgba(251,191,36,.07); }
+.pl-empty { padding: 18px 22px 22px; font-size: 14px; color: var(--txt-2); }
+
+/* equalizer sur l'écran en cours */
+.eq { display: flex; gap: 2.5px; align-items: flex-end; height: 15px; flex-shrink: 0; }
+.eq i {
+  width: 3px; border-radius: 2px; background: var(--green);
+  height: 6px;
+  animation: eqb 1.05s var(--ease) infinite;
+}
+.eq i:nth-child(2) { animation-delay: .26s; }
+.eq i:nth-child(3) { animation-delay: .52s; }
+@keyframes eqb { 0%,100% { height: 5px; } 50% { height: 14px; } }
+.eq.still i { animation: none; }
+
+/* ── Réglages ─────────────────────────────────────────────── */
+.row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px; font-weight: 550;
+}
+.row:last-child { border-bottom: 0; }
+.row-v {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 500; color: var(--txt-2);
+}
+.sec-lbl {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--txt-2);
+  padding: 8px 8px 10px;
 }
 
-/* install hint */
-#install-banner {
-  display: none;
-  padding: 13px 18px;
-  font-size: 13.5px; line-height: 1.5; color: var(--txt-2);
+/* ── Nav basse ────────────────────────────────────────────── */
+nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 50;
 }
-#install-banner.show { display: block; }
-#install-banner b { color: var(--txt); font-weight: 600; }
+.nav-btn {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px;
+  padding: 10px 0 8px;
+  font-size: 10.5px; font-weight: 600;
+  color: var(--txt-3);
+  transition: color .2s var(--ease);
+}
+.nav-btn:active { transform: none; }
+.nav-btn.active { color: var(--txt); }
+.nav-btn svg { display: block; }
 
 /* toast */
 .toast {
   position: fixed;
-  left: 50%; bottom: calc(26px + env(safe-area-inset-bottom));
+  left: 50%; bottom: calc(86px + env(safe-area-inset-bottom));
   transform: translate(-50%, 16px);
   background: var(--accent); color: var(--accent-txt);
   font-size: 14px; font-weight: 550;
@@ -315,71 +378,135 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
 <div class="screen" id="s-main">
   <div class="wrap">
 
-    <header>
-      <h1>Kiosque</h1>
-      <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Connexion…</span></div>
-    </header>
-
-    <div class="card" id="ext-note">
-      L'extension n'est pas connectée sur le PC du kiosque — les commandes sont indisponibles.
-    </div>
-
-    <div class="card" id="install-banner">
-      Ajoutez cette page à l'écran d'accueil : <b>Partager → Sur l'écran d'accueil</b>
-    </div>
-
-    <div class="card" id="warn-banner"></div>
-
-    <!-- Now playing + transport -->
-    <div class="card">
-      <div class="now">
-        <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
-        <div class="now-name" id="now-name">—</div>
-        <div class="now-url" id="now-url">&nbsp;</div>
+    <!-- ════ Accueil ════ -->
+    <div class="page show" id="pg-home">
+      <div class="pg-head">
+        <h1>Kiosque</h1>
+        <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Connexion…</span></div>
       </div>
-      <div class="transport" id="transport">
-        <button class="t-side" id="b-prev" aria-label="Précédent">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
+
+      <div class="card" id="ext-note">
+        L'extension n'est pas connectée sur le PC du kiosque — les commandes sont indisponibles.
+      </div>
+
+      <div class="card" id="install-banner">
+        Ajoutez cette page à l'écran d'accueil : <b>Partager → Sur l'écran d'accueil</b>
+      </div>
+
+      <div class="card" id="warn-banner"></div>
+
+      <!-- Lecteur -->
+      <div class="card">
+        <div class="now">
+          <div class="art" id="art">—</div>
+          <div class="now-meta">
+            <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
+            <div class="now-name" id="now-name">—</div>
+            <div class="now-url" id="now-url">&nbsp;</div>
+          </div>
+        </div>
+        <div class="transport" id="transport">
+          <button class="t-side" id="b-prev" aria-label="Précédent">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
+          </button>
+          <button class="t-main" id="b-main" aria-label="Lecture / pause">
+            <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" width="30" height="30" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          <button class="t-side" id="b-next" aria-label="Suivant">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Release -->
+      <div class="card" id="card-release">
+        <button class="release-btn" id="b-release">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          Revenir à la rotation
         </button>
-        <button class="t-main" id="b-main" aria-label="Lecture / pause">
-          <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" width="30" height="30" style="display:none"><path d="M8 5v14l11-7z"/></svg>
-          <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-        </button>
-        <button class="t-side" id="b-next" aria-label="Suivant">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
-        </button>
+      </div>
+
+      <!-- Open URL -->
+      <div class="card">
+        <div class="open-row">
+          <input id="urlin" type="url" placeholder="Afficher une URL…"
+                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <button class="send-btn" id="b-send" aria-label="Afficher">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Release -->
-    <div class="card" id="card-release">
-      <button class="release-btn" id="b-release">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        Revenir à la rotation
-      </button>
-    </div>
-
-    <!-- Playlist -->
-    <div class="card">
-      <div class="sec-h">
-        <div class="sec-t">Playlist</div>
-        <div class="sec-n" id="pl-count"></div>
+    <!-- ════ Playlist ════ -->
+    <div class="page" id="pg-playlist">
+      <div class="pg-head">
+        <h1>Playlist</h1>
+        <div class="pg-sub" id="pl-count"></div>
       </div>
-      <div class="pl" id="pl"></div>
+      <div class="card">
+        <div class="pl" id="pl"></div>
+      </div>
     </div>
 
-    <!-- Open URL -->
-    <div class="card">
-      <div class="open-row">
-        <input id="urlin" type="url" placeholder="Afficher une URL…"
-               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <button class="send-btn" id="b-send" aria-label="Afficher">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg>
-        </button>
+    <!-- ════ Réglages ════ -->
+    <div class="page" id="pg-settings">
+      <div class="pg-head">
+        <h1>Réglages</h1>
+      </div>
+
+      <div class="sec-lbl">Système</div>
+      <div class="card">
+        <div class="row">Serveur remote
+          <div class="row-v"><span id="set-server">—</span><div class="dot" id="set-server-dot"></div></div>
+        </div>
+        <div class="row">Extension kiosque
+          <div class="row-v"><span id="set-ext">—</span><div class="dot" id="set-ext-dot"></div></div>
+        </div>
+        <div class="row">Écrans configurés
+          <div class="row-v" id="set-screens">—</div>
+        </div>
+        <div class="row">Intervalle de rotation
+          <div class="row-v" id="set-interval">—</div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">Application</div>
+      <div class="card">
+        <div class="row">Installer sur iPhone
+          <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
+        </div>
+        <div class="row">Version
+          <div class="row-v">wee rotate 1.8</div>
+        </div>
       </div>
     </div>
 
   </div>
+
+  <!-- Nav basse -->
+  <nav>
+    <button class="nav-btn active" data-pg="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="23" height="23">
+        <path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 8.8V20h13V8.8"/>
+      </svg>
+      Accueil
+    </button>
+    <button class="nav-btn" data-pg="playlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" width="23" height="23">
+        <path d="M4 6.5h16M4 12h16M4 17.5h9"/>
+      </svg>
+      Playlist
+    </button>
+    <button class="nav-btn" data-pg="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" width="23" height="23">
+        <path d="M4 7h2.4M11.6 7H20M4 17h8.4M17.6 17H20"/>
+        <circle cx="9" cy="7" r="2.6"/><circle cx="15" cy="17" r="2.6"/>
+      </svg>
+      Réglages
+    </button>
+  </nav>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -388,6 +515,7 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
 let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
 let lastState = null;
 let reconnectTimer = null;
+let extOnline = false;
 
 const $ = id => document.getElementById(id);
 
@@ -421,11 +549,20 @@ function show(id) {
     el.classList.toggle('show', el.id === id));
 }
 
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p =>
+    p.classList.toggle('show', p.id === 'pg-' + name));
+  document.querySelectorAll('.nav-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.pg === name));
+}
+
 function chip(state) { // 'on' | 'off' | 'wait'
   const c = $('chip');
   c.classList.toggle('on', state === 'on');
   $('chip-txt').textContent =
     state === 'on' ? 'Connecté' : state === 'off' ? 'Reconnexion…' : 'Connexion…';
+  $('set-server').textContent = state === 'on' ? 'Connecté' : 'Hors ligne';
+  $('set-server-dot').style.background = state === 'on' ? 'var(--green)' : 'var(--txt-3)';
 }
 
 function showToast(msg) {
@@ -473,8 +610,11 @@ function connect() {
 }
 
 function setExtOnline(on) {
+  extOnline = on;
   $('ext-note').classList.toggle('show', !on);
   $('transport').classList.toggle('off', !on);
+  $('set-ext').textContent = on ? 'Connectée' : 'Hors ligne';
+  $('set-ext-dot').style.background = on ? 'var(--green)' : 'var(--txt-3)';
 }
 
 // mode courant déduit de l'état : 'external' | 'running' | 'paused' | 'stopped'
@@ -483,6 +623,20 @@ function modeOf(s) {
   if (s.active) return 'running';
   if (s.remotePaused) return 'paused';
   return 'stopped';
+}
+
+// teinte stable par nom — donne sa « pochette » à chaque écran
+function hueOf(str) {
+  let h = 0;
+  for (const c of (str || '')) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+function artBg(name) {
+  const h = hueOf(name);
+  return `linear-gradient(140deg, hsl(${h},34%,72%), hsl(${h},40%,52%))`;
+}
+function initialOf(name) {
+  return (name || '—').trim().charAt(0).toUpperCase() || '—';
 }
 
 function sync(s) {
@@ -523,16 +677,22 @@ function sync(s) {
     wb.classList.remove('show');
   }
 
+  // Réglages — infos système
+  $('set-screens').textContent  = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : 'Aucun';
+  $('set-interval').textContent = (s.interval || 30) + ' s';
+
   renderPlaylist(urls, s.currentIndex || 0, mode, warns);
 }
 
 function setNow(name, url) {
-  const n = $('now-name'), u = $('now-url');
+  const n = $('now-name'), u = $('now-url'), a = $('art');
   if (n.textContent !== name) {
     n.style.opacity = '0';
     setTimeout(() => { n.textContent = name; n.style.opacity = '1'; }, 120);
   }
-  u.textContent = url || ' ';
+  u.textContent = url || ' ';
+  a.textContent = initialOf(name);
+  a.style.background = artBg(name);
 }
 
 function shortUrl(u) {
@@ -549,17 +709,23 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
   }
   pl.innerHTML = '';
   urls.forEach((u, i) => {
+    const isCur = i === currentIndex && mode !== 'external';
     const b = document.createElement('button');
     b.className = 'pl-item'
-      + (i === currentIndex && mode !== 'external' ? ' cur' : '')
+      + (isCur ? ' cur' : '')
       + (warns.includes(i) ? ' warn' : '');
+    const name = u.name || shortUrl(u.url);
     b.innerHTML = `
-      <div class="pl-ix">${i + 1}</div>
+      <div class="pl-art"></div>
       <div class="pl-txt">
         <div class="pl-name"></div>
         <div class="pl-url"></div>
-      </div>`;
-    b.querySelector('.pl-name').textContent = u.name || shortUrl(u.url);
+      </div>
+      ${isCur ? `<div class="eq${mode === 'running' ? '' : ' still'}"><i></i><i></i><i></i></div>` : ''}`;
+    const art = b.querySelector('.pl-art');
+    art.textContent = initialOf(name);
+    art.style.background = artBg(name);
+    b.querySelector('.pl-name').textContent = name;
     b.querySelector('.pl-url').textContent  = u.url;
     b.addEventListener('click', () => cmd('goto', { index: i }));
     pl.appendChild(b);
@@ -597,6 +763,9 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-release').addEventListener('click', () => cmd('release'));
   $('b-send').addEventListener('click', sendUrl);
   $('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
+
+  document.querySelectorAll('.nav-btn').forEach(b =>
+    b.addEventListener('click', () => showPage(b.dataset.pg)));
 
   // Bannière d'installation sur iOS Safari (hors mode PWA)
   if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {

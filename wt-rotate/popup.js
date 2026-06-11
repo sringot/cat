@@ -27,9 +27,9 @@ function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
       btn.classList.add('active');
-      $('tab-' + btn.dataset.tab).classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('show');
     });
   });
 }
@@ -53,7 +53,6 @@ function wireButtons() {
   $('b-main').addEventListener('click', onMainButton);
   $('b-prev').addEventListener('click', onPrev);
   $('b-next-t').addEventListener('click', onNext);
-  $('btn-next').addEventListener('click', onNext);
 
   $('btn-add').addEventListener('click', () => {
     if (!config) config = migrateConfig(null);
@@ -276,7 +275,6 @@ function updateStatusUI() {
   $('chip').classList.toggle('on', on);
   $('chip-txt').textContent = on ? (paused ? 'En pause' : 'Actif') : 'Arrêté';
 
-  $('btn-next').classList.toggle('hidden', !on);
   $('prog-wrap').classList.toggle('hidden', !on || paused);
 
   $('ic-play').style.display = on ? 'none' : '';
@@ -286,10 +284,12 @@ function updateStatusUI() {
   if (on) {
     const activeUrls = config.urls.filter(u => u?.url?.trim());
     const cur = activeUrls[config.currentIndex % Math.max(activeUrls.length, 1)];
+    const name = cur?.name || cur?.url || '—';
     nowLbl.classList.toggle('live', !paused);
     $('now-lbl-txt').textContent = paused ? 'En pause' : 'En cours';
-    $('now-name').textContent    = cur?.name || cur?.url || '—';
-    $('now-url').textContent     = cur?.url  || '';
+    $('now-name').textContent    = name;
+    $('now-url').textContent     = cur?.url || '';
+    setArt(name);
     if (!paused) {
       const totalSec  = config.currentAlarmSec || cur?.interval || config.interval;
       let   remainSec = totalSec;
@@ -304,8 +304,23 @@ function updateStatusUI() {
     $('now-lbl-txt').textContent = 'Arrêté';
     $('now-name').textContent    = '—';
     $('now-url').textContent     = '';
+    setArt(null);
     stopProgressBar();
   }
+}
+
+// « pochette » : teinte stable dérivée du nom de l'écran
+function setArt(name) {
+  const a = $('art');
+  if (!name) {
+    a.textContent = '—';
+    a.style.background = 'linear-gradient(140deg,#C9C7C2,#8B8A86)';
+    return;
+  }
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  a.textContent = name.trim().charAt(0).toUpperCase() || '—';
+  a.style.background = `linear-gradient(140deg, hsl(${h},34%,72%), hsl(${h},40%,52%))`;
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────

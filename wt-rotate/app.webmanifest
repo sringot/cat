@@ -4,8 +4,8 @@
   "description": "Contrôle à distance wee rotate",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F7F7F8",
-  "theme_color": "#F7F7F8",
+  "background_color": "#F3F1ED",
+  "theme_color": "#F3F1ED",
   "orientation": "portrait",
   "icons": [
     {

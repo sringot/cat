@@ -8,16 +8,18 @@ const DEFAULT_CONFIG = {
 };
 
 function migrateConfig(raw) {
-  if (!raw) return { ...DEFAULT_CONFIG };
-  const c = { ...DEFAULT_CONFIG, ...raw };
+  // Copie profonde des tableaux : une mutation sur config.urls / tabIds ne
+  // doit jamais polluer DEFAULT_CONFIG (partagé par référence sinon)
+  const c = { ...DEFAULT_CONFIG, ...(raw || {}) };
   c.urls = (c.urls || []).map(u =>
-    typeof u === 'string' ? { url: u, name: '', interval: null } : u
+    typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u }
   );
   if (c.tabId !== undefined) {
     if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
     delete c.tabId;
   }
-  if (!Array.isArray(c.tabIds)) c.tabIds = [];
+  c.tabIds = Array.isArray(c.tabIds) ? [...c.tabIds] : [];
+  c.scheduleDays = Array.isArray(c.scheduleDays) ? [...c.scheduleDays] : [1, 2, 3, 4, 5];
   return c;
 }
 

@@ -122,16 +122,18 @@ function wireButtons() {
 // ── Config ────────────────────────────────────────────────────────────────────
 
 function migrateConfig(raw) {
-  if (!raw) return { ...DEFAULT_CONFIG };
-  const c = { ...DEFAULT_CONFIG, ...raw };
+  // Copie profonde des tableaux : un push sur config.urls ne doit jamais
+  // polluer DEFAULT_CONFIG (sinon « Réinit. » restaure une config sale)
+  const c = { ...DEFAULT_CONFIG, ...(raw || {}) };
   c.urls = (c.urls || []).map(u =>
-    typeof u === 'string' ? { url: u, name: '', interval: null } : u
+    typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u }
   );
   if (c.tabId !== undefined) {
     if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
     delete c.tabId;
   }
-  if (!Array.isArray(c.tabIds)) c.tabIds = [];
+  c.tabIds = Array.isArray(c.tabIds) ? [...c.tabIds] : [];
+  c.scheduleDays = Array.isArray(c.scheduleDays) ? [...c.scheduleDays] : [1, 2, 3, 4, 5];
   return c;
 }
 
@@ -172,8 +174,7 @@ function renderUrls() {
     return;
   }
 
-  const activeUrls = config.urls.filter(u => u?.url?.trim());
-  $('pl-count').textContent = activeUrls.length + ' URL' + (activeUrls.length > 1 ? 's' : '');
+  updatePlCount();
 
   config.urls.forEach((entry, i) => {
     const isActive    = config.active && i === config.currentIndex;
@@ -210,7 +211,7 @@ function renderUrls() {
     nameInp.addEventListener('blur',  () => { config.urls[i].name = nameInp.value.trim(); nameInp.value = config.urls[i].name; saveConfig(); });
     nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.focus(); });
 
-    urlInp.addEventListener('input', () => { config.urls[i].url = urlInp.value; saveConfig(); });
+    urlInp.addEventListener('input', () => { config.urls[i].url = urlInp.value; saveConfig(); updatePlCount(); });
     urlInp.addEventListener('blur',  () => { config.urls[i].url = urlInp.value.trim(); urlInp.value = config.urls[i].url; saveConfig(); });
     urlInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.blur(); });
 
@@ -259,6 +260,11 @@ function renderUrls() {
 
     urlList.appendChild(row);
   });
+}
+
+function updatePlCount() {
+  const n = config.urls.filter(u => u?.url?.trim()).length;
+  $('pl-count').textContent = config.urls.length ? n + ' URL' + (n > 1 ? 's' : '') : '';
 }
 
 // ── Status UI ─────────────────────────────────────────────────────────────────

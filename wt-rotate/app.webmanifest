@@ -2,7 +2,7 @@
   "name": "Kiosque",
   "short_name": "Kiosque",
   "description": "Contrôle à distance wee rotate",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#F3F1ED",
   "theme_color": "#F3F1ED",

@@ -9,5 +9,6 @@ cached_state: dict = {}
 local_ip: str = '127.0.0.1'
 qr_cache: Optional[bytes] = None
 html_cache: Optional[bytes] = None
+guide_cache: Optional[bytes] = None
 manifest_cache: Optional[bytes] = None
 icon_cache: dict = {}

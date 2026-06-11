@@ -42,9 +42,14 @@ async def main():
     except Exception:
         state.html_cache = b'<h1>control.html introuvable</h1>'
     try:
+        state.guide_cache = (base / 'guide.html').read_bytes()
+    except Exception:
+        state.guide_cache = None
+    try:
         import json as _json
         manifest = _json.loads((base / 'app.webmanifest').read_bytes())
-        manifest['start_url'] = f'/?token={auth.TOKEN}'
+        # L'app installée ouvre directement la télécommande, pas le guide
+        manifest['start_url'] = f'/app?token={auth.TOKEN}'
         state.manifest_cache = _json.dumps(manifest).encode()
     except Exception:
         pass

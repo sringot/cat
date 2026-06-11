@@ -35,7 +35,17 @@ async def handle_http(request):
                                          'Access-Control-Allow-Origin': '*'})
         return web.Response(status=503, text='pip install qrcode')
 
-    if state.html_cache:
+    # /app → la télécommande ; / (cible du QR code) → le guide d'installation
+    if path == '/app' and state.html_cache:
+        return web.Response(body=state.html_cache,
+                            headers={'Content-Type': 'text/html; charset=utf-8',
+                                     'Cache-Control': 'no-store'})
+
+    if state.guide_cache:
+        return web.Response(body=state.guide_cache,
+                            headers={'Content-Type': 'text/html; charset=utf-8',
+                                     'Cache-Control': 'no-store'})
+    if state.html_cache:  # guide.html manquant : on sert la télécommande direct
         return web.Response(body=state.html_cache,
                             headers={'Content-Type': 'text/html; charset=utf-8',
                                      'Cache-Control': 'no-store'})

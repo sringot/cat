@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F3F1ED">
+<link rel="manifest" href="/app.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon180.png">
+<title>Kiosque — Bienvenue</title>
+<script>
+// Lancé depuis l'écran d'accueil : on saute le guide, direction la télécommande.
+// (exécuté avant le rendu pour éviter tout flash de la page guide)
+(function () {
+  const qs = new URLSearchParams(location.search);
+  const t = qs.get('token') || '';
+  if (t) try { localStorage.setItem('wt_token', t); } catch {}
+  const standalone = navigator.standalone ||
+    (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (standalone) {
+    let saved = t;
+    if (!saved) try { saved = localStorage.getItem('wt_token') || ''; } catch {}
+    location.replace('/app' + (saved ? '?token=' + encodeURIComponent(saved) : ''));
+  }
+})();
+</script>
+<style>
+:root {
+  --bg:        #F3F1ED;
+  --card:      #FFFFFF;
+  --txt:       #131312;
+  --txt-2:     #8B8A86;
+  --txt-3:     #C9C7C2;
+  --line:      rgba(0,0,0,.06);
+  --accent:    #131312;
+  --accent-txt:#FFFFFF;
+  --shadow:    0 1px 2px rgba(20,18,14,.03), 0 10px 32px rgba(20,18,14,.06);
+  --ease:      cubic-bezier(.25,.8,.25,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #121212;
+    --card:      #1F1F1F;
+    --txt:       #F4F3F1;
+    --txt-2:     #9C9B97;
+    --txt-3:     #555450;
+    --line:      rgba(255,255,255,.07);
+    --accent:    #F4F3F1;
+    --accent-txt:#131312;
+    --shadow:    0 1px 2px rgba(0,0,0,.35), 0 10px 32px rgba(0,0,0,.3);
+  }
+  .card { border: 1px solid rgba(255,255,255,.06); }
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { min-height:100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 520px; margin: 0 auto;
+  padding: calc(34px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom));
+  animation: in .4s var(--ease);
+}
+@keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── En-tête ──────────────────────────────────────────────── */
+.hero { text-align: center; padding: 6px 0 26px; }
+.hero img {
+  width: 86px; height: 86px; border-radius: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+}
+h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
+.hero p {
+  font-size: 15px; color: var(--txt-2); line-height: 1.5;
+  margin-top: 9px; max-width: 300px; margin-left: auto; margin-right: auto;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.card-hdr {
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--txt-2);
+  padding: 18px 20px 4px;
+}
+
+/* ── Étapes ───────────────────────────────────────────────── */
+.step {
+  display: flex; align-items: center; gap: 15px;
+  padding: 15px 20px;
+}
+.step + .step { border-top: 1px solid var(--line); }
+.step-ic {
+  width: 44px; height: 44px; border-radius: 13px;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--txt);
+}
+.step-txt { font-size: 15px; font-weight: 550; line-height: 1.4; min-width: 0; }
+.step-txt b { font-weight: 700; }
+.step-txt small { display: block; font-size: 13px; font-weight: 500; color: var(--txt-2); margin-top: 2px; }
+.step-n {
+  margin-left: auto; flex-shrink: 0;
+  font-size: 13px; font-weight: 700; color: var(--txt-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Android ──────────────────────────────────────────────── */
+.android {
+  display: flex; align-items: center; gap: 15px;
+  padding: 16px 20px;
+  font-size: 14px; color: var(--txt-2); line-height: 1.45;
+}
+.android b { color: var(--txt); font-weight: 600; }
+
+/* ── Lien navigateur ──────────────────────────────────────── */
+.browser-link {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 22px;
+  font-size: 15px; font-weight: 600;
+  color: var(--txt-2); text-decoration: none;
+  padding: 14px;
+  transition: opacity .18s var(--ease);
+}
+.browser-link:active { opacity: .55; }
+.browser-link svg { transition: transform .18s var(--ease); }
+.browser-link:active svg { transform: translateX(3px); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img src="/icons/icon180.png" alt="">
+    <h1>Télécommande du kiosque</h1>
+    <p>Contrôlez l'affichage depuis votre téléphone, comme une vraie app.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">Ajouter à l'écran d'accueil — iPhone</div>
+    <div class="step">
+      <div class="step-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/>
+          <path d="M6 11.5H5.5A1.5 1.5 0 0 0 4 13v6.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V13a1.5 1.5 0 0 0-1.5-1.5H18"/>
+        </svg>
+      </div>
+      <div class="step-txt">Touchez <b>Partager</b><small>dans la barre de Safari, en bas de l'écran</small></div>
+      <div class="step-n">1</div>
+    </div>
+    <div class="step">
+      <div class="step-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <rect x="4" y="4" width="16" height="16" rx="4.5"/>
+          <path d="M12 8.8v6.4M8.8 12h6.4"/>
+        </svg>
+      </div>
+      <div class="step-txt">Choisissez <b>« Sur l'écran d'accueil »</b><small>faites défiler la liste si besoin</small></div>
+      <div class="step-n">2</div>
+    </div>
+    <div class="step">
+      <div class="step-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <path d="M4.5 12.5l5 5 10-11"/>
+        </svg>
+      </div>
+      <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Kiosque » apparaît sur votre écran d'accueil</small></div>
+      <div class="step-n">3</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="android">
+      <div class="step-ic">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>
+        </svg>
+      </div>
+      <div>Sur <b>Android</b> : menu <b>⋮</b> de Chrome, puis <b>« Ajouter à l'écran d'accueil »</b>.</div>
+    </div>
+  </div>
+
+  <a class="browser-link" id="open-app" href="/app">
+    Continuer dans le navigateur
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+      <path d="M5 12h13M13 6.5L18.5 12 13 17.5"/>
+    </svg>
+  </a>
+
+</div>
+
+<script>
+// Le lien « navigateur » embarque le token pour que la télécommande s'authentifie
+(function () {
+  let t = '';
+  try { t = localStorage.getItem('wt_token') || ''; } catch {}
+  document.getElementById('open-app').href =
+    '/app' + (t ? '?token=' + encodeURIComponent(t) : '');
+})();
+</script>
+</body>
+</html>

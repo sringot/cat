@@ -207,20 +207,20 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
 
 .transport {
   display: flex; align-items: center; justify-content: center;
-  gap: 30px;
-  padding: 19px 0 22px;
+  gap: 26px;
+  padding: 16px 0 20px;
   border-top: 1px solid var(--line);
   transition: opacity .3s var(--ease);
 }
 .transport.off { opacity: .3; pointer-events: none; }
 .t-side {
-  width: 50px; height: 50px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   background: var(--bg);
   display: flex; align-items: center; justify-content: center;
   color: var(--txt);
 }
 .t-main {
-  width: 80px; height: 80px; border-radius: 50%;
+  width: 68px; height: 68px; border-radius: 50%;
   background: var(--accent); color: var(--accent-txt);
   display: flex; align-items: center; justify-content: center;
   box-shadow: var(--shadow);
@@ -551,14 +551,14 @@ nav {
         </div>
         <div class="transport" id="transport">
           <button class="t-side" id="b-prev" aria-label="Précédent">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
           </button>
           <button class="t-main" id="b-main" aria-label="Lecture / pause">
-            <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" width="32" height="32" style="display:none"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" width="28" height="28" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           </button>
           <button class="t-side" id="b-next" aria-label="Suivant">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 18l8.5-6L6 6v12zm7.5 0h2V6h-2v12z"/></svg>
           </button>
         </div>
         <div class="seekrow" id="seekrow">
@@ -655,7 +655,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.9.1</div>
+          <div class="row-v">wee rotate 1.10.0</div>
         </div>
       </div>
     </div>
@@ -705,6 +705,7 @@ nav {
 let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
 let lastState = null;
 let reconnectTimer = null;
+let lastMsgAt = 0;
 let extOnline = false;
 let editMode = false;
 let pendingUrl = null;
@@ -774,11 +775,19 @@ function showToast(msg) {
 
 function connect() {
   clearTimeout(reconnectTimer);
+  // On détache et ferme toute socket précédente : après un retour
+  // d'arrière-plan iOS, une vieille socket « zombie » peut survivre et
+  // continuer à pousser des états périmés par-dessus la nouvelle.
+  if (ws) {
+    ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
+    try { ws.close(); } catch {}
+  }
   chip('wait');
   authFailed = false;
   ws = new WebSocket(`ws://${ip}:${port}`);
-  ws.onopen    = () => ws.send(JSON.stringify({ type: 'mobile', token: wsToken }));
+  ws.onopen    = () => { lastMsgAt = Date.now(); ws.send(JSON.stringify({ type: 'mobile', token: wsToken })); };
   ws.onmessage = e => {
+    lastMsgAt = Date.now();
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.type === 'ping')       { ws.send(JSON.stringify({ type: 'pong' })); return; }
     if (m.type === 'auth_error') {
@@ -810,6 +819,15 @@ function connect() {
     if (!authFailed) reconnectTimer = setTimeout(connect, 3000);
   };
   ws.onerror = () => {};
+}
+
+// Au retour au premier plan : si la socket est fermée, ou « ouverte » mais
+// silencieuse (le serveur ping toutes les 20 s, une socket saine a toujours
+// du trafic récent), on repart sur une connexion neuve immédiatement.
+function ensureAlive() {
+  if (authFailed || document.visibilityState === 'hidden') return;
+  if (!ws || ws.readyState >= 2) { connect(); return; }
+  if (ws.readyState === 1 && Date.now() - lastMsgAt > 25000) connect();
 }
 
 function setExtOnline(on) {
@@ -1123,6 +1141,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
     $('install-banner').classList.add('show');
   }
+
+  // Retour au premier plan (changement d'app, écran verrouillé…) :
+  // on vérifie tout de suite que la connexion est encore vivante
+  document.addEventListener('visibilitychange', ensureAlive);
+  window.addEventListener('pageshow', ensureAlive);
+  window.addEventListener('focus', ensureAlive);
 
   boot();
 });

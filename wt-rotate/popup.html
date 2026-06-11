@@ -22,13 +22,14 @@
 }
 @media (prefers-color-scheme:dark) {
   :root {
-    --bg:    #121212; --card: #1D1D1D;
+    --bg:    #121212; --card: #1F1F1F;
     --txt:   #F4F3F1; --txt-2:#9C9B97; --txt-3:#555450;
     --line:  rgba(255,255,255,.07);
     --accent:#F4F3F1; --acc-txt:#131312;
     --nav-bg:rgba(24,24,24,.86);
     --sh:    0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.28);
   }
+  .card { border:1px solid rgba(255,255,255,.06); }
 }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 body {
@@ -354,7 +355,10 @@ nav {
         <div class="next-lbl">SUIVANT</div>
         <div class="next-body">
           <div class="art" id="next-art" style="width:38px;height:38px;border-radius:10px;font-size:15px;flex-shrink:0">—</div>
-          <div class="now-name" id="next-name" style="font-size:13px;margin-top:0">—</div>
+          <div style="min-width:0">
+            <div class="now-name" id="next-name" style="font-size:13px;margin-top:0">—</div>
+            <div class="now-url" id="next-url" style="margin-top:1px"></div>
+          </div>
         </div>
       </div>
     </div>

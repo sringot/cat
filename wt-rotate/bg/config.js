@@ -2,7 +2,7 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  remotePaused: false, remoteTabId: null,
+  remotePaused: false, remoteTabId: null, remoteUntil: null,
   canvaRefreshMin: 5,
   tabRefreshHours: 4
 };

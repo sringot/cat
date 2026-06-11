@@ -41,7 +41,8 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.alarms.onAlarm.addListener(async alarm => {
-  if (alarm.name === 'wt-rotate')   await rotateToNext();
+  if (alarm.name === 'wt-rotate')    await rotateToNext();
+  if (alarm.name === 'wt-spotlight') await endSpotlight();
   if (alarm.name === 'wt-watchdog') {
     await checkSchedule();
     connectRemote();
@@ -55,11 +56,16 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 chrome.tabs.onRemoved.addListener(async tabId => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
-  if (config.remoteTabId === tabId) config.remoteTabId = null;
+  if (config.remoteTabId === tabId) {
+    config.remoteTabId = null; config.remoteUntil = null;
+    chrome.alarms.clear('wt-spotlight');
+  }
   if (config.tabIds.includes(tabId)) {
     await log('onglet fermé — arrêt');
-    config.active = false; config.tabIds = []; config.windowId = null; config.remoteTabId = null;
+    config.active = false; config.tabIds = []; config.windowId = null;
+    config.remoteTabId = null; config.remoteUntil = null;
     chrome.alarms.clear('wt-rotate');
+    chrome.alarms.clear('wt-spotlight');
     await chrome.storage.local.set({ config });
     await sendStateToRemote();
   } else {
@@ -106,8 +112,16 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
       const data = await chrome.storage.local.get('config');
       const config = migrateConfig(data.config);
       config.active = false; config.remotePaused = false;
+      config.remoteUntil = null;
       chrome.alarms.clear('wt-rotate');
-      await chrome.storage.local.set({ config });
+      chrome.alarms.clear('wt-spotlight');
+      if (config.remoteTabId) {
+        const t = config.remoteTabId; config.remoteTabId = null;
+        await chrome.storage.local.set({ config });
+        try { await chrome.tabs.remove(t); } catch {}
+      } else {
+        await chrome.storage.local.set({ config });
+      }
       await log('popup — arrêt');
       await sendStateToRemote();
       reply({ ok: true });

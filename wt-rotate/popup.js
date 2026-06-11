@@ -2,7 +2,7 @@ const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
   scheduleDays: [1, 2, 3, 4, 5], lastScheduleState: false,
-  remotePaused: false, remoteTabId: null,
+  remotePaused: false, remoteTabId: null, remoteUntil: null,
   canvaRefreshMin: 5,
   tabRefreshHours: 4
 };
@@ -326,6 +326,7 @@ function renderHomeCards() {
     let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
     art.style.background = `linear-gradient(140deg,hsl(${h},34%,72%),hsl(${h},40%,52%))`;
     $('next-name').textContent = name;
+    $('next-url').textContent  = next?.url || '';
     nextCard.style.display = '';
     stopCard.style.display = 'none';
   } else if (!on) {

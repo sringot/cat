@@ -245,6 +245,20 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
   color: var(--red);
 }
 
+/* session expirée */
+#warn-banner {
+  display: none;
+  padding: 13px 18px;
+  font-size: 13.5px; line-height: 1.45;
+  color: #B45309;
+  background: rgba(245,158,11,.08);
+}
+#warn-banner.show { display: block; }
+.pl-item.warn .pl-name::after { content: ' ⚠️'; font-size: 11px; }
+@media (prefers-color-scheme: dark) {
+  #warn-banner { color: #FBBF24; background: rgba(251,191,36,.07); }
+}
+
 /* install hint */
 #install-banner {
   display: none;
@@ -313,6 +327,8 @@ h1 { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
     <div class="card" id="install-banner">
       Ajoutez cette page à l'écran d'accueil : <b>Partager → Sur l'écran d'accueil</b>
     </div>
+
+    <div class="card" id="warn-banner"></div>
 
     <!-- Now playing + transport -->
     <div class="card">
@@ -495,7 +511,19 @@ function sync(s) {
   $('ic-pause').style.display = playing ? '' : 'none';
 
   $('card-release').classList.toggle('show', mode === 'external');
-  renderPlaylist(urls, s.currentIndex || 0, mode);
+
+  // Sessions expirées (onglet bloqué sur une page de login côté kiosque)
+  const warns = s.warnings || [];
+  const wb = $('warn-banner');
+  if (warns.length) {
+    const names = warns.map(i => urls[i]?.name || shortUrl(urls[i]?.url || '')).filter(Boolean);
+    wb.textContent = '⚠️ Session expirée : ' + names.join(', ') + ' — reconnectez-vous sur le PC du kiosque.';
+    wb.classList.add('show');
+  } else {
+    wb.classList.remove('show');
+  }
+
+  renderPlaylist(urls, s.currentIndex || 0, mode, warns);
 }
 
 function setNow(name, url) {
@@ -512,7 +540,7 @@ function shortUrl(u) {
   try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; }
 }
 
-function renderPlaylist(urls, currentIndex, mode) {
+function renderPlaylist(urls, currentIndex, mode, warns = []) {
   const pl = $('pl');
   $('pl-count').textContent = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : '';
   if (!urls.length) {
@@ -522,7 +550,9 @@ function renderPlaylist(urls, currentIndex, mode) {
   pl.innerHTML = '';
   urls.forEach((u, i) => {
     const b = document.createElement('button');
-    b.className = 'pl-item' + (i === currentIndex && mode !== 'external' ? ' cur' : '');
+    b.className = 'pl-item'
+      + (i === currentIndex && mode !== 'external' ? ' cur' : '')
+      + (warns.includes(i) ? ' warn' : '');
     b.innerHTML = `
       <div class="pl-ix">${i + 1}</div>
       <div class="pl-txt">

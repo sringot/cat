@@ -69,6 +69,12 @@ async function checkSchedule() {
   await chrome.storage.local.set({ config });
 }
 
+// Empêche Memory Saver de décharger un onglet kiosque : un onglet déchargé
+// ne poll plus son API → la session expire côté serveur (WithSecure, NinjaOne…)
+async function keepTabAlive(tabId) {
+  try { await chrome.tabs.update(tabId, { autoDiscardable: false }); } catch {}
+}
+
 async function autoStartRotation(config) {
   const activeUrls = config.urls.filter(u => u?.url?.trim());
   let winExists = false;
@@ -79,9 +85,11 @@ async function autoStartRotation(config) {
     if (!winExists) {
       const win = await chrome.windows.create({ url: activeUrls[0].url, state: 'fullscreen' });
       config.tabIds = [win.tabs[0].id]; config.windowId = win.id;
+      await keepTabAlive(win.tabs[0].id);
       for (let i = 1; i < activeUrls.length; i++) {
         const tab = await chrome.tabs.create({ windowId: win.id, url: activeUrls[i].url, active: false });
         config.tabIds.push(tab.id);
+        await keepTabAlive(tab.id);
       }
     } else {
       for (const tid of config.tabIds) { try { await chrome.tabs.remove(tid); } catch {} }
@@ -89,6 +97,7 @@ async function autoStartRotation(config) {
       for (let i = 0; i < activeUrls.length; i++) {
         const tab = await chrome.tabs.create({ windowId: config.windowId, url: activeUrls[i].url, active: i === 0 });
         config.tabIds.push(tab.id);
+        await keepTabAlive(tab.id);
       }
       await chrome.windows.update(config.windowId, { state: 'fullscreen' });
     }
@@ -137,6 +146,71 @@ async function refreshStaleTabsIfNeeded() {
     }
   }
   if (changed) await chrome.storage.local.set({ tabRefreshTimes: times });
+}
+
+// ── Détection de sessions expirées (page de login affichée) ──────────────────
+// Quand un onglet kiosque atterrit sur une page de login (session expirée),
+// on le re-navigue vers son URL configurée : si le SSO est encore valide la
+// reconnexion est silencieuse et le dashboard revient seul. Sinon l'entrée
+// reste dans sessionWarn et le téléphone affiche un avertissement.
+
+const LOGIN_RX = /(login\.microsoftonline\.com|b2clogin\.com|okta\.com|auth0\.com|accounts\.google\.com|onelogin\.com|duosecurity\.com)|[\/.](login|log-?in|sign-?in|sso|authenticate|authentication)([\/?#.]|$)/i;
+const LOGIN_RETRY_MS = 10 * 60 * 1000; // re-navigation au plus toutes les 10 min
+
+async function checkSessions() {
+  const data = await chrome.storage.local.get(['config', 'sessionWarn']);
+  const config = migrateConfig(data.config);
+  if (!config.tabIds.length) {
+    if (Object.keys(data.sessionWarn || {}).length)
+      await chrome.storage.local.set({ sessionWarn: {} });
+    return;
+  }
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  const warn = data.sessionWarn || {};
+  const now = Date.now();
+  let changed = false;
+
+  for (let i = 0; i < config.tabIds.length; i++) {
+    const tabId = config.tabIds[i];
+    const entry = activeUrls[i];
+    if (!entry) continue;
+    let tab;
+    try { tab = await chrome.tabs.get(tabId); } catch { continue; }
+
+    if (tab.autoDiscardable !== false) await keepTabAlive(tabId);
+    if (tab.status === 'loading') continue;          // redirection SSO en cours
+
+    // Si l'URL configurée ressemble elle-même à une page de login, indétectable
+    const onLogin = !LOGIN_RX.test(entry.url) && LOGIN_RX.test(tab.url || '');
+
+    if (onLogin) {
+      if (!warn[tabId]) {
+        warn[tabId] = { name: entry.name || entry.url.slice(0, 40), since: now, lastRetry: 0 };
+        changed = true;
+        await log('session expirée détectée: ' + warn[tabId].name);
+      }
+      if (now - warn[tabId].lastRetry >= LOGIN_RETRY_MS) {
+        warn[tabId].lastRetry = now;
+        changed = true;
+        try {
+          await chrome.tabs.update(tabId, { url: entry.url });
+          await log('re-navigation (tentative SSO): ' + warn[tabId].name);
+        } catch {}
+      }
+    } else if (warn[tabId]) {
+      await log('session restaurée: ' + warn[tabId].name);
+      delete warn[tabId];
+      changed = true;
+    }
+  }
+
+  for (const tid of Object.keys(warn)) {
+    if (!config.tabIds.includes(Number(tid))) { delete warn[tid]; changed = true; }
+  }
+  if (changed) {
+    await chrome.storage.local.set({ sessionWarn: warn });
+    await sendStateToRemote();
+  }
 }
 
 // ── Auto-refresh des onglets Canva ────────────────────────────────────────────

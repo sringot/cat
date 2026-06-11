@@ -66,13 +66,18 @@ function sendCmdAck(action, ok, reason) {
 
 async function sendStateToRemote() {
   if (remoteWs?.readyState !== WebSocket.OPEN) return;
-  const data = await chrome.storage.local.get('config');
+  const data = await chrome.storage.local.get(['config', 'sessionWarn']);
   const config = migrateConfig(data.config);
   const activeUrls = config.urls.filter(u => u?.url?.trim());
   let remoteUrl = null;
   if (config.remoteTabId) {
     try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
   }
+  // Index (dans la playlist) des onglets bloqués sur une page de login
+  const sessionWarn = data.sessionWarn || {};
+  const warnings = config.tabIds
+    .map((tid, i) => sessionWarn[tid] ? i : -1)
+    .filter(i => i >= 0 && i < activeUrls.length);
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,
@@ -80,7 +85,8 @@ async function sendStateToRemote() {
     hasTabs: config.tabIds.length > 0,
     currentIndex: config.currentIndex,
     urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
-    interval: config.interval
+    interval: config.interval,
+    warnings
   }));
 }
 

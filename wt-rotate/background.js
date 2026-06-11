@@ -45,6 +45,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-watchdog') {
     await checkSchedule();
     connectRemote();
+    await checkSessions();
     await injectOverlayAll();
     await refreshCanvaTabsIfNeeded();
     await refreshStaleTabsIfNeeded();

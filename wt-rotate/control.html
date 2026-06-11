@@ -170,10 +170,10 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   padding: 22px 22px 20px;
 }
 .art {
-  width: 86px; height: 86px; border-radius: 20px;
+  width: 96px; height: 96px; border-radius: 22px;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px; font-weight: 750; color: #FFFFFF;
+  font-size: 40px; font-weight: 750; color: #FFFFFF;
   text-shadow: 0 1px 8px rgba(0,0,0,.16);
   background: linear-gradient(140deg, #C9C7C2, #8B8A86);
   transition: background .4s var(--ease);
@@ -190,7 +190,7 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
 .now-label.live .dot { background: var(--green); animation: pulse 2.2s var(--ease) infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 .now-name {
-  font-size: 21px; font-weight: 750; letter-spacing: -.4px;
+  font-size: 23px; font-weight: 750; letter-spacing: -.4px;
   margin-top: 7px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: opacity .25s var(--ease);
@@ -244,6 +244,38 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   background: var(--accent); color: var(--accent-txt);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+}
+
+/* ── Écrans / À venir (home) ──────────────────────────────── */
+.upnext-scroll {
+  display: flex; overflow-x: auto; gap: 12px;
+  padding: 0 18px 18px;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.upnext-scroll::-webkit-scrollbar { display: none; }
+.un-item {
+  flex-shrink: 0; display: flex; flex-direction: column;
+  align-items: center; gap: 7px; width: 68px;
+  cursor: pointer;
+}
+.un-item:active { opacity: .7; transform: scale(.95); }
+.un-art {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 5px rgba(0,0,0,.15);
+  flex-shrink: 0;
+}
+.un-name {
+  font-size: 11px; font-weight: 550; color: var(--txt-2);
+  text-align: center; width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.upnext-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 10px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--txt-2);
 }
 
 /* ── Playlist ─────────────────────────────────────────────── */
@@ -427,6 +459,14 @@ nav {
         </button>
       </div>
 
+      <!-- Écrans configurés (toujours visible si playlist non vide) -->
+      <div class="card" id="card-upnext" style="display:none">
+        <div class="upnext-hdr">
+          <span id="upnext-label">ÉCRANS</span>
+        </div>
+        <div class="upnext-scroll" id="upnext-list"></div>
+      </div>
+
       <!-- Open URL -->
       <div class="card">
         <div class="open-row">
@@ -524,6 +564,7 @@ const REASONS = {
   rotation_stopped: 'Rotation arrêtée — appuyez sur lecture pour démarrer',
   no_urls:          'Aucune URL configurée — ajoutez-en depuis le PC',
   no_window:        'Le kiosque n\'est pas ouvert — appuyez sur lecture pour démarrer',
+  create_failed:    'Impossible d\'ouvrir la fenêtre — vérifiez le kiosque',
   blocked_scheme:   'URL non autorisée',
   invalid_url:      'URL invalide',
   bad_index:        'Action impossible',
@@ -681,6 +722,7 @@ function sync(s) {
   $('set-screens').textContent  = urls.length ? urls.length + (urls.length > 1 ? ' écrans' : ' écran') : 'Aucun';
   $('set-interval').textContent = (s.interval || 30) + ' s';
 
+  renderUpNext(urls, s.currentIndex || 0, mode);
   renderPlaylist(urls, s.currentIndex || 0, mode, warns);
 }
 
@@ -698,6 +740,31 @@ function setNow(name, url) {
 function shortUrl(u) {
   if (!u) return '';
   try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; }
+}
+
+function renderUpNext(urls, currentIndex, mode) {
+  const card = $('card-upnext');
+  if (!urls.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const running = mode === 'running';
+  $('upnext-label').textContent = running ? 'À VENIR' : 'ÉCRANS';
+  const list = $('upnext-list');
+  list.innerHTML = '';
+  const count = Math.min(urls.length, running ? 4 : 5);
+  for (let k = 0; k < count; k++) {
+    const idx = running ? (currentIndex + 1 + k) % urls.length : k;
+    const u = urls[idx];
+    const name = u.name || shortUrl(u.url);
+    const item = document.createElement('button');
+    item.className = 'un-item';
+    item.innerHTML = '<div class="un-art"></div><div class="un-name"></div>';
+    const art = item.querySelector('.un-art');
+    art.textContent = initialOf(name);
+    art.style.background = artBg(name);
+    item.querySelector('.un-name').textContent = name;
+    item.addEventListener('click', () => cmd('goto', { index: idx }));
+    list.appendChild(item);
+  }
 }
 
 function renderPlaylist(urls, currentIndex, mode, warns = []) {

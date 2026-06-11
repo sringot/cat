@@ -136,7 +136,6 @@ async function handleRemoteCommand(cmd) {
 
     case 'open_url': {
       if (!cmd.url) { ok = false; reason = 'invalid_url'; break; }
-      if (!config.windowId) { ok = false; reason = 'no_window'; break; }
       let safeUrl;
       try {
         const parsed = new URL(cmd.url);
@@ -147,15 +146,31 @@ async function handleRemoteCommand(cmd) {
         safeUrl = transformUrl(cmd.url);
       } catch { ok = false; reason = 'invalid_url'; break; }
       try {
-        if (config.remoteTabId) { try { await chrome.tabs.remove(config.remoteTabId); } catch {} }
-        const tab = await chrome.tabs.create({ windowId: config.windowId, url: safeUrl, active: true });
+        if (config.remoteTabId) { try { await chrome.tabs.remove(config.remoteTabId); } catch {} config.remoteTabId = null; }
+        let tab;
+        if (config.windowId) {
+          // Essai d'ajout dans la fenêtre kiosque existante
+          try {
+            tab = await chrome.tabs.create({ windowId: config.windowId, url: safeUrl, active: true });
+          } catch { config.windowId = null; }
+        }
+        if (!config.windowId) {
+          // Pas de fenêtre kiosque : on ouvre une fenêtre plein écran dédiée
+          const win = await chrome.windows.create({ url: safeUrl, state: 'fullscreen' });
+          config.windowId = win.id;
+          tab = win.tabs[0];
+        }
         config.remoteTabId = tab.id; config.active = false; config.remotePaused = true;
         chrome.alarms.clear('wt-rotate');
         await chrome.storage.local.set({ config });
         await log('remote — open_url: ' + cmd.url.slice(0, 60));
+        // Injection YouTube immédiate en cas de chargement rapide
+        if (/youtube\.com\/watch|youtu\.be\//.test(safeUrl)) {
+          setTimeout(() => injectYouTubeMaximize(tab.id).catch(() => {}), 1500);
+        }
       } catch (e) {
         await log('remote open_url ERR: ' + e.message);
-        ok = false; reason = 'no_window';
+        ok = false; reason = 'create_failed';
       }
       break;
     }

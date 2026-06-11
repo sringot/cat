@@ -307,6 +307,42 @@ function updateStatusUI() {
     setArt(null);
     stopProgressBar();
   }
+
+  renderHomeCards();
+}
+
+function renderHomeCards() {
+  const on         = config.active;
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  const nextCard   = $('card-next');
+  const stopCard   = $('card-stopped');
+
+  if (on && activeUrls.length >= 2) {
+    const nextIdx = (config.currentIndex + 1) % activeUrls.length;
+    const next    = activeUrls[nextIdx];
+    const name    = next?.name || next?.url || '—';
+    const art     = $('next-art');
+    art.textContent = name.trim().charAt(0).toUpperCase() || '—';
+    let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+    art.style.background = `linear-gradient(140deg,hsl(${h},34%,72%),hsl(${h},40%,52%))`;
+    $('next-name').textContent = name;
+    nextCard.style.display = '';
+    stopCard.style.display = 'none';
+  } else if (!on) {
+    nextCard.style.display = 'none';
+    const n = activeUrls.length;
+    if (n > 0) {
+      $('stopped-title').textContent = n + ' écran' + (n > 1 ? 's' : '') + ' configuré' + (n > 1 ? 's' : '');
+      $('stopped-sub').textContent   = 'Appuyez sur ▶ pour démarrer la rotation';
+    } else {
+      $('stopped-title').textContent = 'Aucune URL configurée';
+      $('stopped-sub').textContent   = 'Allez dans Playlist pour ajouter des écrans';
+    }
+    stopCard.style.display = '';
+  } else {
+    nextCard.style.display = 'none';
+    stopCard.style.display = 'none';
+  }
 }
 
 // « pochette » : teinte stable dérivée du nom de l'écran

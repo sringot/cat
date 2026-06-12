@@ -764,7 +764,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.3</div>
+          <div class="row-v">wee rotate 1.10.4</div>
         </div>
       </div>
     </div>
@@ -832,6 +832,7 @@ const REASONS = {
   blocked_scheme:   'URL non autorisée',
   invalid_url:      'URL invalide',
   no_video:         'Aucune vidéo sur cette page',
+  empty_text:       'Message vide',
   bad_index:        'Action impossible',
   unknown_action:   'Action impossible'
 };
@@ -965,7 +966,10 @@ function setExtOnline(on) {
 
 // ── Aperçu en direct ──────────────────────────────────────────────────────────
 function requestScreenshot() {
-  if (extOnline) cmd('screenshot');
+  // envoi silencieux : un tick automatique pendant une reconnexion ne doit
+  // pas afficher le toast « Connexion perdue » toutes les 20 s
+  if (extOnline && ws?.readyState === 1)
+    ws.send(JSON.stringify({ type: 'command', action: 'screenshot' }));
 }
 function startPreview() {
   stopPreview();
@@ -1262,22 +1266,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('b-preview-refresh').addEventListener('click', requestScreenshot);
 
-  $('b-ann').addEventListener('click', () => {
+  const sendAnnounce = () => {
     const text = ($('ann-in').value || '').trim();
     if (!text) return;
     cmd('announce', { text, duration: 30 });
     $('ann-in').value = '';
     $('ann-in').blur();
-  });
-  $('ann-in').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      const text = ($('ann-in').value || '').trim();
-      if (!text) return;
-      cmd('announce', { text, duration: 30 });
-      $('ann-in').value = '';
-      $('ann-in').blur();
-    }
-  });
+  };
+  $('b-ann').addEventListener('click', sendAnnounce);
+  $('ann-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendAnnounce(); });
 
   $('b-back15').addEventListener('click', () => cmd('seek', { delta: -15 }));
   $('b-fwd15').addEventListener('click',  () => cmd('seek', { delta: 15 }));

@@ -14,7 +14,7 @@ if platform.system() != 'Windows':
 import ctypes
 if not ctypes.windll.shell32.IsUserAnAdmin():
     print('[ERREUR] Ce script doit être lancé en tant qu\'Administrateur.')
-    print('Clic droit sur setup_autostart.py → Exécuter en tant qu\'administrateur')
+    print('Clic droit sur setup_autostart.bat → Exécuter en tant qu\'administrateur')
     input('\nAppuyez sur Entrée pour quitter...')
     sys.exit(1)
 
@@ -53,23 +53,39 @@ if r.returncode == 0:
 else:
     print(f'[2/3] ECHEC tâche    : {r.stderr.strip()[:120]}')
 
-# ── 3. Raccourci Chrome dans le dossier Démarrage Windows ────────────────────
+# ── 3. Raccourci navigateur dans le dossier Démarrage Windows ────────────────
+# Le choix est important : lancer le MAUVAIS navigateur au boot peut faire
+# tourner DEUX extensions kiosque en même temps (conflit Chrome + Edge).
+print()
+print('Quel navigateur fait tourner le kiosque ?')
+print('  1. Google Chrome')
+print('  2. Microsoft Edge')
+choice = input('Choix [1/2, défaut 1] : ').strip() or '1'
+
+BROWSERS = {
+    '1': ('Chrome', [
+        r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+        r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+    ]),
+    '2': ('Edge', [
+        r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+        r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+    ]),
+}
+browser_name, candidates = BROWSERS.get(choice, BROWSERS['1'])
+browser_exe = next((p for p in candidates if Path(p).exists()), None)
+
 startup_folder = (
     Path(os.environ['APPDATA'])
     / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs' / 'Startup'
 )
-lnk = startup_folder / 'wt-rotate-chrome.lnk'
-chrome_candidates = [
-    r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-    r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-]
-chrome_exe = next((p for p in chrome_candidates if Path(p).exists()), None)
+lnk = startup_folder / 'wt-rotate-browser.lnk'
 
-if chrome_exe:
+if browser_exe:
     ps = (
         f"$ws = New-Object -ComObject WScript.Shell; "
         f"$lnk = $ws.CreateShortcut('{lnk}'); "
-        f"$lnk.TargetPath = '{chrome_exe}'; "
+        f"$lnk.TargetPath = '{browser_exe}'; "
         f"$lnk.Save()"
     )
     r2 = subprocess.run(
@@ -77,20 +93,24 @@ if chrome_exe:
         capture_output=True, text=True
     )
     if r2.returncode == 0:
-        print(f'[3/3] Chrome         : raccourci démarrage créé')
+        print(f'[3/3] {browser_name:<14} : raccourci démarrage créé')
     else:
-        print(f'[3/3] ECHEC Chrome   : {r2.stderr.strip()[:80]}')
+        print(f'[3/3] ECHEC {browser_name} : {r2.stderr.strip()[:80]}')
 else:
-    print('[3/3] Chrome         : introuvable — ajoutez-le manuellement au dossier Démarrage')
+    print(f'[3/3] {browser_name:<14} : introuvable — ajoutez-le manuellement au dossier Démarrage')
 
 print()
 print('═' * 56)
 print('Que faire maintenant :')
 print()
-print('  1. Redémarrez Windows pour tester')
-print('  2. Si la rotation était active avant la coupure,')
-print('     elle redémarrera automatiquement quand Chrome s\'ouvre')
-print('  3. Le serveur démarre 30 s après votre session')
-print('     (le temps que le réseau WiFi soit dispo)')
+print('  1. Dans le navigateur, réglez « Au démarrage » sur')
+print('     « Ouvrir la page Nouvel onglet » (PAS « Reprendre »,')
+print('     sinon une vieille fenêtre kiosque serait restaurée')
+print('     en double à chaque redémarrage)')
+print('  2. Windows + R → netplwiz → décochez « Les utilisateurs')
+print('     doivent entrer un nom d\'utilisateur… » (login auto)')
+print('  3. Laissez la rotation ACTIVE puis redémarrez pour tester')
+print('  4. Le serveur démarre 30 s après la session')
+print('     (le temps que le réseau soit dispo)')
 print('═' * 56)
 input('\nAppuyez sur Entrée pour quitter...')

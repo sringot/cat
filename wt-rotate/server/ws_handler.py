@@ -106,13 +106,21 @@ async def _handle_mobile(ws) -> None:
             if msg_data.type == WSMsgType.TEXT:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'command':
-                    # Volume système : on règle pycaw côté serveur, puis on
-                    # forwarde aussi à l'extension pour le <video> HTML5
+                    payload = msg_data.data
+                    # Volume : pycaw règle le volume système Windows quand il
+                    # est dispo ; la vidéo est alors laissée à 100 % pour ne
+                    # pas appliquer l'atténuation deux fois (50 % × 50 % = 25 %).
+                    # Sans pycaw, le niveau est forwardé tel quel et c'est le
+                    # <video> qui sert de bouton de volume.
                     if d.get('action') == 'volume':
-                        sys_audio.set_volume(int(d.get('level', 100)))
+                        try:
+                            if sys_audio.set_volume(int(float(d.get('level', 100)))):
+                                payload = json.dumps({**d, 'level': 100})
+                        except (TypeError, ValueError):
+                            pass  # level absent/malformé : on n'éjecte pas le mobile
                     if state.ext_ws and not state.ext_ws.closed:
                         try:
-                            await state.ext_ws.send_str(msg_data.data)
+                            await state.ext_ws.send_str(payload)
                         except Exception:
                             pass
                     else:

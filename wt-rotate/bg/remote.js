@@ -307,39 +307,45 @@ async function handleRemoteCommand(cmd) {
       return; // pas d'ack ni de state push
     }
 
-    // Affiche un bandeau de message sur l'onglet kiosque actif
+    // Affiche un bandeau de message sur les onglets kiosque
     case 'announce': {
       const text = (cmd.text || '').trim().slice(0, 300);
       const duration = Math.min(300, Math.max(5, Number(cmd.duration) || 30));
-      if (!text) { ok = false; reason = 'invalid_url'; break; }
-      let target = config.remoteTabId;
-      if (!target && config.tabIds.length)
-        target = config.tabIds[config.currentIndex % config.tabIds.length];
-      if (!target) { ok = false; reason = 'no_window'; break; }
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: target },
-          func: (text, duration) => {
-            const prev = document.getElementById('__wt_announce');
-            if (prev) prev.remove();
-            const el = document.createElement('div');
-            el.id = '__wt_announce';
-            el.textContent = text;
-            el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;'
-              + 'background:rgba(0,0,0,.84);color:#fff;'
-              + 'font:700 2.2vw/1.4 system-ui,sans-serif;'
-              + 'text-align:center;padding:2vh 3vw;'
-              + 'z-index:2147483647;opacity:0;transition:opacity .35s';
-            document.body.appendChild(el);
-            setTimeout(() => { el.style.opacity = '1'; }, 16);
-            setTimeout(() => {
-              el.style.opacity = '0';
-              setTimeout(() => el.remove(), 420);
-            }, duration * 1000);
-          },
-          args: [text, duration]
-        });
-      } catch { ok = false; reason = 'create_failed'; }
+      if (!text) { ok = false; reason = 'empty_text'; break; }
+      // Injecté dans TOUS les onglets kiosque : la rotation peut changer de
+      // page pendant l'affichage, le message doit rester visible
+      const targets = [...config.tabIds];
+      if (config.remoteTabId) targets.push(config.remoteTabId);
+      if (!targets.length) { ok = false; reason = 'no_window'; break; }
+      let done = 0;
+      for (const tid of targets) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tid },
+            func: (text, duration) => {
+              const prev = document.getElementById('__wt_announce');
+              if (prev) prev.remove();
+              const el = document.createElement('div');
+              el.id = '__wt_announce';
+              el.textContent = text;
+              el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;'
+                + 'background:rgba(0,0,0,.84);color:#fff;'
+                + 'font:700 2.2vw/1.4 system-ui,sans-serif;'
+                + 'text-align:center;padding:2vh 3vw;'
+                + 'z-index:2147483647;opacity:0;transition:opacity .35s';
+              document.body.appendChild(el);
+              setTimeout(() => { el.style.opacity = '1'; }, 16);
+              setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 420);
+              }, duration * 1000);
+            },
+            args: [text, duration]
+          });
+          done++;
+        } catch {} // onglet en cours de chargement, page chrome:// …
+      }
+      if (!done) { ok = false; reason = 'create_failed'; }
       break;
     }
 

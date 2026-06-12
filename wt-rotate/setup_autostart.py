@@ -31,10 +31,16 @@ launcher.write_text(
     '@echo off\n'
     f'cd /d "{here}"\n'
     'python -m pip install aiohttp qrcode pycaw --quiet\n'
-    'python remote_server.py\n',
+    ':: Boucle de relance : si le serveur plante, il repart seul apres 5 s\n'
+    ':loop\n'
+    'python remote_server.py\n'
+    'echo.\n'
+    'echo  Serveur arrete — relance dans 5 s (Ctrl+C pour quitter)...\n'
+    'timeout /t 5 /nobreak >nul\n'
+    'goto loop\n',
     encoding='utf-8'
 )
-print(f'[1/3] Lanceur créé   : {launcher.name}')
+print(f'[1/3] Lanceur créé   : {launcher.name} (relance auto en cas de plantage)')
 
 # ── 2. Tâche planifiée (serveur 30 s après le login) ─────────────────────────
 task_name = 'wt-rotate serveur'

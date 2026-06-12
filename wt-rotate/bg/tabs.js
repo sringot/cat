@@ -48,6 +48,10 @@ async function checkSchedule() {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   if (!config.scheduleEnabled) return;
+  // Spotlight en cours : on ne démarre/arrête rien par-dessus une URL envoyée
+  // explicitement. lastScheduleState n'est pas mis à jour, la transition
+  // sera appliquée au tick suivant la fin du spotlight.
+  if (config.remoteTabId) return;
   const wasIn = config.lastScheduleState ?? false;
   const nowIn = isInSchedule(config);
   config.lastScheduleState = nowIn;

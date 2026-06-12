@@ -1,6 +1,8 @@
 let remoteWs             = null;
 let remoteReconnectTimer = null;
 let remoteLastMsg        = 0;
+let lastShotData         = '';   // dédup des captures : page figée = JPEG identique
+let lastShotAt           = 0;
 
 const SAFE_URL_SCHEMES = ['http:', 'https:'];
 
@@ -97,8 +99,16 @@ async function sendStateToRemote() {
     remoteUntil: config.remoteUntil || null,
     hasTabs: config.tabIds.length > 0,
     currentIndex: config.currentIndex,
-    urls: activeUrls.map(u => ({ name: u.name || '', url: u.url })),
+    urls: activeUrls.map(u => ({ name: u.name || '', url: u.url, interval: u.interval || null })),
     interval: config.interval,
+    schedule: {
+      enabled: !!config.scheduleEnabled,
+      start: config.scheduleStart || '08:00',
+      end: config.scheduleEnd || '18:00',
+      days: config.scheduleDays || [1, 2, 3, 4, 5]
+    },
+    tabRefreshHours: config.tabRefreshHours ?? 4,
+    canvaRefreshMin: config.canvaRefreshMin || 5,
     warnings
   }));
 }
@@ -305,8 +315,15 @@ async function handleRemoteCommand(cmd) {
       try {
         const dataUrl = await chrome.tabs.captureVisibleTab(
           config.windowId, { format: 'jpeg', quality: 35 });
+        // Page figée → captures strictement identiques : inutile de renvoyer
+        // le même JPEG en boucle (réseau + batterie téléphone). On re-pousse
+        // quand même toutes les ~25 s pour alimenter le cache serveur, qui
+        // sert l'aperçu aux téléphones fraîchement connectés.
+        if (dataUrl === lastShotData && Date.now() - lastShotAt < 25000) return;
         if (remoteWs?.readyState === WebSocket.OPEN) {
           remoteWs.send(JSON.stringify({ type: 'screenshot', data: dataUrl }));
+          lastShotData = dataUrl;
+          lastShotAt   = Date.now();
         }
       } catch {}
       return; // pas d'ack ni de state push
@@ -432,6 +449,82 @@ async function handleRemoteCommand(cmd) {
       const i = Number.isInteger(cmd.index) ? cmd.index : -1;
       if (i < 0 || i >= act.length) { ok = false; reason = 'bad_index'; break; }
       config.urls[act[i]].name = (cmd.name || '').trim();
+      await chrome.storage.local.set({ config });
+      break;
+    }
+
+    // Durée d'affichage propre à une page (null/0 = intervalle global)
+    case 'pl_set_interval': {
+      const act = activeIndices(config);
+      const i = Number.isInteger(cmd.index) ? cmd.index : -1;
+      if (i < 0 || i >= act.length) { ok = false; reason = 'bad_index'; break; }
+      const secs = Number(cmd.seconds) || 0;
+      config.urls[act[i]].interval = secs > 0
+        ? Math.round(Math.min(3600, Math.max(5, secs)))
+        : null;
+      await chrome.storage.local.set({ config });
+      await log('remote — durée page ' + i + ' → ' + (config.urls[act[i]].interval || 'défaut'));
+      break;
+    }
+
+    // Remplace la playlist par la sauvegarde conservée côté serveur
+    case 'pl_restore': {
+      const list = Array.isArray(cmd.urls) ? cmd.urls : [];
+      const clean = [];
+      for (const u of list) {
+        const url = (u?.url || '').trim();
+        try {
+          const parsed = new URL(url);
+          if (!SAFE_URL_SCHEMES.includes(parsed.protocol)) continue;
+        } catch { continue; }
+        const secs = Number(u.interval) || 0;
+        clean.push({
+          url,
+          name: (u.name || '').trim(),
+          interval: secs > 0 ? Math.round(Math.min(3600, Math.max(5, secs))) : null
+        });
+      }
+      if (!clean.length) { ok = false; reason = 'no_backup'; break; }
+      config.urls = clean;
+      config.currentIndex = 0;
+      // Kiosque ouvert (et pas en spotlight) : onglets reconstruits sur la
+      // nouvelle liste. Sinon on sauve juste — lecture au prochain démarrage.
+      if (config.tabIds.length && !config.remoteTabId) {
+        await autoStartRotation(config);
+      } else {
+        await chrome.storage.local.set({ config });
+      }
+      await log('remote — playlist restaurée (' + clean.length + ' pages)');
+      break;
+    }
+
+    // Horaires d'affichage (mêmes réglages que le popup de l'extension)
+    case 'set_schedule': {
+      const hm = /^([01]\d|2[0-3]):[0-5]\d$/;
+      config.scheduleEnabled = !!cmd.enabled;
+      if (hm.test(cmd.start || '')) config.scheduleStart = cmd.start;
+      if (hm.test(cmd.end || ''))   config.scheduleEnd   = cmd.end;
+      if (Array.isArray(cmd.days)) {
+        const days = [...new Set(cmd.days.map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))];
+        if (days.length) config.scheduleDays = days;
+      }
+      // lastScheduleState inversé = transition forcée : checkSchedule applique
+      // immédiatement l'état voulu (arrêt hors plage, démarrage dans la plage)
+      config.lastScheduleState = !isInSchedule(config);
+      await chrome.storage.local.set({ config });
+      if (config.scheduleEnabled) await checkSchedule();
+      await log('remote — horaires ' + (config.scheduleEnabled
+        ? config.scheduleStart + '-' + config.scheduleEnd + ' [' + config.scheduleDays.join(',') + ']'
+        : 'désactivés'));
+      break;
+    }
+
+    // Réglages avancés (rafraîchissement périodique des onglets)
+    case 'set_opts': {
+      if (cmd.tabRefreshHours !== undefined)
+        config.tabRefreshHours = Math.max(0, Math.min(24, Math.round(Number(cmd.tabRefreshHours) || 0)));
+      if (cmd.canvaRefreshMin !== undefined)
+        config.canvaRefreshMin = Math.max(1, Math.min(60, Math.round(Number(cmd.canvaRefreshMin) || 5)));
       await chrome.storage.local.set({ config });
       break;
     }

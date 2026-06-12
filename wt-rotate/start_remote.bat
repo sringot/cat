@@ -27,5 +27,10 @@ echo   Port 8765 ouvert (HTTP + WebSocket sur le meme port).
 
 echo.
 echo Demarrage du serveur wt-rotate Remote Control...
+echo (relance automatique en cas de plantage — Ctrl+C pour quitter)
+:loop
 python remote_server.py
-pause
+echo.
+echo  Serveur arrete — relance dans 5 s (Ctrl+C pour quitter)...
+timeout /t 5 /nobreak >nul
+goto loop

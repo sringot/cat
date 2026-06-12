@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from aiohttp import web, WSMsgType
-from server import state, auth, sys_audio
+from server import state, auth, sys_audio, backup
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -79,8 +79,16 @@ async def _handle_extension(ws) -> None:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'state':
                     state.cached_state = d
+                    if backup.maybe_save(d.get('urls') or []):
+                        await _broadcast_mobiles(json.dumps(backup.info_msg()))
                     await _broadcast_mobiles(msg_data.data)
-                elif d.get('type') in ('cmd_ack', 'screenshot'):
+                elif d.get('type') == 'screenshot':
+                    # Mis en cache : un mobile qui arrive reçoit le dernier
+                    # aperçu tout de suite au lieu d'attendre une capture
+                    state.cached_shot = msg_data.data
+                    state.cached_shot_ts = time.time()
+                    await _broadcast_mobiles(msg_data.data)
+                elif d.get('type') == 'cmd_ack':
                     await _broadcast_mobiles(msg_data.data)
                 # pong responses silently ignored
     except Exception:
@@ -101,12 +109,32 @@ async def _handle_mobile(ws) -> None:
     await ws.send_str(json.dumps({'type': 'ext_status', 'connected': ext_online}))
     if state.cached_state:
         await ws.send_str(json.dumps({**state.cached_state, 'type': 'state'}))
+    await ws.send_str(json.dumps(backup.info_msg()))
+    if state.cached_shot and time.time() - state.cached_shot_ts < 30:
+        await ws.send_str(state.cached_shot)
     try:
         async for msg_data in ws:
             if msg_data.type == WSMsgType.TEXT:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'command':
                     payload = msg_data.data
+                    # Captures : un frame vient d'être diffusé à TOUS les
+                    # mobiles — inutile de redemander une capture identique
+                    # quand plusieurs téléphones tournent en même temps.
+                    if d.get('action') == 'screenshot' and time.time() - state.cached_shot_ts < 3:
+                        continue
+                    # Restauration : la playlist sauvegardée vit côté serveur,
+                    # on l'injecte dans la commande avant de la forwarder.
+                    if d.get('action') == 'pl_restore':
+                        if not backup.data['urls']:
+                            try:
+                                await ws.send_str(json.dumps({
+                                    'type': 'cmd_ack', 'action': 'pl_restore',
+                                    'ok': False, 'reason': 'no_backup'}))
+                            except Exception:
+                                pass
+                            continue
+                        payload = json.dumps({**d, 'urls': backup.data['urls']})
                     # Volume : pycaw règle le volume système Windows quand il
                     # est dispo ; la vidéo est alors laissée à 100 % pour ne
                     # pas appliquer l'atténuation deux fois (50 % × 50 % = 25 %).

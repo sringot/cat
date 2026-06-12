@@ -450,6 +450,44 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   text-transform: uppercase; color: var(--txt-2);
   padding: 8px 8px 10px;
 }
+.set-note {
+  margin: -6px 0 16px; padding: 0 8px;
+  font-size: 12px; line-height: 1.5; color: var(--txt-2);
+}
+
+/* interrupteur (horaires) */
+.switch {
+  width: 50px; height: 30px; border-radius: 100px;
+  background: var(--bg); position: relative; flex-shrink: 0;
+  transition: background .25s var(--ease);
+}
+.switch i {
+  position: absolute; top: 3px; left: 3px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.22);
+  transition: transform .25s var(--ease);
+}
+.switch.on { background: var(--green); }
+.switch.on i { transform: translateX(20px); }
+.switch:active { transform: none; }
+
+/* heures + jours du planning */
+.time-in {
+  background: var(--bg); border-radius: 10px;
+  padding: 7px 10px; font-size: 14px; font-weight: 550;
+}
+.days { display: flex; gap: 7px; }
+.day {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bg); color: var(--txt-2);
+  font-size: 12.5px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.day.on { background: var(--accent); color: var(--accent-txt); }
+
+/* option sélectionnée dans une feuille (durée par page) */
+.sheet-opt.sel { background: var(--bg); }
 
 /* ── URLs récentes ────────────────────────────────────────── */
 .recents-btn {
@@ -765,6 +803,50 @@ nav {
         </div>
       </div>
 
+      <div class="sec-lbl">Horaires d'affichage</div>
+      <div class="card">
+        <div class="row">Limiter aux horaires
+          <button class="switch" id="sch-toggle" aria-label="Activer les horaires"><i></i></button>
+        </div>
+        <div id="sch-details" style="display:none">
+          <div class="row">Début
+            <input type="time" class="time-in" id="sch-start" value="08:00">
+          </div>
+          <div class="row">Fin
+            <input type="time" class="time-in" id="sch-end" value="18:00">
+          </div>
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:12px">Jours
+            <div class="days" id="sch-days"></div>
+          </div>
+        </div>
+      </div>
+      <div class="set-note">En dehors de ces horaires, la rotation s'arrête toute seule et reprend au prochain créneau.</div>
+
+      <div class="sec-lbl">Avancé</div>
+      <div class="card">
+        <div class="row">Rafraîchir les pages
+          <div class="row-v" style="gap:10px">
+            <button class="step-btn" id="ref-minus" aria-label="Rafraîchir moins souvent">−</button>
+            <span id="ref-val">—</span>
+            <button class="step-btn" id="ref-plus" aria-label="Rafraîchir plus souvent">+</button>
+          </div>
+        </div>
+        <div class="row">Rafraîchir Canva
+          <div class="row-v" style="gap:10px">
+            <button class="step-btn" id="canva-minus" aria-label="Rafraîchir Canva moins souvent">−</button>
+            <span id="canva-val">—</span>
+            <button class="step-btn" id="canva-plus" aria-label="Rafraîchir Canva plus souvent">+</button>
+          </div>
+        </div>
+        <div class="row">Sauvegarde playlist
+          <div class="row-v" style="gap:10px">
+            <span id="backup-meta">—</span>
+            <button id="b-restore" style="padding:8px 15px;border-radius:100px;background:var(--bg);font-size:13px;font-weight:650;color:var(--txt)">Restaurer</button>
+          </div>
+        </div>
+      </div>
+      <div class="set-note">« Rafraîchir les pages » recharge périodiquement les onglets en arrière-plan pour garder les sessions actives (NinjaOne, WithSecure…). La playlist est sauvegardée automatiquement sur le PC du kiosque.</div>
+
       <div class="sec-lbl">Serveur</div>
       <div class="card">
         <div class="row">Connexion
@@ -781,7 +863,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.11</div>
+          <div class="row-v">wee rotate 1.11.0</div>
         </div>
       </div>
     </div>
@@ -835,6 +917,21 @@ nav {
     <button class="sheet-opt" data-ann-dur="900">15 minutes</button>
     <button class="sheet-opt" data-ann-dur="-1">Personnalisé…</button>
     <button class="sheet-cancel" id="ann-sheet-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Feuille : durée d'affichage d'une page de la playlist -->
+<div class="sheet" id="dur-sheet">
+  <div class="sheet-bg" id="dur-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title" id="dur-sheet-title">Durée d'affichage</div>
+    <button class="sheet-opt" data-pdur="0">Par défaut</button>
+    <button class="sheet-opt" data-pdur="15">15 secondes</button>
+    <button class="sheet-opt" data-pdur="30">30 secondes</button>
+    <button class="sheet-opt" data-pdur="60">1 minute</button>
+    <button class="sheet-opt" data-pdur="120">2 minutes</button>
+    <button class="sheet-opt" data-pdur="300">5 minutes</button>
+    <button class="sheet-cancel" id="dur-sheet-cancel">Annuler</button>
   </div>
 </div>
 
@@ -905,9 +1002,10 @@ let reconnectTimer = null;
 let lastMsgAt = 0;
 let extOnline = false;
 let editMode = false;
-let pendingUrl = null, pendingAnn = null;
+let pendingUrl = null, pendingAnn = null, pendingDurIndex = null;
 let currentPage = 'home';
 let screenshotTimer = null;
+let backupInfo = null;
 
 const $ = id => document.getElementById(id);
 
@@ -922,6 +1020,7 @@ const REASONS = {
   no_video:         'Aucune vidéo sur cette page',
   empty_text:       'Message vide',
   bad_index:        'Action impossible',
+  no_backup:        'Aucune sauvegarde disponible',
   unknown_action:   'Action impossible'
 };
 
@@ -929,7 +1028,8 @@ const ACK_OK = {
   pl_add:     'Page ajoutée',
   pl_remove:  'Page supprimée',
   announce:   'Message affiché sur la télé',
-  reload_all: 'Pages rechargées'
+  reload_all: 'Pages rechargées',
+  pl_restore: 'Playlist restaurée'
 };
 
 function boot() {
@@ -1020,6 +1120,7 @@ function connect() {
       return;
     }
     if (m.type === 'cmd_error')  { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
+    if (m.type === 'backup_info'){ backupInfo = m; renderBackup(); return; }
     if (m.type === 'state')      sync(m);
   };
   ws.onclose = () => {
@@ -1097,6 +1198,8 @@ function initialOf(name) {
 }
 
 const INTERVAL_STEPS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 900, 1800, 3600];
+const REF_STEPS   = [0, 1, 2, 3, 4, 6, 8, 12, 24];  // heures (0 = désactivé)
+const CANVA_STEPS = [1, 2, 3, 5, 10, 15, 30, 60];   // minutes
 
 function fmtInterval(s) {
   if (s >= 3600) return (s / 3600) + ' h';
@@ -1170,8 +1273,52 @@ function sync(s) {
   $('set-int-minus').disabled = interval <= INTERVAL_STEPS[0];
   $('set-int-plus').disabled  = interval >= INTERVAL_STEPS[INTERVAL_STEPS.length - 1];
 
+  // Réglages — horaires + avancé
+  renderSchedule(s.schedule);
+  const refH = s.tabRefreshHours ?? 4;
+  $('ref-val').textContent = refH > 0 ? refH + ' h' : 'Désactivé';
+  $('ref-minus').disabled = refH <= REF_STEPS[0];
+  $('ref-plus').disabled  = refH >= REF_STEPS[REF_STEPS.length - 1];
+  const cvM = s.canvaRefreshMin || 5;
+  $('canva-val').textContent = cvM + ' min';
+  $('canva-minus').disabled = cvM <= CANVA_STEPS[0];
+  $('canva-plus').disabled  = cvM >= CANVA_STEPS[CANVA_STEPS.length - 1];
+
   renderPlaylist(urls, s.currentIndex || 0, mode, warns);
   if (recentsOpen) renderRecents();
+}
+
+// ── Horaires d'affichage ──────────────────────────────────────────────────────
+function schState() {
+  return lastState?.schedule || { enabled: false, start: '08:00', end: '18:00', days: [1, 2, 3, 4, 5] };
+}
+
+function renderSchedule(sch) {
+  sch = sch || { enabled: false, start: '08:00', end: '18:00', days: [1, 2, 3, 4, 5] };
+  $('sch-toggle').classList.toggle('on', sch.enabled);
+  $('sch-details').style.display = sch.enabled ? '' : 'none';
+  // ne pas écraser un champ en cours d'édition par un push d'état
+  if (document.activeElement !== $('sch-start')) $('sch-start').value = sch.start || '08:00';
+  if (document.activeElement !== $('sch-end'))   $('sch-end').value   = sch.end   || '18:00';
+  document.querySelectorAll('#sch-days .day').forEach(el =>
+    el.classList.toggle('on', (sch.days || []).includes(parseInt(el.dataset.day))));
+}
+
+function sendSchedule(patch) {
+  const next = { ...schState(), ...patch };
+  if (lastState) lastState.schedule = next; // optimiste, l'état confirme derrière
+  renderSchedule(next);
+  cmd('set_schedule', { enabled: next.enabled, start: next.start, end: next.end, days: next.days });
+}
+
+// ── Sauvegarde de la playlist (conservée sur le PC du kiosque) ───────────────
+function renderBackup() {
+  const el = $('backup-meta');
+  if (!backupInfo || !backupInfo.count) { el.textContent = 'Aucune'; return; }
+  const d = new Date(backupInfo.ts * 1000);
+  el.textContent = backupInfo.count + ' page' + (backupInfo.count > 1 ? 's' : '') + ' · '
+    + d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function setNow(name) {
@@ -1241,6 +1388,9 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
       </div>
       ${editMode ? `
       <div class="pl-acts">
+        <button class="pl-act" data-act="dur" aria-label="Durée d'affichage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v4.5l3 2.5"/></svg>
+        </button>
         <button class="pl-act pl-act-del" data-act="del" aria-label="Supprimer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M5 5l14 14M19 5L5 19"/></svg>
         </button>
@@ -1249,7 +1399,8 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
     const art = b.querySelector('.pl-art');
     renderArt(art, name, u.url);
     b.querySelector('.pl-name').textContent = name;
-    b.querySelector('.pl-url').textContent  = u.url;
+    // durée spécifique affichée devant l'URL (« 1 min · exemple.com »)
+    b.querySelector('.pl-url').textContent  = (u.interval ? fmtInterval(u.interval) + ' · ' : '') + u.url;
 
     if (editMode) {
       // tap sur le texte → renommer ; appui long → déplacer ; ✕ → supprimer
@@ -1261,6 +1412,7 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
       b.querySelector('[data-act="del"]').addEventListener('click', () => {
         if (confirm('Supprimer « ' + name + ' » de la playlist ?')) cmd('pl_remove', { index: i });
       });
+      b.querySelector('[data-act="dur"]').addEventListener('click', () => openDurSheet(i, name, u.interval));
     } else {
       b.addEventListener('click', () => { if (!suppressClick) cmd('goto', { index: i }); });
     }
@@ -1411,6 +1563,18 @@ function closeAnnSheet() {
   $('ann-sheet').classList.remove('show');
 }
 
+function openDurSheet(index, name, current) {
+  pendingDurIndex = index;
+  $('dur-sheet-title').textContent = 'Durée — ' + name;
+  document.querySelectorAll('[data-pdur]').forEach(b =>
+    b.classList.toggle('sel', (current || 0) === parseInt(b.dataset.pdur)));
+  $('dur-sheet').classList.add('show');
+}
+function closeDurSheet() {
+  pendingDurIndex = null;
+  $('dur-sheet').classList.remove('show');
+}
+
 function addPage() {
   let u = ($('add-url').value || '').trim();
   if (!u) return;
@@ -1502,6 +1666,15 @@ document.addEventListener('DOMContentLoaded', () => {
   $('ann-sheet-cancel').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
   $('ann-sheet-bg').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
 
+  document.querySelectorAll('[data-pdur]').forEach(b =>
+    b.addEventListener('click', () => {
+      if (pendingDurIndex !== null)
+        cmd('pl_set_interval', { index: pendingDurIndex, seconds: parseInt(b.dataset.pdur) || 0 });
+      closeDurSheet();
+    }));
+  $('dur-sheet-cancel').addEventListener('click', closeDurSheet);
+  $('dur-sheet-bg').addEventListener('click', closeDurSheet);
+
   $('set-int-minus').addEventListener('click', () => {
     const cur = lastState?.interval || 30;
     const prev = [...INTERVAL_STEPS].reverse().find(s => s < cur) || INTERVAL_STEPS[0];
@@ -1515,6 +1688,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('b-reload-all').addEventListener('click', () => cmd('reload_all'));
   $('b-recents').addEventListener('click', toggleRecents);
+
+  // Horaires d'affichage
+  const DAY_CHIPS = [['L', 1], ['M', 2], ['M', 3], ['J', 4], ['V', 5], ['S', 6], ['D', 0]];
+  DAY_CHIPS.forEach(([lbl, val]) => {
+    const b = document.createElement('button');
+    b.className = 'day';
+    b.dataset.day = val;
+    b.textContent = lbl;
+    b.addEventListener('click', () => {
+      const days = [...schState().days];
+      const ix = days.indexOf(val);
+      if (ix >= 0) {
+        if (days.length === 1) return; // au moins un jour actif
+        days.splice(ix, 1);
+      } else {
+        days.push(val);
+      }
+      sendSchedule({ days });
+    });
+    $('sch-days').appendChild(b);
+  });
+  $('sch-toggle').addEventListener('click', () => sendSchedule({ enabled: !schState().enabled }));
+  $('sch-start').addEventListener('change', () => { if ($('sch-start').value) sendSchedule({ start: $('sch-start').value }); });
+  $('sch-end').addEventListener('change',   () => { if ($('sch-end').value)   sendSchedule({ end: $('sch-end').value }); });
+
+  // Avancé — rafraîchissement périodique des onglets
+  $('ref-minus').addEventListener('click', () => {
+    const cur = lastState?.tabRefreshHours ?? 4;
+    const prev = [...REF_STEPS].reverse().find(v => v < cur);
+    if (prev !== undefined) cmd('set_opts', { tabRefreshHours: prev });
+  });
+  $('ref-plus').addEventListener('click', () => {
+    const cur = lastState?.tabRefreshHours ?? 4;
+    const next = REF_STEPS.find(v => v > cur);
+    if (next !== undefined) cmd('set_opts', { tabRefreshHours: next });
+  });
+  $('canva-minus').addEventListener('click', () => {
+    const cur = lastState?.canvaRefreshMin || 5;
+    const prev = [...CANVA_STEPS].reverse().find(v => v < cur);
+    if (prev !== undefined) cmd('set_opts', { canvaRefreshMin: prev });
+  });
+  $('canva-plus').addEventListener('click', () => {
+    const cur = lastState?.canvaRefreshMin || 5;
+    const next = CANVA_STEPS.find(v => v > cur);
+    if (next !== undefined) cmd('set_opts', { canvaRefreshMin: next });
+  });
+
+  // Avancé — restauration de la playlist sauvegardée
+  $('b-restore').addEventListener('click', () => {
+    if (!backupInfo || !backupInfo.count) { showToast('Aucune sauvegarde disponible'); return; }
+    const n = backupInfo.count;
+    if (confirm('Remplacer la playlist actuelle par la sauvegarde (' + n + ' page' + (n > 1 ? 's' : '') + ') ?'))
+      cmd('pl_restore');
+  });
 
   document.querySelectorAll('.nav-btn').forEach(b =>
     b.addEventListener('click', () => showPage(b.dataset.pg)));

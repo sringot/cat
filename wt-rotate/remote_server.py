@@ -11,12 +11,13 @@ from pathlib import Path
 
 async def main():
     from aiohttp import web
-    from server import state, auth, backup, library
+    from server import state, auth, backup, library, ai_agent
     from server.http_handler import handle_http
     from server.ws_handler import handle_ws, keepalive_loop
 
     backup.load()   # playlist auto-sauvegardée lors d'une session précédente
     library.load()  # bibliothèque de playlists nommées
+    ai_agent.init() # assistant vocal IA (optionnel — nécessite ANTHROPIC_API_KEY)
 
     # Detect LAN IP
     try:
@@ -77,6 +78,8 @@ async def main():
     print(f'║  URL mobile : {plain_url:<27}║')
     print(f'║  Token auth : {auth.TOKEN:<27}║')
     print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
+    ai_txt = "OK" if ai_agent.is_available() else "non config. (ANTHROPIC_API_KEY)"
+    print(f'║  IA vocale  : {ai_txt:<27}║')
     print('╚══════════════════════════════════════════╝')
     print('\nEn attente de connexions...\n')
 

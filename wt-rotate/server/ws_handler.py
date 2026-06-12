@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from aiohttp import web, WSMsgType
-from server import state, auth, sys_audio, backup, library
+from server import state, auth, sys_audio, backup, library, ai_agent
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -111,6 +111,7 @@ async def _handle_mobile(ws) -> None:
         await ws.send_str(json.dumps({**state.cached_state, 'type': 'state'}))
     await ws.send_str(json.dumps(backup.info_msg()))
     await ws.send_str(json.dumps(library.info_msg()))
+    await ws.send_str(json.dumps({'type': 'ai_status', 'available': ai_agent.is_available()}))
     if state.cached_shot and time.time() - state.cached_shot_ts < 30:
         await ws.send_str(state.cached_shot)
     try:
@@ -146,6 +147,23 @@ async def _handle_mobile(ws) -> None:
                     if action == 'lib_delete':
                         library.delete_playlist(d.get('id') or '')
                         await _broadcast_mobiles(json.dumps(library.info_msg()))
+                        continue
+                    # Commande vocale IA — traitement asynchrone, pas forwardée
+                    if action == 'voice_cmd':
+                        text = (d.get('text') or '').strip()
+                        if text:
+                            if ai_agent.is_available():
+                                asyncio.create_task(
+                                    _handle_voice_cmd(ws, text, state.cached_state or {})
+                                )
+                            else:
+                                try:
+                                    await ws.send_str(json.dumps({
+                                        'type': 'voice_resp',
+                                        'text': "Assistant IA non configuré — ajoutez ANTHROPIC_API_KEY.",
+                                    }))
+                                except Exception:
+                                    pass
                         continue
                     # Captures : un frame vient d'être diffusé à TOUS les
                     # mobiles — inutile de redemander une capture identique
@@ -191,6 +209,40 @@ async def _handle_mobile(ws) -> None:
     finally:
         state.mob_clients.discard(ws)
         print(f'[-] Mobile déconnecté ({len(state.mob_clients)} actif(s))')
+
+
+async def _handle_voice_cmd(ws, text: str, cached_state: dict) -> None:
+    """Traite une commande vocale via l'agent IA, exécute les actions et répond."""
+    try:
+        result = await ai_agent.run(text, cached_state)
+    except Exception as e:
+        result = {'reply': 'Erreur de traitement, réessayez.', 'commands': []}
+
+    # Exécuter les commandes kiosque déterminées par l'IA
+    for kiosk_cmd in result.get('commands', []):
+        action = kiosk_cmd.get('action')
+        if not action:
+            continue
+        payload: dict = {'type': 'command', 'action': action}
+        if action == 'open_url':
+            payload['url']      = kiosk_cmd.get('url', '')
+            payload['duration'] = int(kiosk_cmd.get('duration') or 0)
+        elif action == 'announce':
+            payload['text']     = kiosk_cmd.get('text', '')
+            payload['duration'] = int(kiosk_cmd.get('duration') or 30)
+        # pause / resume / next / prev / release n'ont pas de paramètres supplémentaires
+        if state.ext_ws and not state.ext_ws.closed:
+            try:
+                await state.ext_ws.send_str(json.dumps(payload))
+            except Exception:
+                pass
+
+    # Renvoyer la réponse textuelle au mobile qui a envoyé la commande
+    try:
+        if not ws.closed:
+            await ws.send_str(json.dumps({'type': 'voice_resp', 'text': result['reply']}))
+    except Exception:
+        pass
 
 
 async def keepalive_loop() -> None:

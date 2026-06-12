@@ -351,9 +351,21 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   border: 0; background: none; font: inherit; color: inherit;
   cursor: pointer;
   transition: transform .18s var(--ease), background .18s var(--ease);
+  touch-action: pan-y;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .pl-item:active { background: var(--bg); transform: scale(.985); }
 .pl-item.editing:active { background: none; transform: none; }
+
+/* réorganisation par appui long + glisser */
+.pl-item.drag {
+  position: relative; z-index: 30;
+  background: var(--card);
+  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  transition: none;
+}
+.pl-item.shift { transition: transform .2s var(--ease); }
+.pl-hint { padding: 4px 14px 10px; font-size: 12px; color: var(--txt-2); }
 
 /* actions du mode édition */
 .pl-acts { display: flex; gap: 7px; flex-shrink: 0; }
@@ -724,7 +736,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.5</div>
+          <div class="row-v">wee rotate 1.10.6</div>
         </div>
       </div>
     </div>
@@ -1102,6 +1114,13 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
     return;
   }
   pl.innerHTML = '';
+  if (editMode && urls.length > 1) {
+    const hint = document.createElement('div');
+    hint.className = 'pl-hint';
+    hint.textContent = 'Maintenez une page et glissez pour réorganiser';
+    pl.appendChild(hint);
+  }
+  const itemEls = [];
   urls.forEach((u, i) => {
     const isCur = i === currentIndex && mode !== 'external';
     const b = document.createElement('div');
@@ -1118,12 +1137,6 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
       </div>
       ${editMode ? `
       <div class="pl-acts">
-        <button class="pl-act" data-act="up" aria-label="Monter"${i === 0 ? ' disabled' : ''}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M5 14.5L12 7.5l7 7"/></svg>
-        </button>
-        <button class="pl-act" data-act="down" aria-label="Descendre"${i === urls.length - 1 ? ' disabled' : ''}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M5 9.5l7 7 7-7"/></svg>
-        </button>
         <button class="pl-act pl-act-del" data-act="del" aria-label="Supprimer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M5 5l14 14M19 5L5 19"/></svg>
         </button>
@@ -1135,22 +1148,98 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
     b.querySelector('.pl-url').textContent  = u.url;
 
     if (editMode) {
-      // tap sur le texte → renommer ; flèches → réordonner ; ✕ → supprimer
+      // tap sur le texte → renommer ; appui long → déplacer ; ✕ → supprimer
       b.querySelector('.pl-txt').addEventListener('click', () => {
+        if (suppressClick) return;
         const n = prompt('Nom de la page', u.name || '');
         if (n !== null && n.trim() !== (u.name || '')) cmd('pl_rename', { index: i, name: n.trim() });
       });
-      b.querySelector('[data-act="up"]').addEventListener('click', () => cmd('pl_move', { from: i, to: i - 1 }));
-      b.querySelector('[data-act="down"]').addEventListener('click', () => cmd('pl_move', { from: i, to: i + 1 }));
       b.querySelector('[data-act="del"]').addEventListener('click', () => {
         if (confirm('Supprimer « ' + name + ' » de la playlist ?')) cmd('pl_remove', { index: i });
       });
     } else {
-      b.addEventListener('click', () => cmd('goto', { index: i }));
+      b.addEventListener('click', () => { if (!suppressClick) cmd('goto', { index: i }); });
     }
     pl.appendChild(b);
+    itemEls.push(b);
+  });
+  itemEls.forEach((el, i) => watchLongPress(el, i, itemEls));
+}
+
+// ── Réorganisation par appui long + glisser ──────────────────────────────────
+// Appui ~350 ms sans bouger → l'item se « soulève » et suit le doigt ; les
+// autres s'écartent. Au lâcher, pl_move est envoyé au kiosque.
+let drag = null;           // état du glisser en cours
+let suppressClick = false; // évite le tap fantôme (goto/rename) après un drop
+
+function watchLongPress(el, index, items) {
+  el.addEventListener('pointerdown', e => {
+    if (drag || items.length < 2 || e.target.closest('.pl-act')) return;
+    drag = { el, items, from: index, to: index, startY: e.clientY,
+             h: el.offsetHeight, pid: e.pointerId, active: false };
+    drag.timer = setTimeout(() => {
+      if (!drag) return;
+      drag.active = true;
+      el.classList.add('drag');
+      el.style.transform = 'scale(1.03)';
+      try { el.setPointerCapture(drag.pid); } catch {}
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, 350);
   });
 }
+
+document.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const dy = e.clientY - drag.startY;
+  if (!drag.active) {
+    // le doigt bouge avant la fin de l'appui long : c'est un scroll
+    if (Math.abs(dy) > 10) { clearTimeout(drag.timer); drag = null; }
+    return;
+  }
+  drag.el.style.transform = `translateY(${dy}px) scale(1.03)`;
+  const slot = Math.min(drag.items.length - 1, Math.max(0, drag.from + Math.round(dy / drag.h)));
+  if (slot !== drag.to) {
+    drag.to = slot;
+    drag.items.forEach((it, j) => {
+      if (it === drag.el) return;
+      let off = 0;
+      if (drag.from < slot && j > drag.from && j <= slot) off = -drag.h;
+      else if (drag.from > slot && j >= slot && j < drag.from) off = drag.h;
+      it.classList.add('shift');
+      it.style.transform = off ? `translateY(${off}px)` : '';
+    });
+  }
+});
+
+// pendant un glisser actif, on bloque le scroll de la page (iOS)
+document.addEventListener('touchmove', e => { if (drag?.active) e.preventDefault(); }, { passive: false });
+
+function endDrag(e) {
+  if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.pid)) return;
+  clearTimeout(drag.timer);
+  const d = drag; drag = null;
+  if (!d.active) return;
+  d.el.classList.remove('drag');
+  d.items.forEach(it => { it.classList.remove('shift'); it.style.transform = ''; });
+  suppressClick = true;
+  setTimeout(() => { suppressClick = false; }, 350);
+  if (d.to === d.from) { if (lastState) sync(lastState); return; }
+  // réordonnancement optimiste : l'affichage suit tout de suite, l'état
+  // renvoyé par le kiosque confirme juste derrière
+  if (lastState?.urls) {
+    const [u] = lastState.urls.splice(d.from, 1);
+    lastState.urls.splice(d.to, 0, u);
+    let ci = lastState.currentIndex || 0;
+    if (ci === d.from) ci = d.to;
+    else if (d.from < ci && d.to >= ci) ci--;
+    else if (d.from > ci && d.to <= ci) ci++;
+    lastState.currentIndex = ci;
+    sync(lastState);
+  }
+  cmd('pl_move', { from: d.from, to: d.to });
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
 
 function cmd(action, extra) {
   if (ws?.readyState === 1) {

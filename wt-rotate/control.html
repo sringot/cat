@@ -1005,6 +1005,8 @@ let editMode = false;
 let pendingUrl = null, pendingAnn = null, pendingDurIndex = null;
 let currentPage = 'home';
 let screenshotTimer = null;
+let extVideoPaused = false;   // état pause/lecture de la vidéo en spotlight
+let lastRemoteUrl   = null;   // détection de changement d'URL externe
 let backupInfo = null;
 
 const $ = id => document.getElementById(id);
@@ -1229,12 +1231,19 @@ function sync(s) {
   const urls = s.urls || [];
   const cur  = urls[s.currentIndex || 0] || {};
 
+  // Reset de l'état pause vidéo si on quitte le spotlight ou si l'URL change
+  const extUrl = s.remoteUrl || null;
+  if (mode !== 'external' || extUrl !== lastRemoteUrl) extVideoPaused = false;
+  lastRemoteUrl = extUrl;
+
   const label    = $('now-label');
   const labelTxt = $('now-label-txt');
   label.classList.toggle('live', mode === 'running');
 
+  const extIsYouTube = mode === 'external' && /(?:youtube\.com|youtu\.be)\//i.test(extUrl || '');
+
   if (mode === 'external') {
-    labelTxt.textContent = 'URL externe';
+    labelTxt.textContent = extVideoPaused ? 'En pause' : 'URL externe';
     setNow(shortUrl(s.remoteUrl));
   } else {
     labelTxt.textContent =
@@ -1243,8 +1252,11 @@ function sync(s) {
     setNow(cur.name || shortUrl(cur.url) || '—');
   }
 
-  // bouton principal : pause si ça tourne, lecture sinon
-  const playing = mode === 'running';
+  // bouton principal :
+  // – rotation active → pause
+  // – spotlight YouTube → pause/lecture vidéo (sans quitter le spotlight)
+  // – sinon → lecture
+  const playing = mode === 'running' || (extIsYouTube && !extVideoPaused);
   $('ic-play').style.display  = playing ? 'none' : '';
   $('ic-pause').style.display = playing ? '' : 'none';
 
@@ -1522,10 +1534,21 @@ function flipMain(playing, label) {
 function mainAction() {
   if (!lastState) { cmd('start'); return; }
   const mode = modeOf(lastState);
+  const extIsYouTube = mode === 'external'
+    && /(?:youtube\.com|youtu\.be)\//i.test(lastState.remoteUrl || '');
+
   if (mode === 'running') {
     if (cmd('pause')) {
       lastState.active = false; lastState.remotePaused = true;
       flipMain(false, 'En pause');
+    }
+  } else if (extIsYouTube) {
+    // Spotlight YouTube : pause/lecture de la vidéo sans quitter le spotlight
+    if (cmd('video_toggle')) {
+      extVideoPaused = !extVideoPaused;
+      $('ic-play').style.display  = extVideoPaused ? '' : 'none';
+      $('ic-pause').style.display = extVideoPaused ? 'none' : '';
+      $('now-label-txt').textContent = extVideoPaused ? 'En pause' : 'URL externe';
     }
   } else if (mode === 'external') {
     if (cmd('release')) {

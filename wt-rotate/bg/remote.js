@@ -285,6 +285,27 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
+    // Pause/lecture de la vidéo affichée (YouTube en spotlight)
+    case 'video_toggle': {
+      let target = config.remoteTabId;
+      if (!target && config.tabIds.length)
+        target = config.tabIds[config.currentIndex % config.tabIds.length];
+      if (!target) { ok = false; reason = 'no_video'; break; }
+      try {
+        const res = await chrome.scripting.executeScript({
+          target: { tabId: target, allFrames: true },
+          func: () => {
+            const v = document.querySelector('video');
+            if (!v) return false;
+            if (v.paused) v.play(); else v.pause();
+            return true;
+          }
+        });
+        if (!res?.some(r => r?.result)) { ok = false; reason = 'no_video'; }
+      } catch { ok = false; reason = 'no_video'; }
+      break;
+    }
+
     // Avance/recule dans la vidéo affichée (YouTube ou tout lecteur HTML5)
     case 'seek': {
       const delta = Number(cmd.delta);

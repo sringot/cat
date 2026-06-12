@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from aiohttp import web, WSMsgType
-from server import state, auth
+from server import state, auth, sys_audio
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -80,7 +80,7 @@ async def _handle_extension(ws) -> None:
                 if d.get('type') == 'state':
                     state.cached_state = d
                     await _broadcast_mobiles(msg_data.data)
-                elif d.get('type') == 'cmd_ack':
+                elif d.get('type') in ('cmd_ack', 'screenshot'):
                     await _broadcast_mobiles(msg_data.data)
                 # pong responses silently ignored
     except Exception:
@@ -106,6 +106,10 @@ async def _handle_mobile(ws) -> None:
             if msg_data.type == WSMsgType.TEXT:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'command':
+                    # Volume système : on règle pycaw côté serveur, puis on
+                    # forwarde aussi à l'extension pour le <video> HTML5
+                    if d.get('action') == 'volume':
+                        sys_audio.set_volume(int(d.get('level', 100)))
                     if state.ext_ws and not state.ext_ws.closed:
                         try:
                             await state.ext_ws.send_str(msg_data.data)

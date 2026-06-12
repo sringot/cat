@@ -253,6 +253,30 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   font-variant-numeric: tabular-nums;
 }
 
+/* aperçu en direct */
+#card-preview { overflow: hidden; }
+.preview-wrap { position: relative; line-height: 0; }
+.preview-wrap img { width: 100%; display: block; }
+.preview-ts {
+  position: absolute; right: 10px; bottom: 10px;
+  font-size: 11px; font-weight: 550; color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.42); padding: 3px 9px; border-radius: 100px;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.preview-refresh {
+  position: absolute; right: 10px; top: 10px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,.42); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.9);
+}
+
+/* sous-texte des cards (annonce…) */
+.card-sub {
+  padding: 0 20px 14px;
+  font-size: 12px; color: var(--txt-2);
+}
+
 /* barre de volume */
 .volrow {
   display: flex; align-items: center; gap: 14px;
@@ -590,6 +614,17 @@ nav {
 
       <div class="card" id="warn-banner"></div>
 
+      <!-- Aperçu en direct -->
+      <div class="card" id="card-preview" style="display:none">
+        <div class="preview-wrap">
+          <img id="preview-img" alt="Aperçu kiosque">
+          <div class="preview-ts" id="preview-ts"></div>
+          <button class="preview-refresh" id="b-preview-refresh" aria-label="Actualiser l'aperçu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          </button>
+        </div>
+      </div>
+
       <!-- Lecteur -->
       <div class="card">
         <div class="now">
@@ -649,6 +684,19 @@ nav {
           <span id="upnext-label">PAGES</span>
         </div>
         <div class="upnext-scroll" id="upnext-list"></div>
+      </div>
+
+      <!-- Annonce kiosque -->
+      <div class="card">
+        <div class="card-hdr">Message sur la télé</div>
+        <div class="open-row">
+          <input id="ann-in" type="text" placeholder="Réunion dans 5 min…"
+                 autocomplete="off" autocorrect="off" spellcheck="false" maxlength="300">
+          <button class="send-btn" id="b-ann" aria-label="Envoyer le message">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="card-sub">Affiché 30 s en bandeau sur l'écran du kiosque</div>
       </div>
 
       <!-- Open URL -->
@@ -716,7 +764,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.2</div>
+          <div class="row-v">wee rotate 1.10.3</div>
         </div>
       </div>
     </div>
@@ -770,6 +818,8 @@ let lastMsgAt = 0;
 let extOnline = false;
 let editMode = false;
 let pendingUrl = null;
+let currentPage = 'home';
+let screenshotTimer = null;
 
 const $ = id => document.getElementById(id);
 
@@ -788,7 +838,8 @@ const REASONS = {
 
 const ACK_OK = {
   pl_add:    'Page ajoutée',
-  pl_remove: 'Page supprimée'
+  pl_remove: 'Page supprimée',
+  announce:  'Message affiché sur la télé'
 };
 
 function boot() {
@@ -811,10 +862,12 @@ function show(id) {
 }
 
 function showPage(name) {
+  currentPage = name;
   document.querySelectorAll('.page').forEach(p =>
     p.classList.toggle('show', p.id === 'pg-' + name));
   document.querySelectorAll('.nav-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.pg === name));
+  if (name === 'home') startPreview(); else stopPreview();
 }
 
 function chip(state) { // 'on' | 'off' | 'wait'
@@ -862,6 +915,14 @@ function connect() {
     if (m.type === 'auth_ok')    { show('s-main'); chip('on'); return; }
     if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
     if (m.type === 'warn_dual_ext') { $('dual-banner').classList.add('show'); return; }
+    if (m.type === 'screenshot') {
+      if (m.data) {
+        $('preview-img').src = m.data;
+        $('card-preview').style.display = '';
+        $('preview-ts').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }
+      return;
+    }
     if (m.type === 'cmd_ack')    {
       if (!m.ok) showToast(REASONS[m.reason] || 'Action impossible');
       else if (ACK_OK[m.action]) showToast(ACK_OK[m.action]);
@@ -899,6 +960,24 @@ function setExtOnline(on) {
   $('volrow').classList.toggle('off', !on);
   $('set-ext').textContent = on ? 'Connectée' : 'Hors ligne';
   $('set-ext-dot').style.background = on ? 'var(--green)' : 'var(--txt-3)';
+  if (on) startPreview(); else stopPreview();
+}
+
+// ── Aperçu en direct ──────────────────────────────────────────────────────────
+function requestScreenshot() {
+  if (extOnline) cmd('screenshot');
+}
+function startPreview() {
+  stopPreview();
+  if (!extOnline || document.visibilityState === 'hidden' || currentPage !== 'home') return;
+  requestScreenshot();
+  screenshotTimer = setInterval(() => {
+    if (extOnline && document.visibilityState !== 'hidden') requestScreenshot();
+  }, 20000);
+}
+function stopPreview() {
+  clearInterval(screenshotTimer);
+  screenshotTimer = null;
 }
 
 // mode courant déduit de l'état : 'external' | 'running' | 'paused' | 'stopped'
@@ -1181,6 +1260,25 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-send').addEventListener('click', sendUrl);
   $('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
 
+  $('b-preview-refresh').addEventListener('click', requestScreenshot);
+
+  $('b-ann').addEventListener('click', () => {
+    const text = ($('ann-in').value || '').trim();
+    if (!text) return;
+    cmd('announce', { text, duration: 30 });
+    $('ann-in').value = '';
+    $('ann-in').blur();
+  });
+  $('ann-in').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const text = ($('ann-in').value || '').trim();
+      if (!text) return;
+      cmd('announce', { text, duration: 30 });
+      $('ann-in').value = '';
+      $('ann-in').blur();
+    }
+  });
+
   $('b-back15').addEventListener('click', () => cmd('seek', { delta: -15 }));
   $('b-fwd15').addEventListener('click',  () => cmd('seek', { delta: 15 }));
 
@@ -1227,7 +1325,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Retour au premier plan (changement d'app, écran verrouillé…) :
   // on vérifie tout de suite que la connexion est encore vivante
-  document.addEventListener('visibilitychange', ensureAlive);
+  document.addEventListener('visibilitychange', () => {
+    ensureAlive();
+    if (document.visibilityState === 'hidden') stopPreview(); else startPreview();
+  });
   window.addEventListener('pageshow', ensureAlive);
   window.addEventListener('focus', ensureAlive);
 

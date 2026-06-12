@@ -294,6 +294,55 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
+    // Capture l'onglet kiosque et renvoie un JPEG base64 aux mobiles
+    case 'screenshot': {
+      if (!config.windowId) return;
+      try {
+        const dataUrl = await chrome.tabs.captureVisibleTab(
+          config.windowId, { format: 'jpeg', quality: 35 });
+        if (remoteWs?.readyState === WebSocket.OPEN) {
+          remoteWs.send(JSON.stringify({ type: 'screenshot', data: dataUrl }));
+        }
+      } catch {}
+      return; // pas d'ack ni de state push
+    }
+
+    // Affiche un bandeau de message sur l'onglet kiosque actif
+    case 'announce': {
+      const text = (cmd.text || '').trim().slice(0, 300);
+      const duration = Math.min(300, Math.max(5, Number(cmd.duration) || 30));
+      if (!text) { ok = false; reason = 'invalid_url'; break; }
+      let target = config.remoteTabId;
+      if (!target && config.tabIds.length)
+        target = config.tabIds[config.currentIndex % config.tabIds.length];
+      if (!target) { ok = false; reason = 'no_window'; break; }
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: target },
+          func: (text, duration) => {
+            const prev = document.getElementById('__wt_announce');
+            if (prev) prev.remove();
+            const el = document.createElement('div');
+            el.id = '__wt_announce';
+            el.textContent = text;
+            el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;'
+              + 'background:rgba(0,0,0,.84);color:#fff;'
+              + 'font:700 2.2vw/1.4 system-ui,sans-serif;'
+              + 'text-align:center;padding:2vh 3vw;'
+              + 'z-index:2147483647;opacity:0;transition:opacity .35s';
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '1'; }, 16);
+            setTimeout(() => {
+              el.style.opacity = '0';
+              setTimeout(() => el.remove(), 420);
+            }, duration * 1000);
+          },
+          args: [text, duration]
+        });
+      } catch { ok = false; reason = 'create_failed'; }
+      break;
+    }
+
     // Réglage du volume — injecté dans tous les <video> de l'onglet actif
     case 'volume': {
       const level = Math.round(Math.min(100, Math.max(0, Number(cmd.level) || 0)));

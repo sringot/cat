@@ -32,9 +32,20 @@ chrome.runtime.onStartup.addListener(async () => {
       await setNextAlarm(cur?.interval || config.interval);
       await log('onStartup — relance alarme');
     } else {
+      // Les onglets kiosque sont perdus (redémarrage Chrome/PC) : on repart
+      // proprement puis on relance la rotation si des URLs sont configurées
       config.active = false; config.tabIds = []; config.windowId = null;
+      config.remoteTabId = null; config.remoteUntil = null;
       await chrome.storage.local.set({ config });
-      await log('onStartup — onglets perdus, arrêt');
+      const activeUrls = config.urls.filter(u => u?.url?.trim());
+      if (activeUrls.length) {
+        try {
+          await autoStartRotation(config);
+          await log('onStartup — rotation relancée automatiquement');
+        } catch (e) { await log('onStartup autoStart ERR: ' + e.message); }
+      } else {
+        await log('onStartup — onglets perdus, aucune URL configurée');
+      }
     }
   }
   connectRemote();

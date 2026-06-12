@@ -489,6 +489,57 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
 /* option sélectionnée dans une feuille (durée par page) */
 .sheet-opt.sel { background: var(--bg); }
 
+/* bouton bibliothèque dans l'en-tête de playlist */
+.pl-lib-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--card); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--txt-2); flex-shrink: 0;
+}
+.pl-lib-btn:active { transform: scale(.9); }
+
+/* champ texte dans une feuille (renommage, nom de playlist) */
+.sheet-input-row { padding: 4px 12px 8px; }
+.sheet-input-row input {
+  display: block; width: 100%;
+  background: var(--bg); border-radius: 12px;
+  padding: 14px 16px; font-size: 16px;
+}
+
+/* en-tête de section Avancé repliable */
+.sec-adv-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 8px 10px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--txt-2);
+}
+.sec-adv-toggle svg { transition: transform .22s var(--ease); flex-shrink: 0; }
+.sec-adv-toggle.open svg { transform: rotate(180deg); }
+
+/* éléments de bibliothèque de playlists */
+.lib-save-btn { display: flex; align-items: center; gap: 10px; font-weight: 650; }
+#lib-list { max-height: 45vh; overflow-y: auto; overscroll-behavior: contain; }
+.lib-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 12px; border-radius: 13px;
+  transition: background .15s var(--ease);
+}
+.lib-item:active { background: var(--bg); }
+.lib-txt { flex: 1; min-width: 0; }
+.lib-name { font-size: 15px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-meta { font-size: 12px; color: var(--txt-2); margin-top: 2px; }
+.lib-load {
+  padding: 8px 14px; border-radius: 100px;
+  background: var(--accent); color: var(--accent-txt);
+  font-size: 13px; font-weight: 650; flex-shrink: 0;
+}
+.lib-del {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg); color: var(--red);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.lib-empty { padding: 16px 12px 8px; font-size: 14px; color: var(--txt-2); line-height: 1.5; }
+
 /* ── URLs récentes ────────────────────────────────────────── */
 .recents-btn {
   width: 100%;
@@ -749,8 +800,11 @@ nav {
     <div class="page" id="pg-playlist">
       <div class="pg-head">
         <h1>Playlist</h1>
-        <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px">
           <div class="pg-sub" id="pl-count"></div>
+          <button class="pl-lib-btn" id="b-pl-lib" aria-label="Bibliothèque de playlists">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="19" height="19"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </button>
           <button class="edit-btn" id="pl-edit">Modifier</button>
         </div>
       </div>
@@ -820,50 +874,48 @@ nav {
           </div>
         </div>
       </div>
-      <div class="set-note">En dehors de ces horaires, la rotation s'arrête toute seule et reprend au prochain créneau.</div>
 
-      <div class="sec-lbl">Avancé</div>
-      <div class="card">
-        <div class="row">Rafraîchir les pages
-          <div class="row-v" style="gap:10px">
-            <button class="step-btn" id="ref-minus" aria-label="Rafraîchir moins souvent">−</button>
-            <span id="ref-val">—</span>
-            <button class="step-btn" id="ref-plus" aria-label="Rafraîchir plus souvent">+</button>
+      <button class="sec-lbl sec-adv-toggle" id="adv-toggle">Avancé
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div id="adv-body" style="display:none">
+        <div class="card">
+          <div class="row">Rafraîchir les pages
+            <div class="row-v" style="gap:10px">
+              <button class="step-btn" id="ref-minus" aria-label="Rafraîchir moins souvent">−</button>
+              <span id="ref-val">—</span>
+              <button class="step-btn" id="ref-plus" aria-label="Rafraîchir plus souvent">+</button>
+            </div>
           </div>
-        </div>
-        <div class="row">Rafraîchir Canva
-          <div class="row-v" style="gap:10px">
-            <button class="step-btn" id="canva-minus" aria-label="Rafraîchir Canva moins souvent">−</button>
-            <span id="canva-val">—</span>
-            <button class="step-btn" id="canva-plus" aria-label="Rafraîchir Canva plus souvent">+</button>
+          <div class="row">Rafraîchir Canva
+            <div class="row-v" style="gap:10px">
+              <button class="step-btn" id="canva-minus" aria-label="Rafraîchir Canva moins souvent">−</button>
+              <span id="canva-val">—</span>
+              <button class="step-btn" id="canva-plus" aria-label="Rafraîchir Canva plus souvent">+</button>
+            </div>
           </div>
-        </div>
-        <div class="row">Sauvegarde playlist
-          <div class="row-v" style="gap:10px">
-            <span id="backup-meta">—</span>
-            <button id="b-restore" style="padding:8px 15px;border-radius:100px;background:var(--bg);font-size:13px;font-weight:650;color:var(--txt)">Restaurer</button>
+          <div class="row">Sauvegarde auto
+            <div class="row-v" style="gap:10px">
+              <span id="backup-meta">—</span>
+              <button id="b-restore" style="padding:8px 15px;border-radius:100px;background:var(--bg);font-size:13px;font-weight:650;color:var(--txt)">Restaurer</button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="set-note">« Rafraîchir les pages » recharge périodiquement les onglets en arrière-plan pour garder les sessions actives (NinjaOne, WithSecure…). La playlist est sauvegardée automatiquement sur le PC du kiosque.</div>
 
-      <div class="sec-lbl">Serveur</div>
+      <div class="sec-lbl">Informations</div>
       <div class="card">
-        <div class="row">Connexion
+        <div class="row">Serveur
           <div class="row-v"><span id="set-server">—</span><div class="dot" id="set-server-dot"></div></div>
         </div>
         <div class="row">Adresse
           <div class="row-v" id="set-ip">—</div>
         </div>
-      </div>
-
-      <div class="sec-lbl">Application</div>
-      <div class="card">
+        <div class="row">Version
+          <div class="row-v">wee rotate 1.12.0</div>
+        </div>
         <div class="row">Installer sur iPhone
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
-        </div>
-        <div class="row">Version
-          <div class="row-v">wee rotate 1.11.0</div>
         </div>
       </div>
     </div>
@@ -932,6 +984,48 @@ nav {
     <button class="sheet-opt" data-pdur="120">2 minutes</button>
     <button class="sheet-opt" data-pdur="300">5 minutes</button>
     <button class="sheet-cancel" id="dur-sheet-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Feuille : renommage d'une page de la playlist -->
+<div class="sheet" id="rename-sheet">
+  <div class="sheet-bg" id="rename-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Renommer</div>
+    <div class="sheet-input-row">
+      <input id="rename-in" type="text" placeholder="Nom de la page" maxlength="60"
+             autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="sheet-opt" id="b-rename-confirm">Confirmer</button>
+    <button class="sheet-cancel" id="rename-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Feuille : bibliothèque de playlists -->
+<div class="sheet" id="lib-sheet">
+  <div class="sheet-bg" id="lib-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Bibliothèque</div>
+    <button class="sheet-opt lib-save-btn" id="b-lib-save">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Sauvegarder la playlist actuelle
+    </button>
+    <div id="lib-list"></div>
+    <button class="sheet-cancel" id="lib-sheet-cancel">Fermer</button>
+  </div>
+</div>
+
+<!-- Feuille : nom de la nouvelle playlist -->
+<div class="sheet" id="lib-name-sheet">
+  <div class="sheet-bg" id="lib-name-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Nom de la playlist</div>
+    <div class="sheet-input-row">
+      <input id="lib-name-in" type="text" placeholder="Ex : Accueil, Bureau 2…" maxlength="40"
+             autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="sheet-opt" id="b-lib-name-confirm">Sauvegarder</button>
+    <button class="sheet-cancel" id="lib-name-cancel">Annuler</button>
   </div>
 </div>
 
@@ -1008,6 +1102,8 @@ let screenshotTimer = null;
 let extVideoPaused = false;   // état pause/lecture de la vidéo en spotlight
 let lastRemoteUrl   = null;   // détection de changement d'URL externe
 let backupInfo = null;
+let libPlaylists = [];
+let pendingRenameIndex = null;
 
 const $ = id => document.getElementById(id);
 
@@ -1031,7 +1127,7 @@ const ACK_OK = {
   pl_remove:  'Page supprimée',
   announce:   'Message affiché sur la télé',
   reload_all: 'Pages rechargées',
-  pl_restore: 'Playlist restaurée'
+  pl_restore: 'Playlist chargée'
 };
 
 function boot() {
@@ -1122,8 +1218,9 @@ function connect() {
       return;
     }
     if (m.type === 'cmd_error')  { showToast('Extension hors ligne — réessayez dans quelques secondes'); return; }
-    if (m.type === 'backup_info'){ backupInfo = m; renderBackup(); return; }
-    if (m.type === 'state')      sync(m);
+    if (m.type === 'backup_info')    { backupInfo = m; renderBackup(); return; }
+    if (m.type === 'library_update') { libPlaylists = m.playlists || []; renderLibrary(); return; }
+    if (m.type === 'state')          sync(m);
   };
   ws.onclose = () => {
     chip('off');
@@ -1333,6 +1430,72 @@ function renderBackup() {
     + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
+// ── Renommage via feuille ─────────────────────────────────────────────────────
+function openRenameSheet(index, name) {
+  pendingRenameIndex = index;
+  $('rename-in').value = name;
+  $('rename-sheet').classList.add('show');
+  setTimeout(() => $('rename-in').focus(), 320);
+}
+function closeRenameSheet() {
+  pendingRenameIndex = null;
+  $('rename-sheet').classList.remove('show');
+}
+
+// ── Bibliothèque de playlists ─────────────────────────────────────────────────
+function openLibSheet() {
+  renderLibrary();
+  $('lib-sheet').classList.add('show');
+}
+function closeLibSheet() { $('lib-sheet').classList.remove('show'); }
+
+function openLibNameSheet() {
+  $('lib-name-in').value = '';
+  closeLibSheet();
+  $('lib-name-sheet').classList.add('show');
+  setTimeout(() => $('lib-name-in').focus(), 320);
+}
+function closeLibNameSheet() { $('lib-name-sheet').classList.remove('show'); }
+
+function renderLibrary() {
+  const list = $('lib-list');
+  if (!libPlaylists.length) {
+    list.innerHTML = '<div class="lib-empty">Aucune playlist sauvegardée.<br>Cliquez sur le bouton ci-dessus pour en créer une.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  libPlaylists.forEach(pl => {
+    const row = document.createElement('div');
+    row.className = 'lib-item';
+    const d = new Date(pl.ts * 1000);
+    const date = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    row.innerHTML = `
+      <div class="lib-txt">
+        <div class="lib-name"></div>
+        <div class="lib-meta">${pl.count} page${pl.count > 1 ? 's' : ''} · ${date}</div>
+      </div>
+      <button class="lib-load">Charger</button>
+      <button class="lib-del" aria-label="Supprimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>`;
+    row.querySelector('.lib-name').textContent = pl.name;
+    row.querySelector('.lib-load').addEventListener('click', () => {
+      cmd('lib_load', { id: pl.id });
+      closeLibSheet();
+    });
+    row.querySelector('.lib-del').addEventListener('click', () => {
+      cmd('lib_delete', { id: pl.id });
+      row.style.transition = 'opacity .25s';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        row.remove();
+        if (!$('lib-list').querySelector('.lib-item')) renderLibrary();
+      }, 260);
+    });
+    list.appendChild(row);
+  });
+}
+
 function setNow(name) {
   const n = $('now-name');
   if (n.textContent !== name) {
@@ -1418,8 +1581,7 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
       // tap sur le texte → renommer ; appui long → déplacer ; ✕ → supprimer
       b.querySelector('.pl-txt').addEventListener('click', () => {
         if (suppressClick) return;
-        const n = prompt('Nom de la page', u.name || '');
-        if (n !== null && n.trim() !== (u.name || '')) cmd('pl_rename', { index: i, name: n.trim() });
+        openRenameSheet(i, u.name || '');
       });
       b.querySelector('[data-act="del"]').addEventListener('click', () => {
         if (confirm('Supprimer « ' + name + ' » de la playlist ?')) cmd('pl_remove', { index: i });
@@ -1764,6 +1926,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const n = backupInfo.count;
     if (confirm('Remplacer la playlist actuelle par la sauvegarde (' + n + ' page' + (n > 1 ? 's' : '') + ') ?'))
       cmd('pl_restore');
+  });
+
+  // Bibliothèque de playlists
+  $('b-pl-lib').addEventListener('click', openLibSheet);
+  $('lib-sheet-cancel').addEventListener('click', closeLibSheet);
+  $('lib-sheet-bg').addEventListener('click', closeLibSheet);
+  $('b-lib-save').addEventListener('click', openLibNameSheet);
+  $('lib-name-cancel').addEventListener('click', closeLibNameSheet);
+  $('lib-name-sheet-bg').addEventListener('click', closeLibNameSheet);
+  $('b-lib-name-confirm').addEventListener('click', () => {
+    const name = ($('lib-name-in').value || '').trim();
+    if (name) { cmd('lib_save', { name }); showToast('Playlist sauvegardée'); }
+    closeLibNameSheet();
+  });
+  $('lib-name-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('b-lib-name-confirm').click(); });
+
+  // Renommage via feuille
+  $('b-rename-confirm').addEventListener('click', () => {
+    const n = ($('rename-in').value || '').trim();
+    if (pendingRenameIndex !== null && lastState) {
+      const oldName = lastState.urls[pendingRenameIndex]?.name || '';
+      if (n !== oldName) cmd('pl_rename', { index: pendingRenameIndex, name: n });
+    }
+    closeRenameSheet();
+  });
+  $('rename-cancel').addEventListener('click', closeRenameSheet);
+  $('rename-sheet-bg').addEventListener('click', closeRenameSheet);
+  $('rename-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('b-rename-confirm').click(); });
+
+  // Section Avancé — repliable
+  $('adv-toggle').addEventListener('click', () => {
+    const open = $('adv-body').style.display !== 'none';
+    $('adv-body').style.display = open ? 'none' : '';
+    $('adv-toggle').classList.toggle('open', !open);
   });
 
   document.querySelectorAll('.nav-btn').forEach(b =>

@@ -11,11 +11,12 @@ from pathlib import Path
 
 async def main():
     from aiohttp import web
-    from server import state, auth, backup
+    from server import state, auth, backup, library
     from server.http_handler import handle_http
     from server.ws_handler import handle_ws, keepalive_loop
 
-    backup.load()  # playlist sauvegardée lors d'une session précédente
+    backup.load()   # playlist auto-sauvegardée lors d'une session précédente
+    library.load()  # bibliothèque de playlists nommées
 
     # Detect LAN IP
     try:

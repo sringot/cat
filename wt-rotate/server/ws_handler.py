@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from aiohttp import web, WSMsgType
-from server import state, auth, sys_audio, backup
+from server import state, auth, sys_audio, backup, library
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -110,6 +110,7 @@ async def _handle_mobile(ws) -> None:
     if state.cached_state:
         await ws.send_str(json.dumps({**state.cached_state, 'type': 'state'}))
     await ws.send_str(json.dumps(backup.info_msg()))
+    await ws.send_str(json.dumps(library.info_msg()))
     if state.cached_shot and time.time() - state.cached_shot_ts < 30:
         await ws.send_str(state.cached_shot)
     try:
@@ -118,6 +119,34 @@ async def _handle_mobile(ws) -> None:
                 d = json.loads(msg_data.data)
                 if d.get('type') == 'command':
                     payload = msg_data.data
+                    # Bibliothèque de playlists — traitée côté serveur, pas forwardée
+                    action = d.get('action', '')
+                    if action == 'lib_save':
+                        name = (d.get('name') or 'Playlist').strip()[:40] or 'Playlist'
+                        urls = (state.cached_state or {}).get('urls') or []
+                        if urls:
+                            library.save_playlist(name, urls)
+                            await _broadcast_mobiles(json.dumps(library.info_msg()))
+                        continue
+                    if action == 'lib_load':
+                        pl = library.get_playlist(d.get('id') or '')
+                        if pl and pl.get('urls'):
+                            ext_cmd = json.dumps({'type': 'command', 'action': 'pl_restore', 'urls': pl['urls']})
+                            if state.ext_ws and not state.ext_ws.closed:
+                                try:
+                                    await state.ext_ws.send_str(ext_cmd)
+                                except Exception:
+                                    pass
+                            else:
+                                try:
+                                    await ws.send_str(json.dumps({'type': 'cmd_error', 'code': 'ext_offline'}))
+                                except Exception:
+                                    pass
+                        continue
+                    if action == 'lib_delete':
+                        library.delete_playlist(d.get('id') or '')
+                        await _broadcast_mobiles(json.dumps(library.info_msg()))
+                        continue
                     # Captures : un frame vient d'être diffusé à TOUS les
                     # mobiles — inutile de redemander une capture identique
                     # quand plusieurs téléphones tournent en même temps.

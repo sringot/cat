@@ -81,7 +81,9 @@ async function sendStateToRemote() {
   const activeUrls = config.urls.filter(u => u?.url?.trim());
   let remoteUrl = null;
   if (config.remoteTabId) {
-    try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.url || null; } catch {}
+    // pendingUrl : pendant le chargement, tab.url est encore vide — sans ça
+    // le remote ne sait pas que c'est du YouTube et cache les boutons ±15 s
+    try { const tab = await chrome.tabs.get(config.remoteTabId); remoteUrl = tab.pendingUrl || tab.url || null; } catch {}
   }
   // Index (dans la playlist) des onglets bloqués sur une page de login
   const sessionWarn = data.sessionWarn || {};
@@ -223,6 +225,9 @@ async function handleRemoteCommand(cmd) {
         if (/youtube\.com\/watch|youtu\.be\//.test(safeUrl)) {
           setTimeout(() => injectYouTubeMaximize(tab.id).catch(() => {}), 1500);
         }
+        // Re-push de l'état une fois la navigation commitée : le premier push
+        // part avant la fin du chargement et peut manquer l'URL finale
+        setTimeout(() => sendStateToRemote().catch(() => {}), 3000);
       } catch (e) {
         await log('remote open_url ERR: ' + e.message);
         ok = false; reason = 'create_failed';

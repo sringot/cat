@@ -451,6 +451,43 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   padding: 8px 8px 10px;
 }
 
+/* ── URLs récentes ────────────────────────────────────────── */
+.recents-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 20px;
+  border-radius: 22px;
+  background: var(--card); box-shadow: var(--shadow);
+  font-size: 14px; font-weight: 650; color: var(--txt-2);
+  margin-bottom: 14px;
+  transition: color .2s var(--ease);
+}
+.recents-btn:active { transform: scale(.985); }
+.recents-btn.open { color: var(--txt); }
+.recents-btn svg { transition: transform .22s var(--ease); flex-shrink: 0; }
+.recents-btn.open svg { transform: rotate(180deg); }
+.rec-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  transition: opacity .2s;
+}
+.rec-art {
+  width: 38px; height: 38px; border-radius: 11px;
+  flex-shrink: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+  overflow: hidden;
+}
+.rec-art img { width: 100%; height: 100%; object-fit: contain; padding: 5px; border-radius: inherit; }
+.rec-txt { flex: 1; min-width: 0; }
+.rec-host { font-size: 14px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-url  { font-size: 11.5px; color: var(--txt-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.rec-add {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); color: var(--accent-txt);
+  display: flex; align-items: center; justify-content: center;
+}
+
 /* ── Nav basse ────────────────────────────────────────────── */
 nav {
   position: fixed; left: 0; right: 0; bottom: 0;
@@ -692,6 +729,14 @@ nav {
         </div>
         <button class="add-go" id="b-add">Ajouter à la playlist</button>
       </div>
+
+      <button class="recents-btn" id="b-recents">
+        <span>URLs récentes</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="card" id="recents-card" style="display:none">
+        <div id="recents-list"></div>
+      </div>
     </div>
 
     <!-- ════ Réglages ════ -->
@@ -736,7 +781,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.10</div>
+          <div class="row-v">wee rotate 1.10.11</div>
         </div>
       </div>
     </div>
@@ -796,6 +841,64 @@ nav {
 <div id="toast" class="toast"></div>
 
 <script>
+const RECENTS_KEY = 'wt_recents';
+
+function saveRecent(url) {
+  try {
+    let list = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+    list = list.filter(u => u !== url);
+    list.unshift(url);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, 30)));
+  } catch {}
+}
+function getRecents() {
+  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'); } catch { return []; }
+}
+
+let recentsOpen = false;
+
+function toggleRecents() {
+  recentsOpen = !recentsOpen;
+  $('b-recents').classList.toggle('open', recentsOpen);
+  $('recents-card').style.display = recentsOpen ? '' : 'none';
+  if (recentsOpen) renderRecents();
+}
+
+function renderRecents() {
+  const currentUrls = new Set((lastState?.urls || []).map(u => u.url));
+  const recents = getRecents().filter(u => !currentUrls.has(u));
+  const list = $('recents-list');
+  if (!recents.length) {
+    list.innerHTML = '<div class="pl-empty">Aucune URL récente à ajouter.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  recents.forEach(url => {
+    let host = '';
+    try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+    const row = document.createElement('div');
+    row.className = 'rec-item';
+    row.innerHTML = `
+      <div class="rec-art"></div>
+      <div class="rec-txt">
+        <div class="rec-host"></div>
+        <div class="rec-url"></div>
+      </div>
+      <button class="rec-add" aria-label="Ajouter à la playlist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+      </button>`;
+    renderArt(row.querySelector('.rec-art'), host, url);
+    row.querySelector('.rec-host').textContent = host || url;
+    row.querySelector('.rec-url').textContent  = url;
+    row.querySelector('.rec-add').addEventListener('click', () => {
+      cmd('pl_add', { url, name: '' });
+      row.style.opacity = '0';
+      setTimeout(() => { row.remove(); if (!$('recents-list').querySelector('.rec-item')) renderRecents(); }, 280);
+    });
+    list.appendChild(row);
+  });
+}
+
 let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
 let lastState = null;
 let reconnectTimer = null;
@@ -1068,6 +1171,7 @@ function sync(s) {
   $('set-int-plus').disabled  = interval >= INTERVAL_STEPS[INTERVAL_STEPS.length - 1];
 
   renderPlaylist(urls, s.currentIndex || 0, mode, warns);
+  if (recentsOpen) renderRecents();
 }
 
 function setNow(name) {
@@ -1371,7 +1475,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.sheet-opt').forEach(b =>
     b.addEventListener('click', () => {
-      if (pendingUrl) cmd('open_url', { url: pendingUrl, duration: parseInt(b.dataset.dur) || 0 });
+      if (pendingUrl) {
+        cmd('open_url', { url: pendingUrl, duration: parseInt(b.dataset.dur) || 0 });
+        saveRecent(pendingUrl);
+      }
       $('urlin').value = '';
       closeSheet();
     }));
@@ -1407,6 +1514,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('b-reload-all').addEventListener('click', () => cmd('reload_all'));
+  $('b-recents').addEventListener('click', toggleRecents);
 
   document.querySelectorAll('.nav-btn').forEach(b =>
     b.addEventListener('click', () => showPage(b.dataset.pg)));

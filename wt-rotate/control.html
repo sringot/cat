@@ -183,40 +183,32 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
 #install-banner b { color: var(--txt); font-weight: 600; }
 
 /* ── Lecteur (Accueil) ────────────────────────────────────── */
-.now {
-  display: flex; align-items: center; gap: 17px;
-  padding: 22px 22px 20px;
+.now-row { padding: 18px 22px 12px; }
+.now-name {
+  font-size: 20px; font-weight: 750; letter-spacing: -.3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: opacity .25s var(--ease);
 }
-.art {
-  width: 96px; height: 96px; border-radius: 22px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 40px; font-weight: 750; color: #FFFFFF;
-  text-shadow: 0 1px 8px rgba(0,0,0,.16);
-  background: linear-gradient(140deg, #C9C7C2, #8B8A86);
-  transition: background .4s var(--ease);
-}
-.now-meta { min-width: 0; flex: 1; }
 .now-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 1.3px;
+  margin-top: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
   text-transform: uppercase; color: var(--txt-2);
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; gap: 6px;
   transition: color .3s var(--ease);
 }
 .now-label .dot { width: 6px; height: 6px; }
 .now-label.live { color: var(--green); }
 .now-label.live .dot { background: var(--green); animation: pulse 2.2s var(--ease) infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-.now-name {
-  font-size: 23px; font-weight: 750; letter-spacing: -.4px;
-  margin-top: 7px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transition: opacity .25s var(--ease);
+/* favicon dans les icônes de playlist */
+.pl-art img { width: 100%; height: 100%; object-fit: contain; padding: 5px; border-radius: inherit; }
+/* stepper d'intervalle + bouton reload */
+.step-btn {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--bg);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  color: var(--txt); flex-shrink: 0;
 }
-.now-url {
-  font-size: 13px; color: var(--txt-2); margin-top: 3px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+.step-btn:disabled { opacity: .25; pointer-events: none; }
 
 .transport {
   display: flex; align-items: center; justify-content: center;
@@ -347,39 +339,6 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   flex-shrink: 0;
 }
 
-/* ── Écrans / À venir (home) ──────────────────────────────── */
-.upnext-scroll {
-  display: flex; overflow-x: auto; gap: 12px;
-  padding: 0 18px 18px;
-  scrollbar-width: none; -ms-overflow-style: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
-          mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
-}
-.upnext-scroll::-webkit-scrollbar { display: none; }
-.un-item {
-  flex-shrink: 0; display: flex; flex-direction: column;
-  align-items: center; gap: 7px; width: 68px;
-  cursor: pointer;
-}
-.un-item:active { opacity: .7; transform: scale(.95); }
-.un-art {
-  width: 52px; height: 52px; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700; color: #fff;
-  text-shadow: 0 1px 5px rgba(0,0,0,.15);
-  flex-shrink: 0;
-}
-.un-name {
-  font-size: 11px; font-weight: 550; color: var(--txt-2);
-  text-align: center; width: 100%;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.upnext-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 18px 10px;
-  font-size: 12px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--txt-2);
-}
 
 /* ── Playlist ─────────────────────────────────────────────── */
 .pl { padding: 8px; }
@@ -627,13 +586,9 @@ nav {
 
       <!-- Lecteur -->
       <div class="card">
-        <div class="now">
-          <div class="art" id="art">—</div>
-          <div class="now-meta">
-            <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
-            <div class="now-name" id="now-name">—</div>
-            <div class="now-url" id="now-url">&nbsp;</div>
-          </div>
+        <div class="now-row">
+          <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
+          <div class="now-name" id="now-name">—</div>
         </div>
         <div class="transport" id="transport">
           <button class="t-side" id="b-prev" aria-label="Précédent">
@@ -678,14 +633,6 @@ nav {
         <div class="release-sub" id="release-sub"></div>
       </div>
 
-      <!-- Écrans configurés (toujours visible si playlist non vide) -->
-      <div class="card" id="card-upnext" style="display:none">
-        <div class="upnext-hdr">
-          <span id="upnext-label">PAGES</span>
-        </div>
-        <div class="upnext-scroll" id="upnext-list"></div>
-      </div>
-
       <!-- Annonce kiosque -->
       <div class="card">
         <div class="card-hdr">Message sur la télé</div>
@@ -696,7 +643,6 @@ nav {
             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           </button>
         </div>
-        <div class="card-sub">Affiché 30 s en bandeau sur l'écran du kiosque</div>
       </div>
 
       <!-- Open URL -->
@@ -742,19 +688,33 @@ nav {
         <h1>Réglages</h1>
       </div>
 
-      <div class="sec-lbl">Système</div>
+      <div class="sec-lbl">Kiosque</div>
       <div class="card">
-        <div class="row">Serveur remote
-          <div class="row-v"><span id="set-server">—</span><div class="dot" id="set-server-dot"></div></div>
-        </div>
-        <div class="row">Extension kiosque
+        <div class="row">Extension
           <div class="row-v"><span id="set-ext">—</span><div class="dot" id="set-ext-dot"></div></div>
         </div>
         <div class="row">Pages en rotation
           <div class="row-v" id="set-screens">—</div>
         </div>
-        <div class="row">Intervalle de rotation
-          <div class="row-v" id="set-interval">—</div>
+        <div class="row">Intervalle
+          <div class="row-v" style="gap:10px">
+            <button class="step-btn" id="set-int-minus" aria-label="Diminuer l'intervalle">−</button>
+            <span id="set-interval">—</span>
+            <button class="step-btn" id="set-int-plus" aria-label="Augmenter l'intervalle">+</button>
+          </div>
+        </div>
+        <div class="row">Recharger les pages
+          <button id="b-reload-all" style="padding:8px 15px;border-radius:100px;background:var(--bg);font-size:13px;font-weight:650">Recharger</button>
+        </div>
+      </div>
+
+      <div class="sec-lbl">Serveur</div>
+      <div class="card">
+        <div class="row">Connexion
+          <div class="row-v"><span id="set-server">—</span><div class="dot" id="set-server-dot"></div></div>
+        </div>
+        <div class="row">Adresse
+          <div class="row-v" id="set-ip">—</div>
         </div>
       </div>
 
@@ -764,7 +724,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.10.4</div>
+          <div class="row-v">wee rotate 1.10.5</div>
         </div>
       </div>
     </div>
@@ -808,6 +768,19 @@ nav {
   </div>
 </div>
 
+<!-- Feuille : durée du message kiosque -->
+<div class="sheet" id="ann-sheet">
+  <div class="sheet-bg" id="ann-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Durée d'affichage</div>
+    <button class="sheet-opt" data-ann-dur="300">5 minutes</button>
+    <button class="sheet-opt" data-ann-dur="600">10 minutes</button>
+    <button class="sheet-opt" data-ann-dur="900">15 minutes</button>
+    <button class="sheet-opt" data-ann-dur="-1">Personnalisé…</button>
+    <button class="sheet-cancel" id="ann-sheet-cancel">Annuler</button>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -817,7 +790,7 @@ let reconnectTimer = null;
 let lastMsgAt = 0;
 let extOnline = false;
 let editMode = false;
-let pendingUrl = null;
+let pendingUrl = null, pendingAnn = null;
 let currentPage = 'home';
 let screenshotTimer = null;
 
@@ -838,9 +811,10 @@ const REASONS = {
 };
 
 const ACK_OK = {
-  pl_add:    'Page ajoutée',
-  pl_remove: 'Page supprimée',
-  announce:  'Message affiché sur la télé'
+  pl_add:     'Page ajoutée',
+  pl_remove:  'Page supprimée',
+  announce:   'Message affiché sur la télé',
+  reload_all: 'Pages rechargées'
 };
 
 function boot() {
@@ -854,6 +828,7 @@ function boot() {
   } else {
     try { wsToken = localStorage.getItem('wt_token') || ''; } catch {}
   }
+  $('set-ip').textContent = ip + ':' + port;
   connect();
 }
 
@@ -977,7 +952,7 @@ function startPreview() {
   requestScreenshot();
   screenshotTimer = setInterval(() => {
     if (extOnline && document.visibilityState !== 'hidden') requestScreenshot();
-  }, 20000);
+  }, 10000);
 }
 function stopPreview() {
   clearInterval(screenshotTimer);
@@ -1006,6 +981,30 @@ function initialOf(name) {
   return (name || '—').trim().charAt(0).toUpperCase() || '—';
 }
 
+const INTERVAL_STEPS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 900, 1800, 3600];
+
+function fmtInterval(s) {
+  if (s >= 3600) return (s / 3600) + ' h';
+  if (s >= 60) { const m = Math.floor(s / 60), r = s % 60; return m + ' min' + (r ? ' ' + r + ' s' : ''); }
+  return s + ' s';
+}
+
+function renderArt(el, name, url) {
+  let host = '';
+  try { host = new URL(url || '').hostname; } catch {}
+  if (host) {
+    el.textContent = '';
+    el.style.background = 'var(--bg)';
+    const img = document.createElement('img');
+    img.src = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
+    img.onerror = () => { img.remove(); el.textContent = initialOf(name); el.style.background = artBg(name); };
+    el.appendChild(img);
+  } else {
+    el.textContent = initialOf(name);
+    el.style.background = artBg(name);
+  }
+}
+
 function sync(s) {
   lastState = s;
   const mode = modeOf(s);
@@ -1018,12 +1017,12 @@ function sync(s) {
 
   if (mode === 'external') {
     labelTxt.textContent = 'URL externe';
-    setNow(shortUrl(s.remoteUrl), s.remoteUrl);
+    setNow(shortUrl(s.remoteUrl));
   } else {
     labelTxt.textContent =
-      mode === 'running' ? 'En rotation' :
-      mode === 'paused'  ? 'En pause'    : 'Arrêté';
-    setNow(cur.name || shortUrl(cur.url) || '—', cur.url || '');
+      mode === 'running' ? 'Actif'    :
+      mode === 'paused'  ? 'En pause' : 'Arrêté';
+    setNow(cur.name || shortUrl(cur.url) || '—');
   }
 
   // bouton principal : pause si ça tourne, lecture sinon
@@ -1050,22 +1049,21 @@ function sync(s) {
   }
 
   // Réglages — infos système
+  const interval = s.interval || 30;
   $('set-screens').textContent  = urls.length ? urls.length + (urls.length > 1 ? ' pages' : ' page') : 'Aucune';
-  $('set-interval').textContent = (s.interval || 30) + ' s';
+  $('set-interval').textContent = fmtInterval(interval);
+  $('set-int-minus').disabled = interval <= INTERVAL_STEPS[0];
+  $('set-int-plus').disabled  = interval >= INTERVAL_STEPS[INTERVAL_STEPS.length - 1];
 
-  renderUpNext(urls, s.currentIndex || 0, mode);
   renderPlaylist(urls, s.currentIndex || 0, mode, warns);
 }
 
-function setNow(name, url) {
-  const n = $('now-name'), u = $('now-url'), a = $('art');
+function setNow(name) {
+  const n = $('now-name');
   if (n.textContent !== name) {
     n.style.opacity = '0';
     setTimeout(() => { n.textContent = name; n.style.opacity = '1'; }, 120);
   }
-  u.textContent = url || ' ';
-  a.textContent = initialOf(name);
-  a.style.background = artBg(name);
 }
 
 function shortUrl(u) {
@@ -1093,30 +1091,6 @@ function updateSpotlightSub() {
 }
 setInterval(updateSpotlightSub, 1000);
 
-function renderUpNext(urls, currentIndex, mode) {
-  const card = $('card-upnext');
-  if (!urls.length) { card.style.display = 'none'; return; }
-  card.style.display = '';
-  const running = mode === 'running';
-  $('upnext-label').textContent = running ? 'À VENIR' : 'PAGES';
-  const list = $('upnext-list');
-  list.innerHTML = '';
-  const count = Math.min(urls.length, running ? 4 : 5);
-  for (let k = 0; k < count; k++) {
-    const idx = running ? (currentIndex + 1 + k) % urls.length : k;
-    const u = urls[idx];
-    const name = u.name || shortUrl(u.url);
-    const item = document.createElement('button');
-    item.className = 'un-item';
-    item.innerHTML = '<div class="un-art"></div><div class="un-name"></div>';
-    const art = item.querySelector('.un-art');
-    art.textContent = initialOf(name);
-    art.style.background = artBg(name);
-    item.querySelector('.un-name').textContent = name;
-    item.addEventListener('click', () => cmd('goto', { index: idx }));
-    list.appendChild(item);
-  }
-}
 
 function renderPlaylist(urls, currentIndex, mode, warns = []) {
   const pl = $('pl');
@@ -1156,8 +1130,7 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
       </div>`
       : isCur ? `<div class="eq${mode === 'running' ? '' : ' still'}"><i></i><i></i><i></i></div>` : ''}`;
     const art = b.querySelector('.pl-art');
-    art.textContent = initialOf(name);
-    art.style.background = artBg(name);
+    renderArt(art, name, u.url);
     b.querySelector('.pl-name').textContent = name;
     b.querySelector('.pl-url').textContent  = u.url;
 
@@ -1212,11 +1185,11 @@ function mainAction() {
   } else if (mode === 'external') {
     if (cmd('release')) {
       lastState.active = true; lastState.remotePaused = false; lastState.remoteUrl = null;
-      flipMain(true, 'En rotation');
+      flipMain(true, 'Actif');
     }
   } else if (cmd(mode === 'paused' && lastState.hasTabs ? 'resume' : 'start')) {
     lastState.active = true; lastState.remotePaused = false;
-    flipMain(true, 'En rotation');
+    flipMain(true, 'Actif');
   }
 }
 
@@ -1232,6 +1205,17 @@ function sendUrl() {
 function closeSheet() {
   pendingUrl = null;
   $('sheet').classList.remove('show');
+}
+
+function openAnnSheet() {
+  const text = ($('ann-in').value || '').trim();
+  if (!text) return;
+  pendingAnn = text;
+  $('ann-in').blur();
+  $('ann-sheet').classList.add('show');
+}
+function closeAnnSheet() {
+  $('ann-sheet').classList.remove('show');
 }
 
 function addPage() {
@@ -1258,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-release').addEventListener('click', () => {
     if (cmd('release') && lastState) {
       lastState.active = true; lastState.remotePaused = false; lastState.remoteUrl = null;
-      flipMain(true, 'En rotation');
+      flipMain(true, 'Actif');
     }
   });
   $('b-send').addEventListener('click', sendUrl);
@@ -1266,15 +1250,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('b-preview-refresh').addEventListener('click', requestScreenshot);
 
-  const sendAnnounce = () => {
-    const text = ($('ann-in').value || '').trim();
-    if (!text) return;
-    cmd('announce', { text, duration: 30 });
-    $('ann-in').value = '';
-    $('ann-in').blur();
-  };
-  $('b-ann').addEventListener('click', sendAnnounce);
-  $('ann-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendAnnounce(); });
+  $('b-ann').addEventListener('click', openAnnSheet);
+  $('ann-in').addEventListener('keydown', e => { if (e.key === 'Enter') openAnnSheet(); });
 
   $('b-back15').addEventListener('click', () => cmd('seek', { delta: -15 }));
   $('b-fwd15').addEventListener('click',  () => cmd('seek', { delta: 15 }));
@@ -1311,6 +1288,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   $('sheet-cancel').addEventListener('click', closeSheet);
   $('sheet-bg').addEventListener('click', closeSheet);
+
+  document.querySelectorAll('[data-ann-dur]').forEach(b =>
+    b.addEventListener('click', () => {
+      let dur = parseInt(b.dataset.annDur);
+      if (dur === -1) {
+        const raw = prompt('Durée en secondes (ex : 120)');
+        dur = Math.max(5, parseInt(raw) || 30);
+      }
+      if (pendingAnn) {
+        cmd('announce', { text: pendingAnn, duration: dur });
+        $('ann-in').value = '';
+      }
+      pendingAnn = null;
+      closeAnnSheet();
+    }));
+  $('ann-sheet-cancel').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
+  $('ann-sheet-bg').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
+
+  $('set-int-minus').addEventListener('click', () => {
+    const cur = lastState?.interval || 30;
+    const prev = [...INTERVAL_STEPS].reverse().find(s => s < cur) || INTERVAL_STEPS[0];
+    if (prev !== cur) cmd('set_interval', { seconds: prev });
+  });
+  $('set-int-plus').addEventListener('click', () => {
+    const cur = lastState?.interval || 30;
+    const next = INTERVAL_STEPS.find(s => s > cur) || INTERVAL_STEPS[INTERVAL_STEPS.length - 1];
+    if (next !== cur) cmd('set_interval', { seconds: next });
+  });
+
+  $('b-reload-all').addEventListener('click', () => cmd('reload_all'));
 
   document.querySelectorAll('.nav-btn').forEach(b =>
     b.addEventListener('click', () => showPage(b.dataset.pg)));

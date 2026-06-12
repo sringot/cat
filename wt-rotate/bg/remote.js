@@ -454,6 +454,25 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
+    case 'reload_all': {
+      const tabs = [...config.tabIds];
+      if (config.remoteTabId) tabs.push(config.remoteTabId);
+      for (const tid of tabs) {
+        try { await chrome.tabs.reload(tid); } catch {}
+      }
+      await log('remote — rechargement de toutes les pages');
+      break;
+    }
+
+    case 'set_interval': {
+      const secs = Math.round(Math.min(3600, Math.max(5, Number(cmd.seconds) || 30)));
+      config.interval = secs;
+      await chrome.storage.local.set({ config });
+      if (config.active) await setNextAlarm(secs);
+      await log('remote — intervalle → ' + secs + ' s');
+      break;
+    }
+
     default:
       ok = false; reason = 'unknown_action';
   }

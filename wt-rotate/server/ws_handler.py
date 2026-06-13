@@ -218,19 +218,13 @@ async def _handle_voice_cmd(ws, text: str, cached_state: dict) -> None:
     except Exception as e:
         result = {'reply': 'Erreur de traitement, réessayez.', 'commands': []}
 
-    # Exécuter les commandes kiosque déterminées par l'IA
+    # Exécuter les commandes kiosque déterminées par l'IA. Les paramètres sont
+    # forwardés tels quels : l'extension valide tout (schémas d'URL, index…)
+    # exactement comme pour une commande envoyée à la main depuis un mobile.
     for kiosk_cmd in result.get('commands', []):
-        action = kiosk_cmd.get('action')
-        if not action:
+        if kiosk_cmd.get('action') not in ai_agent.ALLOWED_ACTIONS:
             continue
-        payload: dict = {'type': 'command', 'action': action}
-        if action == 'open_url':
-            payload['url']      = kiosk_cmd.get('url', '')
-            payload['duration'] = int(kiosk_cmd.get('duration') or 0)
-        elif action == 'announce':
-            payload['text']     = kiosk_cmd.get('text', '')
-            payload['duration'] = int(kiosk_cmd.get('duration') or 30)
-        # pause / resume / next / prev / release n'ont pas de paramètres supplémentaires
+        payload = {**kiosk_cmd, 'type': 'command'}
         if state.ext_ws and not state.ext_ws.closed:
             try:
                 await state.ext_ws.send_str(json.dumps(payload))

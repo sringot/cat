@@ -541,34 +541,42 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
 .lib-empty { padding: 16px 12px 8px; font-size: 14px; color: var(--txt-2); line-height: 1.5; }
 
 /* ── Assistant vocal ─────────────────────────────────────────────────────── */
-.voice-ctrl {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 20px 18px;
-}
-.voice-info { flex: 1; min-width: 0; }
+.voice-head { padding: 16px 20px 0; }
 .voice-lbl {
   font-size: 11px; font-weight: 700; letter-spacing: 1.1px;
   text-transform: uppercase; color: var(--txt-2);
 }
 .voice-status {
-  font-size: 14px; color: var(--txt-2); margin-top: 3px;
-  line-height: 1.45; overflow: hidden; text-overflow: ellipsis;
-  transition: color .2s var(--ease);
+  font-size: 14px; color: var(--txt-2); margin-top: 4px;
+  line-height: 1.45; transition: color .2s var(--ease);
 }
 .voice-status.reply { color: var(--txt); font-weight: 550; }
-.voice-mic {
-  width: 52px; height: 52px; border-radius: 50%;
+.voice-ask {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px 16px;
+}
+.voice-input {
+  flex: 1; min-width: 0; height: 48px;
+  background: var(--bg); border-radius: 24px;
+  padding: 0 18px; font-size: 16px; color: var(--txt);
+  font-family: inherit; border: 1px solid transparent;
+  transition: border-color .2s var(--ease);
+}
+.voice-input::placeholder { color: var(--txt-2); }
+.voice-input:focus { outline: none; border-color: var(--txt-3); }
+.voice-send, .voice-mic {
+  width: 48px; height: 48px; border-radius: 50%;
   background: var(--accent); color: var(--accent-txt);
   display: flex; align-items: center; justify-content: center;
   box-shadow: var(--shadow); flex-shrink: 0;
-  transition: background .2s var(--ease), transform .18s var(--ease);
+  transition: background .2s var(--ease), transform .18s var(--ease), opacity .2s;
 }
-.voice-mic:active { transform: scale(.9); }
+.voice-send:active, .voice-mic:active { transform: scale(.9); }
+.voice-send:disabled, .voice-mic:disabled { opacity: .4; pointer-events: none; }
 .voice-mic.listening {
   background: var(--red);
   animation: voicepulse 1.3s ease-in-out infinite;
 }
-.voice-mic:disabled { opacity: .5; pointer-events: none; }
 @keyframes voicepulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(224,56,46,.45); }
   55%      { box-shadow: 0 0 0 16px rgba(224,56,46,0); }
@@ -831,12 +839,21 @@ nav {
 
       <!-- Assistant vocal IA -->
       <div class="card" id="card-voice" style="display:none">
-        <div class="voice-ctrl">
-          <div class="voice-info">
-            <div class="voice-lbl">Assistant</div>
-            <div class="voice-status" id="voice-status">Dites une commande…</div>
-          </div>
-          <button class="voice-mic" id="b-voice" aria-label="Assistant vocal">
+        <div class="voice-head">
+          <div class="voice-lbl">Assistant</div>
+          <div class="voice-status" id="voice-status">Posez votre demande…</div>
+        </div>
+        <div class="voice-ask">
+          <input type="text" id="voice-input" class="voice-input"
+                 placeholder="Tapez ou dictez…" autocomplete="off"
+                 autocapitalize="sentences" autocorrect="on" enterkeyhint="send">
+          <button class="voice-send" id="b-voice-send" aria-label="Envoyer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+              <line x1="12" y1="19" x2="12" y2="5"/>
+              <polyline points="6 11 12 5 18 11"/>
+            </svg>
+          </button>
+          <button class="voice-mic" id="b-voice" aria-label="Parler" style="display:none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -964,7 +981,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.14.1</div>
+          <div class="row-v">wee rotate 1.14.2</div>
         </div>
         <div class="row">Installer sur iPhone
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
@@ -1159,6 +1176,12 @@ let pendingRenameIndex = null;
 let voiceState = 'idle';   // 'idle' | 'listening' | 'processing'
 let voiceRec   = null;
 let aiAvailable = false;
+let speechUnlocked = false;
+// SpeechRecognition (micro live) : absent sur iOS/Safari, même en PWA. On ne
+// montre le bouton micro que là où ça marche ; ailleurs, le champ texte +
+// la dictée du clavier iOS prennent le relais.
+const hasSpeechRec  = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+const voiceIdleText = hasSpeechRec ? 'Dites une commande ou tapez…' : 'Tapez ou dictez votre demande…';
 
 const $ = id => document.getElementById(id);
 
@@ -1291,7 +1314,7 @@ function connect() {
       }
       setTimeout(() => {
         if ($('voice-status').textContent === txt)
-          setVoiceState('idle', 'Dites une commande…', false);
+          setVoiceState('idle', voiceIdleText, false);
       }, 7000);
       return;
     }
@@ -1329,7 +1352,7 @@ function setExtOnline(on) {
   $('card-voice').style.display = aiAvailable && on ? '' : 'none';
   if (!on && voiceState !== 'idle') {
     if (voiceRec) { try { voiceRec.stop(); } catch {} voiceRec = null; }
-    setVoiceState('idle', 'Dites une commande…', false);
+    setVoiceState('idle', voiceIdleText, false);
   }
   if (on) startPreview(); else stopPreview();
 }
@@ -1579,14 +1602,43 @@ function renderLibrary() {
 // ── Assistant vocal ───────────────────────────────────────────────────────────
 function setVoiceState(st, statusText, isReply) {
   voiceState = st;
-  const btn = $('b-voice');
-  const el  = $('voice-status');
-  btn.classList.toggle('listening', st === 'listening');
-  btn.disabled = (st === 'processing');
+  const mic  = $('b-voice');
+  const el   = $('voice-status');
+  const inp  = $('voice-input');
+  const send = $('b-voice-send');
+  const busy = (st === 'processing');
+  mic.classList.toggle('listening', st === 'listening');
+  mic.disabled = busy;
+  if (inp)  inp.disabled  = busy;
+  if (send) send.disabled = busy;
   if (statusText !== undefined) {
     el.textContent = statusText;
     el.classList.toggle('reply', !!isReply);
   }
+}
+
+// iOS bloque la synthèse vocale tant qu'elle n'a pas été amorcée DANS un geste
+// utilisateur. On la débloque au premier envoi (clic/Entrée) avec un énoncé
+// vide ; la lecture de la vraie réponse (qui arrive en asynchrone) passe alors.
+function unlockSpeech() {
+  if (speechUnlocked || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    speechUnlocked = true;
+  } catch {}
+}
+
+// Envoi d'une demande tapée ou dictée au clavier (chemin principal sur iOS).
+function sendVoiceText() {
+  if (!extOnline || voiceState === 'processing') return;
+  const inp  = $('voice-input');
+  const text = (inp.value || '').trim();
+  if (!text) return;
+  inp.value = '';
+  inp.blur();
+  unlockSpeech();
+  setVoiceState('processing', '« ' + text + ' »', false);
+  cmd('voice_cmd', { text });
 }
 
 function startVoice() {
@@ -1594,10 +1646,11 @@ function startVoice() {
   // Tap pendant l'écoute → annule
   if (voiceState === 'listening') {
     if (voiceRec) { try { voiceRec.stop(); } catch {} voiceRec = null; }
-    setVoiceState('idle', 'Dites une commande…', false);
+    setVoiceState('idle', voiceIdleText, false);
     return;
   }
   if (voiceState === 'processing') return;
+  unlockSpeech();
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
@@ -1619,20 +1672,20 @@ function startVoice() {
   };
   rec.onerror = e => {
     voiceRec = null;
-    setVoiceState('idle', 'Dites une commande…', false);
+    setVoiceState('idle', voiceIdleText, false);
     if (e.error !== 'no-speech' && e.error !== 'aborted')
       showToast('Micro : ' + e.error);
   };
   rec.onend = () => {
     voiceRec = null;
-    if (voiceState === 'listening') setVoiceState('idle', 'Dites une commande…', false);
+    if (voiceState === 'listening') setVoiceState('idle', voiceIdleText, false);
   };
 
   try {
     rec.start();
     setVoiceState('listening', 'Je vous écoute…', false);
   } catch {
-    setVoiceState('idle', 'Dites une commande…', false);
+    setVoiceState('idle', voiceIdleText, false);
     showToast('Impossible de démarrer le micro');
   }
 }
@@ -2069,8 +2122,17 @@ document.addEventListener('DOMContentLoaded', () => {
       cmd('pl_restore');
   });
 
-  // Assistant vocal
-  $('b-voice').addEventListener('click', startVoice);
+  // Assistant vocal — micro live seulement si le navigateur le supporte
+  // (absent sur iOS). Partout : champ texte + dictée du clavier.
+  if (hasSpeechRec) {
+    $('b-voice').style.display = '';
+    $('b-voice').addEventListener('click', startVoice);
+  }
+  $('b-voice-send').addEventListener('click', sendVoiceText);
+  $('voice-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendVoiceText(); }
+  });
+  $('voice-status').textContent = voiceIdleText;
 
   // Bibliothèque de playlists
   $('b-pl-lib').addEventListener('click', openLibSheet);

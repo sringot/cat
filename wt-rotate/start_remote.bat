@@ -18,19 +18,26 @@ echo Installation / verification des dependances...
 python -m pip install aiohttp qrcode pycaw anthropic --quiet
 
 :: ── Assistant vocal IA : cle API lue depuis cle_ia.txt (si present) ────────────
-:: Collez votre cle Anthropic (https://console.anthropic.com) dans un fichier
-:: nomme "cle_ia.txt" place a cote de ce script. Sans ce fichier, le serveur
-:: fonctionne normalement mais sans l'assistant vocal.
+:: Ouvrez cle_ia.txt avec Notepad, remplacez le texte par votre cle Anthropic
+:: (commence par sk-ant-...) puis sauvegardez. Relancez ce script ensuite.
 if defined ANTHROPIC_API_KEY goto :key_done
 if exist "cle_ia.txt" (
     for /f "usebackq delims=" %%K in ("cle_ia.txt") do (
         if not defined ANTHROPIC_API_KEY set "ANTHROPIC_API_KEY=%%K"
     )
     if defined ANTHROPIC_API_KEY (
-        echo   Assistant vocal IA : cle chargee depuis cle_ia.txt
+        :: Verifie que la cle a l'air valide (commence par sk-)
+        echo %ANTHROPIC_API_KEY% | findstr /b "sk-" >nul 2>&1
+        if %errorlevel% equ 0 (
+            echo   Assistant vocal IA : cle chargee depuis cle_ia.txt [OK]
+        ) else (
+            echo   [!] cle_ia.txt trouvee mais la cle ne semble pas valide.
+            echo       Ouvrez cle_ia.txt et collez votre vraie cle Anthropic ^(sk-ant-...^).
+            set "ANTHROPIC_API_KEY="
+        )
     )
 ) else (
-    echo   Assistant vocal IA : desactive ^(pas de fichier cle_ia.txt^)
+    echo   Assistant vocal IA : desactive ^(fichier cle_ia.txt introuvable^)
 )
 :key_done
 

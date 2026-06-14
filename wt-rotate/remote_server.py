@@ -11,13 +11,14 @@ from pathlib import Path
 
 async def main():
     from aiohttp import web
-    from server import state, auth, backup, library, ai_agent
+    from server import state, auth, backup, library, ai_agent, stt, tls
     from server.http_handler import handle_http
     from server.ws_handler import handle_ws, keepalive_loop
 
     backup.load()   # playlist auto-sauvegardée lors d'une session précédente
     library.load()  # bibliothèque de playlists nommées
     ai_agent.init() # assistant vocal IA (optionnel — nécessite ANTHROPIC_API_KEY)
+    stt.init()      # transcription vocale au micro (optionnel — nécessite GROQ_API_KEY)
 
     # Detect LAN IP
     try:
@@ -70,19 +71,6 @@ async def main():
             return await handle_ws(request)
         return await handle_http(request)
 
-    plain_url = f'http://{state.local_ip}:{state.PORT}/'
-    print('╔══════════════════════════════════════════╗')
-    print('║    wt-rotate Remote Control Server       ║')
-    print('╠══════════════════════════════════════════╣')
-    print(f'║  IP locale  : {state.local_ip:<27}║')
-    print(f'║  URL mobile : {plain_url:<27}║')
-    print(f'║  Token auth : {auth.TOKEN:<27}║')
-    print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
-    ai_txt = "OK" if ai_agent.is_available() else "non config. (ANTHROPIC_API_KEY)"
-    print(f'║  IA vocale  : {ai_txt:<27}║')
-    print('╚══════════════════════════════════════════╝')
-    print('\nEn attente de connexions...\n')
-
     app = web.Application()
     app.router.add_get('/', handle)
     app.router.add_get('/{path:.+}', handle)
@@ -91,6 +79,35 @@ async def main():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', state.PORT)
     await site.start()
+
+    # Serveur HTTPS (port 8766) : indispensable pour le micro vocal sur
+    # téléphone (getUserMedia exige un contexte sécurisé). Certificat auto-signé.
+    ssl_ctx = tls.ssl_context() if tls.ensure_cert(state.local_ip) else None
+    if ssl_ctx:
+        try:
+            https_site = web.TCPSite(runner, '0.0.0.0', state.HTTPS_PORT, ssl_context=ssl_ctx)
+            await https_site.start()
+            state.https_on = True
+        except Exception as e:
+            print(f'[!] HTTPS non démarré : {e}')
+
+    plain_url = f'http://{state.local_ip}:{state.PORT}/'
+    sec_url   = f'https://{state.local_ip}:{state.HTTPS_PORT}/'
+    print('╔══════════════════════════════════════════╗')
+    print('║    wt-rotate Remote Control Server       ║')
+    print('╠══════════════════════════════════════════╣')
+    print(f'║  IP locale  : {state.local_ip:<27}║')
+    print(f'║  URL mobile : {plain_url:<27}║')
+    print(f'║  Token auth : {auth.TOKEN:<27}║')
+    print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
+    ai_txt = "OK" if ai_agent.is_available() else "non config. (cle_ia.txt)"
+    print(f'║  IA vocale  : {ai_txt:<27}║')
+    mic_txt = "OK" if stt.is_available() else "non config. (cle_groq.txt)"
+    print(f'║  Micro voc. : {mic_txt:<27}║')
+    https_txt = sec_url if state.https_on else "off (lib cryptography)"
+    print(f'║  HTTPS micro: {https_txt:<27}║')
+    print('╚══════════════════════════════════════════╝')
+    print('\nEn attente de connexions...\n')
 
     asyncio.create_task(keepalive_loop())
     await asyncio.Future()

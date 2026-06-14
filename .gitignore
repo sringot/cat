@@ -2,3 +2,6 @@ wt-rotate/.wt_token
 __pycache__/
 *.pyc
 *.zip
+*.pem
+wt-rotate/library.json
+wt-rotate/playlist_backup.json

@@ -1,10 +1,21 @@
 import json
 from aiohttp import web
-from server import state
+from server import state, tls
 
 
 async def handle_http(request):
     path = request.path.split('?')[0]
+
+    # Certificat à installer sur le téléphone pour activer le micro vocal (HTTPS).
+    # Type x-x509-ca-cert + pas de Content-Disposition : iOS propose alors
+    # l'installation du profil au lieu d'enregistrer un fichier.
+    if path in ('/cert.crt', '/cert.pem'):
+        data = tls.cert_bytes()
+        if data:
+            return web.Response(body=data,
+                                content_type='application/x-x509-ca-cert',
+                                headers={'Cache-Control': 'no-store'})
+        return web.Response(status=404, text='certificat indisponible')
 
     if path == '/app.webmanifest':
         if state.manifest_cache:

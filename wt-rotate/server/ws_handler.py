@@ -1,8 +1,9 @@
 import asyncio
+import base64
 import json
 import time
 from aiohttp import web, WSMsgType
-from server import state, auth, sys_audio, backup, library, ai_agent
+from server import state, auth, sys_audio, backup, library, ai_agent, stt
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -20,7 +21,8 @@ async def _broadcast_mobiles(msg: str) -> None:
 
 
 async def handle_ws(request):
-    ws = web.WebSocketResponse()
+    # max_msg_size relevé pour accepter l'audio vocal (base64) du téléphone
+    ws = web.WebSocketResponse(max_msg_size=8 * 1024 * 1024)
     await ws.prepare(request)
 
     try:
@@ -111,7 +113,12 @@ async def _handle_mobile(ws) -> None:
         await ws.send_str(json.dumps({**state.cached_state, 'type': 'state'}))
     await ws.send_str(json.dumps(backup.info_msg()))
     await ws.send_str(json.dumps(library.info_msg()))
-    await ws.send_str(json.dumps({'type': 'ai_status', 'available': ai_agent.is_available()}))
+    await ws.send_str(json.dumps({
+        'type': 'ai_status',
+        'available': ai_agent.is_available(),
+        'mic': stt.is_available(),               # transcription serveur configurée ?
+        'https_port': state.HTTPS_PORT if state.https_on else None,
+    }))
     if state.cached_shot and time.time() - state.cached_shot_ts < 30:
         await ws.send_str(state.cached_shot)
     try:
@@ -160,8 +167,26 @@ async def _handle_mobile(ws) -> None:
                                 try:
                                     await ws.send_str(json.dumps({
                                         'type': 'voice_resp',
-                                        'text': "Assistant IA non configuré — ajoutez ANTHROPIC_API_KEY.",
+                                        'text': "Assistant IA non configuré — ajoutez cle_ia.txt.",
                                     }))
+                                except Exception:
+                                    pass
+                        continue
+                    # Audio vocal (micro) — transcription serveur puis agent IA
+                    if action == 'voice_audio':
+                        b64  = d.get('data') or ''
+                        mime = d.get('mime') or 'audio/webm'
+                        if b64:
+                            if stt.is_available() and ai_agent.is_available():
+                                asyncio.create_task(
+                                    _handle_voice_audio(ws, b64, mime, state.cached_state or {})
+                                )
+                            else:
+                                reason = ("Transcription non configurée — ajoutez cle_groq.txt."
+                                          if not stt.is_available()
+                                          else "Assistant IA non configuré — ajoutez cle_ia.txt.")
+                                try:
+                                    await ws.send_str(json.dumps({'type': 'voice_resp', 'text': reason}))
                                 except Exception:
                                     pass
                         continue
@@ -237,6 +262,30 @@ async def _handle_voice_cmd(ws, text: str, cached_state: dict) -> None:
             await ws.send_str(json.dumps({'type': 'voice_resp', 'text': result['reply']}))
     except Exception:
         pass
+
+
+async def _handle_voice_audio(ws, b64: str, mime: str, cached_state: dict) -> None:
+    """Transcrit l'audio du micro, puis l'exécute comme une commande vocale texte."""
+    try:
+        audio = base64.b64decode(b64)
+    except Exception:
+        audio = b''
+    text = await stt.transcribe(audio, mime) if audio else ''
+    if not text:
+        try:
+            if not ws.closed:
+                await ws.send_str(json.dumps({
+                    'type': 'voice_resp', 'text': "Je n'ai pas compris, réessayez."}))
+        except Exception:
+            pass
+        return
+    # Affiche la transcription sur le téléphone avant le traitement IA (1-2 s)
+    try:
+        if not ws.closed:
+            await ws.send_str(json.dumps({'type': 'voice_transcript', 'text': text}))
+    except Exception:
+        pass
+    await _handle_voice_cmd(ws, text, cached_state)
 
 
 async def keepalive_loop() -> None:

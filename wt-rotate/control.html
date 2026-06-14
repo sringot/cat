@@ -582,6 +582,13 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.8px; line-height: 1; }
   55%      { box-shadow: 0 0 0 16px rgba(224,56,46,0); }
 }
 
+/* aide à l'activation du micro (HTTPS) */
+.mic-help { padding: 0 12px 10px; font-size: 14px; color: var(--txt-2); line-height: 1.5; }
+.mic-help p { margin: 0; }
+.mic-help ol { margin: 8px 0 0; padding-left: 20px; }
+.mic-help li { margin: 6px 0; }
+.mic-help b { color: var(--txt); font-weight: 650; }
+
 /* ── URLs récentes ────────────────────────────────────────── */
 .recents-btn {
   width: 100%;
@@ -981,7 +988,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.14.2</div>
+          <div class="row-v">wee rotate 1.15.0</div>
         </div>
         <div class="row">Installer sur iPhone
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
@@ -1098,6 +1105,25 @@ nav {
   </div>
 </div>
 
+<!-- Feuille : activer le micro vocal (HTTPS) -->
+<div class="sheet" id="mic-sheet">
+  <div class="sheet-bg" id="mic-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Parler au micro</div>
+    <div class="mic-help">
+      <p>Le micro a besoin d'une connexion sécurisée. À faire une seule fois sur ce téléphone :</p>
+      <ol>
+        <li>Téléchargez le certificat.</li>
+        <li><b>iPhone</b> : Réglages → « Profil téléchargé » → Installer. Puis Réglages → Général → Informations → tout en bas → Réglages de confiance des certificats → activez « wee rotate ».</li>
+        <li>Ouvrez la version sécurisée et autorisez le micro.</li>
+      </ol>
+    </div>
+    <button class="sheet-opt" id="b-mic-cert">1 · Télécharger le certificat</button>
+    <button class="sheet-opt" id="b-mic-https">2 · Ouvrir la version sécurisée 🔒</button>
+    <button class="sheet-cancel" id="mic-sheet-cancel">Fermer</button>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -1176,12 +1202,17 @@ let pendingRenameIndex = null;
 let voiceState = 'idle';   // 'idle' | 'listening' | 'processing'
 let voiceRec   = null;
 let aiAvailable = false;
+let micServer  = false;    // transcription serveur (Groq Whisper) configurée
+let httpsPort  = null;     // port HTTPS (pour activer le micro depuis l'HTTP)
 let speechUnlocked = false;
-// SpeechRecognition (micro live) : absent sur iOS/Safari, même en PWA. On ne
-// montre le bouton micro que là où ça marche ; ailleurs, le champ texte +
-// la dictée du clavier iOS prennent le relais.
-const hasSpeechRec  = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-const voiceIdleText = hasSpeechRec ? 'Dites une commande ou tapez…' : 'Tapez ou dictez votre demande…';
+let mediaRec = null, mediaChunks = [], mediaStream = null, voiceMaxTimer = null;
+// Micro vocal : on enregistre l'audio et on le transcrit côté serveur — ça
+// marche partout (iOS inclus) DÈS QUE la page est en contexte sécurisé (HTTPS).
+// En HTTP simple, getUserMedia est bloqué → repli sur la dictée du clavier.
+const canRecord    = !!(window.isSecureContext && navigator.mediaDevices
+                        && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+const hasSpeechRec = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+let voiceIdleText  = 'Tapez ou dictez…';
 
 const $ = id => document.getElementById(id);
 
@@ -1265,7 +1296,8 @@ function connect() {
   }
   chip('wait');
   authFailed = false;
-  ws = new WebSocket(`ws://${ip}:${port}`);
+  const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${wsProto}://${ip}:${port}`);
   ws.onopen    = () => { lastMsgAt = Date.now(); ws.send(JSON.stringify({ type: 'mobile', token: wsToken })); };
   ws.onmessage = e => {
     lastMsgAt = Date.now();
@@ -1300,7 +1332,14 @@ function connect() {
     if (m.type === 'library_update') { libPlaylists = m.playlists || []; renderLibrary(); return; }
     if (m.type === 'ai_status') {
       aiAvailable = !!m.available;
+      micServer   = !!m.mic;
+      httpsPort   = m.https_port || null;
       $('card-voice').style.display = aiAvailable && extOnline ? '' : 'none';
+      updateVoiceUI();
+      return;
+    }
+    if (m.type === 'voice_transcript') {
+      setVoiceState('processing', '« ' + (m.text || '') + ' »', false);
       return;
     }
     if (m.type === 'voice_resp') {
@@ -1352,8 +1391,11 @@ function setExtOnline(on) {
   $('card-voice').style.display = aiAvailable && on ? '' : 'none';
   if (!on && voiceState !== 'idle') {
     if (voiceRec) { try { voiceRec.stop(); } catch {} voiceRec = null; }
+    try { if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop(); } catch {}
+    releaseMic(); clearTimeout(voiceMaxTimer);
     setVoiceState('idle', voiceIdleText, false);
   }
+  updateVoiceUI();
   if (on) startPreview(); else stopPreview();
 }
 
@@ -1640,6 +1682,90 @@ function sendVoiceText() {
   setVoiceState('processing', '« ' + text + ' »', false);
   cmd('voice_cmd', { text });
 }
+
+// Affiche/cache le bouton micro et adapte le texte d'invite selon ce qui est
+// réellement possible sur cet appareil (enregistrement, dictée web, ou rien).
+function updateVoiceUI() {
+  const micBtn = $('b-voice');
+  if (!micBtn) return;
+  const recNow    = canRecord && micServer;                  // enregistrement direct
+  const micUsable = recNow || hasSpeechRec;                  // un micro marche ici
+  const helpOnly  = !micUsable && micServer && !!httpsPort;  // micro via passage HTTPS
+  micBtn.style.display = (micUsable || helpOnly) ? '' : 'none';
+  voiceIdleText = recNow      ? 'Appuyez sur le micro et parlez…'
+                : hasSpeechRec ? 'Dites une commande ou tapez…'
+                : helpOnly     ? 'Tapez, ou activez le micro 🔒'
+                :                'Tapez ou dictez…';
+  if (voiceState === 'idle') setVoiceState('idle', voiceIdleText, false);
+}
+
+// Tap sur le bouton micro : enregistrement serveur si possible, sinon micro
+// web, sinon aide pour passer en HTTPS.
+function onMicTap() {
+  if (!extOnline) return;
+  if (canRecord && micServer) { voiceState === 'listening' ? stopRecording() : startRecording(); return; }
+  if (hasSpeechRec)           { startVoice(); return; }
+  if (micServer && httpsPort) { openMicHelp(); return; }
+  showToast('Micro indisponible sur cet appareil');
+}
+
+function releaseMic() {
+  try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch {}
+  mediaStream = null;
+}
+
+async function startRecording() {
+  if (voiceState === 'processing') return;
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    showToast('Micro refusé ou indisponible');
+    return;
+  }
+  mediaStream = stream;
+  mediaChunks = [];
+  let opts;
+  for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/mpeg']) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { opts = { mimeType: m }; break; }
+  }
+  try { mediaRec = new MediaRecorder(stream, opts); }
+  catch { try { mediaRec = new MediaRecorder(stream); } catch { releaseMic(); showToast('Enregistrement non supporté'); return; } }
+  mediaRec.ondataavailable = e => { if (e.data && e.data.size) mediaChunks.push(e.data); };
+  mediaRec.onstop = onRecordingStop;
+  unlockSpeech();
+  try { mediaRec.start(); }
+  catch { releaseMic(); setVoiceState('idle', voiceIdleText, false); return; }
+  setVoiceState('listening', 'Je vous écoute… (appuyez pour envoyer)', false);
+  clearTimeout(voiceMaxTimer);
+  voiceMaxTimer = setTimeout(() => { if (voiceState === 'listening') stopRecording(); }, 30000);
+}
+
+function stopRecording() {
+  clearTimeout(voiceMaxTimer);
+  try { if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop(); }
+  catch { releaseMic(); setVoiceState('idle', voiceIdleText, false); }
+}
+
+function onRecordingStop() {
+  releaseMic();
+  const type = (mediaRec && mediaRec.mimeType) || 'audio/webm';
+  const blob = new Blob(mediaChunks, { type });
+  mediaChunks = [];
+  if (!blob.size) { setVoiceState('idle', voiceIdleText, false); return; }
+  setVoiceState('processing', 'Transcription…', false);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const b64 = String(reader.result || '').split(',')[1] || '';
+    if (!b64 || !cmd('voice_audio', { mime: blob.type || type, data: b64 }))
+      setVoiceState('idle', voiceIdleText, false);
+  };
+  reader.onerror = () => setVoiceState('idle', voiceIdleText, false);
+  reader.readAsDataURL(blob);
+}
+
+function openMicHelp()  { $('mic-sheet').classList.add('show'); }
+function closeMicHelp() { $('mic-sheet').classList.remove('show'); }
 
 function startVoice() {
   if (!extOnline) return;
@@ -2122,17 +2248,21 @@ document.addEventListener('DOMContentLoaded', () => {
       cmd('pl_restore');
   });
 
-  // Assistant vocal — micro live seulement si le navigateur le supporte
-  // (absent sur iOS). Partout : champ texte + dictée du clavier.
-  if (hasSpeechRec) {
-    $('b-voice').style.display = '';
-    $('b-voice').addEventListener('click', startVoice);
-  }
+  // Assistant vocal — le bouton micro s'adapte (enregistrement serveur, micro
+  // web, ou aide HTTPS) ; le champ texte + dictée clavier marchent partout.
+  $('b-voice').addEventListener('click', onMicTap);
   $('b-voice-send').addEventListener('click', sendVoiceText);
   $('voice-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); sendVoiceText(); }
   });
-  $('voice-status').textContent = voiceIdleText;
+  $('mic-sheet-bg').addEventListener('click', closeMicHelp);
+  $('mic-sheet-cancel').addEventListener('click', closeMicHelp);
+  $('b-mic-cert').addEventListener('click', () => { window.location.href = '/cert.crt'; });
+  $('b-mic-https').addEventListener('click', () => {
+    const t = wsToken ? ('?token=' + encodeURIComponent(wsToken)) : '';
+    window.location.href = 'https://' + location.hostname + ':' + (httpsPort || 8766) + '/app' + t;
+  });
+  updateVoiceUI();
 
   // Bibliothèque de playlists
   $('b-pl-lib').addEventListener('click', openLibSheet);

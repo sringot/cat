@@ -14,81 +14,93 @@
 (function(){const t=function(){try{return localStorage.getItem('wt_theme')||'auto';}catch{return'auto';}}();if(t!=='auto')document.documentElement.setAttribute('data-theme',t);})();
 </script>
 <style>
-/* Système « Minimalism + Neumorphism » — thème monochrome blanc/noir/nuances.
-   Deux modes : sombre (défaut) et clair (système ou choix utilisateur).
-   Profondeur par ombres duales, accent = blanc (sombre) ou noir (clair). */
+/* Système « Minimalism + Neumorphism » — palette douce, jamais de blanc ou
+   noir purs. Sombre : anthracite chaud. Clair : pierre froide très légère.
+   Contraste réduit volontairement pour ménager les yeux. */
 
-/* ── Thème sombre (défaut) ──────────────────────────────────── */
+/* ── Thème sombre ────────────────────────────────────────────── */
 :root, [data-theme="dark"] {
   color-scheme: dark;
-  --page:       #111113;
-  --raise:      #1C1C1F;
-  --sink:       #0A0A0D;
-  --txt:        #F5F5F7;
-  --txt-2:      #8E8E9A;
-  --txt-3:      #4E4E58;
-  --line:       rgba(0,0,0,.28);
-  --accent:     #F5F5F7;
-  --accent-2:   #AEAEB8;
-  --accent-txt: #111113;
-  --accent-gl:  rgba(245,245,247,.12);
-  --grad:       linear-gradient(150deg, #F5F5F7, #AEAEB8);
-  --red:        #FF453A;
-  --neu-d:      rgba(0,0,0,.68);
-  --neu-l:      rgba(50,50,56,.72);
-  --sh-card:    8px 8px 20px var(--neu-d), -6px -6px 16px var(--neu-l);
-  --sh-pill:    4px 4px 11px var(--neu-d), -3px -3px 8px var(--neu-l);
-  --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 6px var(--neu-l);
-  --sh-in:      inset 4px 4px 9px rgba(0,0,0,.6), inset -3px -3px 8px rgba(50,50,56,.65);
-  --sh-in-sm:   inset 2px 2px 5px rgba(0,0,0,.55), inset -2px -2px 5px rgba(50,50,56,.52);
-  --sh-accent:  4px 4px 12px rgba(0,0,0,.45), 0 0 18px var(--accent-gl);
+  --page:       #1E1E22;   /* anthracite chaud, jamais noir pur */
+  --raise:      #27272C;   /* convexe */
+  --sink:       #16161A;   /* concave */
+  --txt:        #CECDD5;   /* blanc cassé, pas aveuglant */
+  --txt-2:      #87878F;
+  --txt-3:      #52525A;
+  --line:       rgba(0,0,0,.22);
+  --accent:     #CECDD5;   /* même teinte que le texte — accord parfait */
+  --accent-2:   #96969E;
+  --accent-txt: #1E1E22;
+  --accent-gl:  rgba(206,205,213,.1);
+  --grad:       linear-gradient(150deg, #CECDD5, #96969E);
+  --red:        #F0524C;
+  --neu-d:      rgba(0,0,0,.55);
+  --neu-l:      rgba(48,48,56,.65);
+  --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
+  --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
+  --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
+  --sh-in:      inset 4px 4px 8px rgba(0,0,0,.5), inset -3px -3px 7px rgba(48,48,56,.6);
+  --sh-in-sm:   inset 2px 2px 5px rgba(0,0,0,.45), inset -2px -2px 5px rgba(48,48,56,.48);
+  --sh-accent:  4px 4px 12px rgba(0,0,0,.4), 0 0 16px var(--accent-gl);
   --ease:       cubic-bezier(.16,1,.3,1);
   --bg:         var(--raise);
-  --nav-bg:     #0A0A0D;
+  --nav-bg:     #16161A;
 }
 
-/* ── Thème clair (système) ──────────────────────────────────── */
+/* ── Thème clair (système) ───────────────────────────────────── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --page:       #F2F2F7;
-    --raise:      #FFFFFF;
-    --sink:       #E5E5EA;
-    --txt:        #1C1C1E;
-    --txt-2:      #636366;
-    --txt-3:      #AEAEB2;
-    --line:       rgba(0,0,0,.09);
-    --accent:     #1C1C1E;
-    --accent-2:   #3A3A3C;
-    --accent-txt: #FFFFFF;
-    --accent-gl:  rgba(28,28,30,.1);
-    --grad:       linear-gradient(150deg, #1C1C1E, #3A3A3C);
-    --red:        #FF3B30;
-    --neu-d:      rgba(174,174,192,.32);
-    --neu-l:      rgba(255,255,255,.92);
-    --nav-bg:     #FFFFFF;
+    --page:       #ECEDF1;   /* pierre froide — jamais blanc pur */
+    --raise:      #F3F4F7;   /* légèrement plus clair */
+    --sink:       #DDDEE4;   /* creux, légèrement plus sombre */
+    --txt:        #30303A;   /* quasi-noir mais adouci */
+    --txt-2:      #6A6A76;
+    --txt-3:      #9898A6;
+    --line:       rgba(0,0,0,.07);
+    --accent:     #30303A;
+    --accent-2:   #48484E;
+    --accent-txt: #F3F4F7;
+    --accent-gl:  rgba(48,48,58,.08);
+    --grad:       linear-gradient(150deg, #30303A, #48484E);
+    --red:        #D93025;
+    --neu-d:      rgba(148,150,164,.26);
+    --neu-l:      rgba(255,255,255,.78);
+    --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
+    --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
+    --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
+    --sh-in:      inset 4px 4px 8px rgba(148,150,164,.3), inset -3px -3px 7px rgba(255,255,255,.75);
+    --sh-in-sm:   inset 2px 2px 5px rgba(148,150,164,.25), inset -2px -2px 5px rgba(255,255,255,.7);
+    --sh-accent:  4px 4px 12px rgba(0,0,0,.14), 0 0 16px var(--accent-gl);
+    --nav-bg:     #ECEDF1;
   }
 }
 
-/* ── Thème clair (forcé via réglages) ──────────────────────── */
+/* ── Thème clair (forcé via réglages) ────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
-  --page:       #F2F2F7;
-  --raise:      #FFFFFF;
-  --sink:       #E5E5EA;
-  --txt:        #1C1C1E;
-  --txt-2:      #636366;
-  --txt-3:      #AEAEB2;
-  --line:       rgba(0,0,0,.09);
-  --accent:     #1C1C1E;
-  --accent-2:   #3A3A3C;
-  --accent-txt: #FFFFFF;
-  --accent-gl:  rgba(28,28,30,.1);
-  --grad:       linear-gradient(150deg, #1C1C1E, #3A3A3C);
-  --red:        #FF3B30;
-  --neu-d:      rgba(174,174,192,.32);
-  --neu-l:      rgba(255,255,255,.92);
-  --nav-bg:     #FFFFFF;
+  --page:       #ECEDF1;
+  --raise:      #F3F4F7;
+  --sink:       #DDDEE4;
+  --txt:        #30303A;
+  --txt-2:      #6A6A76;
+  --txt-3:      #9898A6;
+  --line:       rgba(0,0,0,.07);
+  --accent:     #30303A;
+  --accent-2:   #48484E;
+  --accent-txt: #F3F4F7;
+  --accent-gl:  rgba(48,48,58,.08);
+  --grad:       linear-gradient(150deg, #30303A, #48484E);
+  --red:        #D93025;
+  --neu-d:      rgba(148,150,164,.26);
+  --neu-l:      rgba(255,255,255,.78);
+  --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
+  --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
+  --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
+  --sh-in:      inset 4px 4px 8px rgba(148,150,164,.3), inset -3px -3px 7px rgba(255,255,255,.75);
+  --sh-in-sm:   inset 2px 2px 5px rgba(148,150,164,.25), inset -2px -2px 5px rgba(255,255,255,.7);
+  --sh-accent:  4px 4px 12px rgba(0,0,0,.14), 0 0 16px var(--accent-gl);
+  --nav-bg:     #ECEDF1;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }

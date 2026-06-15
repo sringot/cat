@@ -2,9 +2,36 @@ import json
 import time
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 
 FILE = Path(__file__).parent.parent / 'library.json'
 data: dict = {'playlists': []}
+
+
+def _host(url: str) -> str:
+    """Hôte normalisé (sans www) d'une URL, tolérant aux URLs sans schéma."""
+    s = (url or '').strip()
+    if not s:
+        return ''
+    if '://' not in s:
+        s = 'http://' + s
+    try:
+        h = (urlparse(s).hostname or '').lower()
+    except Exception:
+        return ''
+    return h[4:] if h.startswith('www.') else h
+
+
+def _hosts(urls: list, limit: int = 4) -> list:
+    """Jusqu'à `limit` hôtes distincts, pour la mosaïque de favicons."""
+    out: list = []
+    for u in urls:
+        h = _host(u.get('url'))
+        if h and h not in out:
+            out.append(h)
+            if len(out) >= limit:
+                break
+    return out
 
 
 def load() -> None:
@@ -48,6 +75,7 @@ def info_msg() -> dict:
                 'id': p['id'],
                 'name': p['name'],
                 'count': len(p.get('urls', [])),
+                'hosts': _hosts(p.get('urls', [])),
                 'ts': p['ts'],
             }
             for p in data['playlists']

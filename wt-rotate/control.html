@@ -22,12 +22,13 @@
   --sink:       #181A21;   /* concave : un cheveu plus sombre */
   --txt:        #D3D6EB;
   --txt-2:      #767B98;
-  --txt-3:      #474C66;
+  --txt-3:      #646A90;   /* tier le plus discret — lisibilité ~3:1 mini */
   --line:       rgba(0,0,0,.22);
   --accent:     #19E57D;   /* vert néon profond — couleur active unique */
   --accent-2:   #0FB85F;
   --accent-txt: #04210F;   /* texte sombre lisible sur l'accent */
   --accent-gl:  rgba(25,229,125,.30);
+  --grad:       linear-gradient(150deg, var(--accent), var(--accent-2));
   --red:        #FF6259;
   /* ombres neumorphiques : sombre en bas-droite, lumière en haut-gauche */
   --neu-d:      rgba(0,0,0,.55);
@@ -39,14 +40,9 @@
   --sh-in-sm:   inset 2px 2px 5px rgba(0,0,0,.5), inset -2px -2px 5px rgba(56,62,84,.5);
   --sh-accent:  4px 4px 12px rgba(0,0,0,.45), 0 0 18px var(--accent-gl);
   --ease:       cubic-bezier(.16,1,.3,1);
-  /* alias de compatibilité pour le code existant */
+  /* alias encore référencés : --bg (JS renderArt) et --nav-bg (barre basse) */
   --bg:         var(--raise);
-  --card:       var(--page);
-  --card-bd:    transparent;
-  --card-hi:    transparent;
   --nav-bg:     #1A1C23;
-  --blur:       none;
-  --shadow:     var(--sh-card);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -271,7 +267,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 .t-side:active { box-shadow: var(--sh-in); transform: scale(.95); }
 .t-main {
   width: 74px; height: 74px; border-radius: 50%;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt);
   display: flex; align-items: center; justify-content: center;
   box-shadow: var(--sh-accent);
@@ -310,7 +306,6 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   color: rgba(255,255,255,.92);
 }
 
-.card-sub { padding: 0 22px 16px; font-size: 12px; color: var(--txt-2); }
 
 /* volume — piste concave, pastille convexe verte */
 .volrow {
@@ -342,6 +337,9 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   box-shadow: var(--sh-sm), 0 0 0 3px var(--accent-gl);
   cursor: pointer;
 }
+/* Firefox : la piste élément ne porte pas le remplissage → on le rétablit */
+.vol-slider::-moz-range-track { height: 12px; border-radius: 100px; background: var(--sink); }
+.vol-slider::-moz-range-progress { height: 12px; border-radius: 100px; background: var(--accent); }
 
 /* release */
 #card-release { display: none; }
@@ -377,7 +375,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 .open-row input::placeholder { color: var(--txt-3); }
 .send-btn {
   width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-sm);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
@@ -423,7 +421,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 }
 .edit-btn:active { box-shadow: var(--sh-in-sm); }
 .edit-btn.on {
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-accent);
 }
 
@@ -439,7 +437,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   display: block; margin: 14px 18px 18px;
   width: calc(100% - 36px); padding: 15px;
   border-radius: 100px;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-accent);
   font-size: 15px; font-weight: 700; text-align: center;
 }
@@ -512,7 +510,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   background: var(--raise); box-shadow: var(--sh-sm);
   transition: transform .25s var(--ease);
 }
-.switch.on { background: linear-gradient(150deg, var(--accent), var(--accent-2)); }
+.switch.on { background: var(--grad); }
 .switch.on i { transform: translateX(22px); }
 .switch:active { transform: none; }
 
@@ -531,7 +529,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 }
 .day:active { box-shadow: var(--sh-in-sm); }
 .day.on {
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-sm), 0 0 12px var(--accent-gl);
 }
 
@@ -565,32 +563,44 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 .sec-adv-toggle svg { transition: transform .22s var(--ease); flex-shrink: 0; }
 .sec-adv-toggle.open svg { transform: rotate(180deg); }
 
-/* bibliothèque de playlists */
-.lib-save-btn { display: flex; align-items: center; gap: 10px; font-weight: 650; }
-#lib-list { max-height: 45vh; overflow-y: auto; overscroll-behavior: contain; }
-.lib-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 12px; border-radius: 14px;
-  transition: box-shadow .15s var(--ease);
+/* bibliothèque de playlists — galerie de pochettes */
+.lib-save-btn { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 650; }
+#lib-list { max-height: 54vh; overflow-y: auto; overscroll-behavior: contain; padding: 4px 4px 2px; }
+.lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.lib-card {
+  position: relative; display: block; width: 100%; text-align: left;
+  background: var(--raise); box-shadow: var(--sh-pill);
+  border-radius: 18px; padding: 9px 9px 12px;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease);
 }
-.lib-item:active { box-shadow: var(--sh-in-sm); }
-.lib-txt { flex: 1; min-width: 0; }
-.lib-name { font-size: 15px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lib-meta { font-size: 12px; color: var(--txt-2); margin-top: 2px; }
-.lib-load {
-  padding: 9px 16px; border-radius: 100px;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
-  color: var(--accent-txt); box-shadow: var(--sh-sm);
-  font-size: 13px; font-weight: 700; flex-shrink: 0;
+.lib-card:active { box-shadow: var(--sh-in-sm); transform: scale(.97); }
+.lib-cover {
+  position: relative; height: 86px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; font-weight: 800; color: #fff;
+  text-shadow: 0 2px 9px rgba(0,0,0,.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -18px 26px rgba(0,0,0,.16);
+  overflow: hidden;
 }
-.lib-load:active { box-shadow: var(--sh-in-sm); }
-.lib-del {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--raise); box-shadow: var(--sh-sm); color: var(--red);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.lib-badge {
+  position: absolute; right: 7px; bottom: 7px;
+  font-size: 10.5px; font-weight: 700; color: #fff;
+  background: rgba(0,0,0,.36); border-radius: 100px; padding: 3px 9px;
 }
-.lib-del:active { box-shadow: var(--sh-in-sm); }
-.lib-empty { padding: 16px 12px 8px; font-size: 14px; color: var(--txt-2); line-height: 1.5; }
+.lib-card-name {
+  margin: 10px 4px 2px;
+  font-size: 13.5px; font-weight: 650; color: var(--txt);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lib-card-meta { margin: 0 4px; font-size: 11px; font-weight: 500; color: var(--txt-2); }
+.lib-card-del {
+  position: absolute; right: 7px; top: 7px; z-index: 2;
+  width: 27px; height: 27px; border-radius: 50%;
+  background: rgba(0,0,0,.42); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.lib-card-del:active { background: var(--red); transform: scale(.9); }
+.lib-empty { grid-column: 1 / -1; padding: 18px 12px 10px; font-size: 14px; color: var(--txt-2); line-height: 1.5; text-align: center; }
 
 /* ── URLs récentes ────────────────────────────────────────── */
 .recents-btn {
@@ -619,7 +629,7 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 .rec-url  { font-size: 11.5px; color: var(--txt-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
 .rec-add {
   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-sm);
   display: flex; align-items: center; justify-content: center;
 }
@@ -695,7 +705,7 @@ nav {
   margin-top: 6px; padding: 16px;
   font-size: 16px; font-weight: 700;
   border-radius: 100px;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: var(--accent-txt); box-shadow: var(--sh-accent);
 }
 .sheet-primary:active { box-shadow: var(--sh-in); }
@@ -1591,40 +1601,46 @@ function closeLibNameSheet() { $('lib-name-sheet').classList.remove('show'); }
 
 function renderLibrary() {
   const list = $('lib-list');
+  list.className = '';
   if (!libPlaylists.length) {
-    list.innerHTML = '<div class="lib-empty">Aucune playlist sauvegardée.<br>Cliquez sur le bouton ci-dessus pour en créer une.</div>';
+    list.innerHTML = '<div class="lib-empty">Aucune playlist sauvegardée.<br>Touchez le bouton ci-dessus pour en créer une.</div>';
     return;
   }
+  list.className = 'lib-grid';
   list.innerHTML = '';
   libPlaylists.forEach(pl => {
-    const row = document.createElement('div');
-    row.className = 'lib-item';
+    const card = document.createElement('div');
+    card.className = 'lib-card';
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
     const d = new Date(pl.ts * 1000);
-    const date = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-    row.innerHTML = `
-      <div class="lib-txt">
-        <div class="lib-name"></div>
-        <div class="lib-meta">${pl.count} page${pl.count > 1 ? 's' : ''} · ${date}</div>
+    const date = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    card.innerHTML = `
+      <div class="lib-cover" style="background:${artBg(pl.name)}">
+        <span class="lib-cover-i"></span>
+        <span class="lib-badge">${pl.count} page${pl.count > 1 ? 's' : ''}</span>
       </div>
-      <button class="lib-load">Charger</button>
-      <button class="lib-del" aria-label="Supprimer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 5l14 14M19 5L5 19"/></svg>
-      </button>`;
-    row.querySelector('.lib-name').textContent = pl.name;
-    row.querySelector('.lib-load').addEventListener('click', () => {
-      cmd('lib_load', { id: pl.id });
-      closeLibSheet();
-    });
-    row.querySelector('.lib-del').addEventListener('click', () => {
+      <button class="lib-card-del" aria-label="Supprimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" width="13" height="13"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+      <div class="lib-card-name"></div>
+      <div class="lib-card-meta">${date}</div>`;
+    card.querySelector('.lib-cover-i').textContent = initialOf(pl.name);
+    card.querySelector('.lib-card-name').textContent = pl.name;
+    const load = () => { cmd('lib_load', { id: pl.id }); closeLibSheet(); };
+    card.addEventListener('click', load);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); load(); } });
+    card.querySelector('.lib-card-del').addEventListener('click', e => {
+      e.stopPropagation();
       cmd('lib_delete', { id: pl.id });
-      row.style.transition = 'opacity .25s';
-      row.style.opacity = '0';
+      card.style.transition = 'opacity .25s';
+      card.style.opacity = '0';
       setTimeout(() => {
-        row.remove();
-        if (!$('lib-list').querySelector('.lib-item')) renderLibrary();
+        card.remove();
+        if (!list.querySelector('.lib-card')) renderLibrary();
       }, 260);
     });
-    list.appendChild(row);
+    list.appendChild(card);
   });
 }
 

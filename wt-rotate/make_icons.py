@@ -67,6 +67,8 @@ def _logo_mask(S, scale=0.60):
     src = Image.open(_logo_path()).convert('RGBA')
     alpha = src.split()[3]
     bbox = alpha.getbbox()                     # recadre sur la marque visible
+    if bbox is None:
+        sys.exit('logoW_edited.png est entièrement transparent — aucune marque à rendre.')
     mark = alpha.crop(bbox)
     mw, mh = mark.size
     target_w = int(S * scale)

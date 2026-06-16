@@ -26,7 +26,7 @@ print('═' * 56)
 print()
 
 # ── 1. Lanceur silencieux pour le Task Scheduler ──────────────────────────────
-launcher = here / '_autostart_launcher.bat'
+launcher = here / 'wt-launcher.bat'
 launcher.write_text(
     '@echo off\n'
     f'cd /d "{here}"\n'
@@ -40,7 +40,7 @@ launcher.write_text(
     'goto loop\n',
     encoding='utf-8'
 )
-print(f'[1/4] Lanceur créé   : {launcher.name} (relance auto en cas de plantage)')
+print(f'[1/4] Lanceur créé   : {launcher.name} (relance auto en cas de plantage — hors dossier extension)')
 
 # ── 2. Empêcher la déconnexion NinjaOne / RMM après 24 h ─────────────────────
 # La carte réseau peut se mettre en veille indépendamment du système, ce qui

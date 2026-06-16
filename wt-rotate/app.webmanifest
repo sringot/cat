@@ -4,8 +4,8 @@
   "description": "Contrôle à distance wee rotate",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#18181B",
-  "theme_color": "#18181B",
+  "background_color": "#181C14",
+  "theme_color": "#181C14",
   "orientation": "portrait",
   "icons": [
     {

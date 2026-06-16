@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#18181B">
+<meta name="theme-color" content="#181C14">
 <meta name="color-scheme" content="dark light">
 <link rel="manifest" href="/app.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon180.png">
@@ -14,93 +14,100 @@
 (function(){const t=function(){try{return localStorage.getItem('wt_theme')||'auto';}catch{return'auto';}}();if(t!=='auto')document.documentElement.setAttribute('data-theme',t);})();
 </script>
 <style>
-/* Système « Minimalism + Neumorphism » — uniquement noir, blanc et leurs
-   nuances. Sombre : gris quasi-noir / blanc cassé. Clair : blanc cassé /
-   gris foncé. Contraste renforcé pour la lisibilité, rendu minimal. */
+/* Système « Minimalism + Neumorphism » — palette sauge/olive (Color Hunt).
+   Sombre : noir-olive / blanc cassé. Clair : vert pâle / olive très foncé.
+   Le texte garde un fort contraste même si les teintes brutes de la
+   palette ne le permettaient pas seules. */
 
 /* ── Thème sombre ────────────────────────────────────────────── */
 :root, [data-theme="dark"] {
   color-scheme: dark;
-  --page:       #18181B;   /* gris quasi-noir */
-  --raise:      #212125;   /* convexe */
-  --sink:       #0F0F11;   /* concave */
-  --txt:        #EDEDEF;   /* blanc cassé, net */
-  --txt-2:      #9D9DA6;
-  --txt-3:      #5A5A63;
+  --page:       #181C14;   /* noir-olive */
+  --raise:      #3C3D37;   /* convexe */
+  --sink:       #10120D;   /* concave */
+  --txt:        #ECDFCC;   /* blanc cassé */
+  --txt-2:      #95A092;
+  --txt-3:      #566053;
   --line:       rgba(0,0,0,.3);
-  --accent:     #EDEDEF;   /* même teinte que le texte — accord parfait */
-  --accent-2:   #B8B8C0;
-  --accent-txt: #18181B;
-  --accent-gl:  rgba(237,237,239,.1);
-  --grad:       linear-gradient(150deg, #EDEDEF, #B8B8C0);
+  --accent:     #ECDFCC;   /* même teinte que le texte — accord parfait */
+  --accent-2:   #D3B589;
+  --accent-txt: #181C14;
+  --accent-gl:  rgba(236,223,204,.12);
+  --grad:       linear-gradient(150deg, #ECDFCC, #D3B589);
   --red:        #F0524C;
+  --good:       #4ADE80;
+  --warn:       #FBBF24;
   --neu-d:      rgba(0,0,0,.6);
-  --neu-l:      rgba(54,54,60,.7);
+  --neu-l:      rgba(86,88,79,.7);
   --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
   --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
   --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
-  --sh-in:      inset 4px 4px 8px rgba(0,0,0,.55), inset -3px -3px 7px rgba(54,54,60,.65);
-  --sh-in-sm:   inset 2px 2px 5px rgba(0,0,0,.5), inset -2px -2px 5px rgba(54,54,60,.5);
+  --sh-in:      inset 4px 4px 8px rgba(0,0,0,.55), inset -3px -3px 7px rgba(86,88,79,.6);
+  --sh-in-sm:   inset 2px 2px 5px rgba(0,0,0,.5), inset -2px -2px 5px rgba(86,88,79,.45);
   --sh-accent:  4px 4px 12px rgba(0,0,0,.45), 0 0 16px var(--accent-gl);
   --ease:       cubic-bezier(.16,1,.3,1);
   --bg:         var(--raise);
-  --nav-bg:     #0F0F11;
+  --nav-bg:     #10120D;
 }
 
 /* ── Thème clair (système) ───────────────────────────────────── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --page:       #EFEFF2;   /* blanc cassé — jamais blanc pur */
-    --raise:      #FAFAFB;   /* légèrement plus clair */
-    --sink:       #E1E2E7;   /* creux, légèrement plus sombre */
-    --txt:        #1B1B1F;   /* gris très foncé, net */
-    --txt-2:      #5C5C66;
-    --txt-3:      #90909A;
+    --page:       #D0DDD0;   /* vert pâle — volontairement pas blanc pur */
+    --raise:      #F0F0D7;   /* légèrement plus clair, capte la lumière */
+    --sink:       #BED0BE;   /* creux, légèrement plus sombre */
+    --txt:        #242825;   /* olive très foncé, net */
+    --txt-2:      #4E554F;
+    --txt-3:      #9AA39A;
     --line:       rgba(0,0,0,.08);
-    --accent:     #1B1B1F;
-    --accent-2:   #3F3F47;
-    --accent-txt: #FAFAFB;
-    --accent-gl:  rgba(27,27,31,.08);
-    --grad:       linear-gradient(150deg, #1B1B1F, #3F3F47);
+    --accent:     #242825;
+    --accent-2:   #616B63;
+    --accent-txt: #F0F0D7;
+    --accent-gl:  rgba(36,40,37,.08);
+    --grad:       linear-gradient(150deg, #242825, #616B63);
     --red:        #D93025;
-    --neu-d:      rgba(140,142,156,.3);
+    --good:       #15803D;
+    --warn:       #C2410C;
+    --neu-d:      rgba(78,85,79,.3);
     --neu-l:      rgba(255,255,255,.85);
     --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
     --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
     --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
-    --sh-in:      inset 4px 4px 8px rgba(140,142,156,.32), inset -3px -3px 7px rgba(255,255,255,.8);
-    --sh-in-sm:   inset 2px 2px 5px rgba(140,142,156,.28), inset -2px -2px 5px rgba(255,255,255,.75);
+    --sh-in:      inset 4px 4px 8px rgba(78,85,79,.32), inset -3px -3px 7px rgba(255,255,255,.8);
+    --sh-in-sm:   inset 2px 2px 5px rgba(78,85,79,.28), inset -2px -2px 5px rgba(255,255,255,.75);
     --sh-accent:  4px 4px 12px rgba(0,0,0,.16), 0 0 16px var(--accent-gl);
-    --nav-bg:     #E1E2E7;
+    --nav-bg:     #BED0BE;
   }
 }
 
 /* ── Thème clair (forcé via réglages) ────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
-  --page:       #EFEFF2;
-  --raise:      #FAFAFB;
-  --sink:       #E1E2E7;
-  --txt:        #1B1B1F;
-  --txt-2:      #5C5C66;
-  --txt-3:      #90909A;
+  --page:       #D0DDD0;
+  --raise:      #F0F0D7;
+  --sink:       #BED0BE;
+  --txt:        #242825;
+  --txt-2:      #4E554F;
+  --txt-3:      #9AA39A;
   --line:       rgba(0,0,0,.08);
-  --accent:     #1B1B1F;
-  --accent-2:   #3F3F47;
-  --accent-txt: #FAFAFB;
-  --accent-gl:  rgba(27,27,31,.08);
-  --grad:       linear-gradient(150deg, #1B1B1F, #3F3F47);
+  --accent:     #242825;
+  --accent-2:   #616B63;
+  --accent-txt: #F0F0D7;
+  --accent-gl:  rgba(36,40,37,.08);
+  --grad:       linear-gradient(150deg, #242825, #616B63);
   --red:        #D93025;
-  --neu-d:      rgba(140,142,156,.3);
+  --good:       #15803D;
+  --warn:       #C2410C;
+  --neu-d:      rgba(78,85,79,.3);
   --neu-l:      rgba(255,255,255,.85);
   --sh-card:    7px 7px 18px var(--neu-d), -5px -5px 14px var(--neu-l);
   --sh-pill:    4px 4px 10px var(--neu-d), -3px -3px 8px var(--neu-l);
   --sh-sm:      3px 3px 7px var(--neu-d), -2px -2px 5px var(--neu-l);
-  --sh-in:      inset 4px 4px 8px rgba(140,142,156,.32), inset -3px -3px 7px rgba(255,255,255,.8);
-  --sh-in-sm:   inset 2px 2px 5px rgba(140,142,156,.28), inset -2px -2px 5px rgba(255,255,255,.75);
+  --sh-in:      inset 4px 4px 8px rgba(78,85,79,.32), inset -3px -3px 7px rgba(255,255,255,.8);
+  --sh-in-sm:   inset 2px 2px 5px rgba(78,85,79,.28), inset -2px -2px 5px rgba(255,255,255,.75);
   --sh-accent:  4px 4px 12px rgba(0,0,0,.16), 0 0 16px var(--accent-gl);
-  --nav-bg:     #E1E2E7;
+  --nav-bg:     #BED0BE;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -218,10 +225,16 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   background: var(--txt-3);
   transition: background .3s var(--ease);
 }
-.chip.on .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent-gl); animation: dotBreath 2s ease-in-out infinite; }
-@keyframes dotBreath {
-  0%,100% { box-shadow: 0 0 4px var(--accent-gl); }
-  50%     { box-shadow: 0 0 14px var(--accent-gl); }
+.chip.on   .dot { background: var(--good); box-shadow: 0 0 8px color-mix(in srgb, var(--good) 50%, transparent); animation: dotBreath-good 2s ease-in-out infinite; }
+.chip.wait .dot { background: var(--warn); box-shadow: 0 0 8px color-mix(in srgb, var(--warn) 50%, transparent); animation: dotBreath-warn 1.1s ease-in-out infinite; }
+.chip.off  .dot { background: var(--red); box-shadow: 0 0 6px color-mix(in srgb, var(--red) 45%, transparent); }
+@keyframes dotBreath-good {
+  0%,100% { box-shadow: 0 0 4px color-mix(in srgb, var(--good) 50%, transparent); }
+  50%     { box-shadow: 0 0 14px color-mix(in srgb, var(--good) 50%, transparent); }
+}
+@keyframes dotBreath-warn {
+  0%,100% { box-shadow: 0 0 3px color-mix(in srgb, var(--warn) 50%, transparent); }
+  50%     { box-shadow: 0 0 10px color-mix(in srgb, var(--warn) 50%, transparent); }
 }
 .chip.on { color: var(--txt); }
 
@@ -1485,10 +1498,13 @@ function showPage(name) {
 function chip(state) { // 'on' | 'off' | 'wait'
   const c = $('chip');
   c.classList.toggle('on', state === 'on');
+  c.classList.toggle('wait', state === 'wait');
+  c.classList.toggle('off', state === 'off');
   $('chip-txt').textContent =
     state === 'on' ? 'Connecté' : state === 'off' ? 'Reconnexion…' : 'Connexion…';
   $('set-server').textContent = state === 'on' ? 'Connecté' : 'Hors ligne';
-  $('set-server-dot').style.background = state === 'on' ? 'var(--accent)' : 'var(--txt-3)';
+  $('set-server-dot').style.background =
+    state === 'on' ? 'var(--good)' : state === 'wait' ? 'var(--warn)' : 'var(--red)';
 }
 
 function showToast(msg) {
@@ -1573,7 +1589,7 @@ function setExtOnline(on) {
   $('transport').classList.toggle('off', !on);
   $('volrow').classList.toggle('off', !on);
   $('set-ext').textContent = on ? 'Connectée' : 'Hors ligne';
-  $('set-ext-dot').style.background = on ? 'var(--accent)' : 'var(--txt-3)';
+  $('set-ext-dot').style.background = on ? 'var(--good)' : 'var(--red)';
   if (on) startPreview(); else stopPreview();
 }
 

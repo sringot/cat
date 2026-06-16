@@ -1,11 +1,11 @@
 {
-  "name": "Kiosque",
-  "short_name": "Kiosque",
+  "name": "Remote",
+  "short_name": "Remote",
   "description": "Contrôle à distance wee rotate",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#1D2028",
-  "theme_color": "#1D2028",
+  "background_color": "#18181B",
+  "theme_color": "#18181B",
   "orientation": "portrait",
   "icons": [
     {

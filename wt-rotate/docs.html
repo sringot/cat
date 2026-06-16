@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wee rotate — Documentation</title>
+<style>
+/* ── Variables ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #F3F1ED;
+  --card:      #FFFFFF;
+  --txt:       #131312;
+  --txt-2:     #8B8A86;
+  --txt-3:     #C9C7C2;
+  --line:      rgba(0,0,0,.07);
+  --accent:    #131312;
+  --accent-txt:#FFFFFF;
+  --shadow:    0 1px 2px rgba(20,18,14,.03), 0 8px 28px rgba(20,18,14,.07);
+  --shadow-sm: 0 1px 2px rgba(20,18,14,.04), 0 3px 10px rgba(20,18,14,.05);
+  --ease:      cubic-bezier(.25,.8,.25,1);
+  --sidebar-w: 230px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #121212;
+    --card:      #1F1F1F;
+    --txt:       #F4F3F1;
+    --txt-2:     #9C9B97;
+    --txt-3:     #555450;
+    --line:      rgba(255,255,255,.07);
+    --accent:    #F4F3F1;
+    --accent-txt:#131312;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.32);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 3px 10px rgba(0,0,0,.22);
+  }
+  .card { border: 1px solid rgba(255,255,255,.06); }
+  pre, code { border-color: rgba(255,255,255,.08) !important; }
+  .badge { border-color: rgba(255,255,255,.1) !important; }
+  .arch-arrow { opacity: .5; }
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.65;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 32px 0 32px;
+  background: var(--card);
+  box-shadow: 1px 0 0 var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 20px 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.sidebar-logo {
+  width: 38px; height: 38px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar-logo svg { color: var(--accent-txt); }
+.sidebar-name {
+  font-size: 14px; font-weight: 750; letter-spacing: -.3px;
+  line-height: 1.2;
+}
+.sidebar-name small {
+  display: block;
+  font-size: 11px; font-weight: 500;
+  color: var(--txt-2); letter-spacing: 0;
+}
+
+.nav-section {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--txt-3);
+  padding: 16px 20px 6px;
+}
+.nav-link {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 20px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--txt-2);
+  border-left: 2px solid transparent;
+  transition: color .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+  cursor: pointer;
+  text-decoration: none;
+}
+.nav-link:hover {
+  color: var(--txt);
+  background: var(--bg);
+  text-decoration: none;
+}
+.nav-link.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 650;
+  background: var(--bg);
+}
+.nav-link svg { opacity: .55; flex-shrink: 0; }
+.nav-link.active svg { opacity: 1; }
+
+/* ── Main content ──────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  min-width: 0;
+  max-width: 820px;
+  padding: 56px 52px 96px;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────── */
+.hero {
+  margin-bottom: 56px;
+}
+.hero-eyebrow {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--txt-2);
+  margin-bottom: 10px;
+}
+.hero h1 {
+  font-size: 42px; font-weight: 800; letter-spacing: -1.2px;
+  line-height: 1.08; margin-bottom: 16px;
+}
+.hero-sub {
+  font-size: 17px; color: var(--txt-2); line-height: 1.6;
+  max-width: 560px;
+}
+.hero-badges {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 20px;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 100px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--txt-2);
+  box-shadow: var(--shadow-sm);
+}
+.badge svg { opacity: .7; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.section {
+  margin-bottom: 64px;
+  scroll-margin-top: 32px;
+}
+.section-eyebrow {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--txt-3);
+  margin-bottom: 6px;
+}
+.section h2 {
+  font-size: 28px; font-weight: 750; letter-spacing: -.6px;
+  margin-bottom: 6px; line-height: 1.2;
+}
+.section-intro {
+  font-size: 15.5px; color: var(--txt-2); line-height: 1.65;
+  margin-bottom: 28px; max-width: 600px;
+}
+.divider {
+  height: 1px; background: var(--line);
+  margin-bottom: 28px;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.card-hdr {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--txt-2);
+  padding: 16px 20px 8px;
+}
+.card-body {
+  padding: 4px 20px 18px;
+}
+.card-body p { color: var(--txt-2); font-size: 14.5px; line-height: 1.6; }
+.card-body p + p { margin-top: 10px; }
+
+/* ── Step list ─────────────────────────────────────────────────────────── */
+.step-list { list-style: none; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.step-item:last-child { border-bottom: 0; }
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--bg); color: var(--txt-2);
+  font-size: 12px; font-weight: 750;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+  box-shadow: var(--shadow-sm);
+}
+.step-content { flex: 1; min-width: 0; }
+.step-content strong {
+  display: block; font-size: 14.5px; font-weight: 650;
+  margin-bottom: 2px;
+}
+.step-content span { font-size: 13.5px; color: var(--txt-2); line-height: 1.5; }
+
+/* ── Code blocks ───────────────────────────────────────────────────────── */
+pre {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+pre code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
+  color: var(--txt);
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
+  font-size: 12.5px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: var(--txt);
+}
+.prompt {
+  color: var(--txt-3);
+  user-select: none;
+}
+.cmd-comment {
+  color: var(--txt-3);
+  font-style: italic;
+}
+
+/* ── Architecture diagram ──────────────────────────────────────────────── */
+.arch {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.arch-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.arch-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  flex: 1;
+}
+.arch-box-label {
+  font-size: 10px; font-weight: 750; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--txt-3);
+  margin-bottom: 4px;
+}
+.arch-box-name {
+  font-size: 14.5px; font-weight: 700; margin-bottom: 4px;
+}
+.arch-box-desc {
+  font-size: 12.5px; color: var(--txt-2); line-height: 1.5;
+}
+.arch-conn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; margin-bottom: 8px;
+  font-size: 12px; font-weight: 600; color: var(--txt-3);
+}
+.arch-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(to right, transparent, var(--txt-3), transparent);
+}
+.arch-arrow-down {
+  display: flex; justify-content: center;
+  color: var(--txt-3); margin-bottom: 4px;
+}
+
+/* ── Feature grid ──────────────────────────────────────────────────────── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.feature-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+.feature-ic {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+  color: var(--txt);
+  box-shadow: var(--shadow-sm);
+}
+.feature-name {
+  font-size: 14px; font-weight: 700; margin-bottom: 4px; letter-spacing: -.2px;
+}
+.feature-desc {
+  font-size: 13px; color: var(--txt-2); line-height: 1.5;
+}
+
+/* ── Info row (inline label + description) ─────────────────────────────── */
+.info-row {
+  display: flex; align-items: flex-start;
+  gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: 0; }
+.info-label {
+  min-width: 140px; flex-shrink: 0;
+  font-weight: 650; color: var(--txt);
+}
+.info-val { color: var(--txt-2); line-height: 1.5; }
+
+/* ── Troubleshoot cards ─────────────────────────────────────────────────── */
+.trouble-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--txt-3);
+}
+.trouble-card h3 {
+  font-size: 14.5px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.2px;
+}
+.trouble-card p {
+  font-size: 13.5px; color: var(--txt-2); line-height: 1.55;
+}
+.trouble-card p + p { margin-top: 6px; }
+.trouble-card ul {
+  margin-top: 8px; padding-left: 18px;
+  font-size: 13.5px; color: var(--txt-2); line-height: 1.7;
+}
+
+/* ── Security block ────────────────────────────────────────────────────── */
+.sec-row {
+  display: flex; align-items: flex-start;
+  gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.sec-row:last-child { border-bottom: 0; }
+.sec-ic {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--txt-2); box-shadow: var(--shadow-sm);
+}
+.sec-txt strong { display: block; font-size: 14px; font-weight: 650; margin-bottom: 2px; }
+.sec-txt span { font-size: 13px; color: var(--txt-2); line-height: 1.5; }
+
+/* ── Mobile nav (hamburger) ────────────────────────────────────────────── */
+.mob-nav-toggle {
+  display: none;
+  position: fixed; top: 16px; left: 16px; z-index: 200;
+  width: 42px; height: 42px; border-radius: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  align-items: center; justify-content: center;
+  cursor: pointer; border: none;
+}
+.mob-nav-toggle:hover { background: var(--bg); }
+.mob-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0,0,0,.4);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .main { padding: 40px 28px 80px; }
+  .hero h1 { font-size: 32px; }
+}
+@media (max-width: 700px) {
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    z-index: 160; transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.25,.8,.25,1);
+    height: 100%;
+  }
+  .sidebar.open { transform: none; box-shadow: 4px 0 32px rgba(0,0,0,.2); }
+  .mob-overlay.open { display: block; }
+  .mob-nav-toggle { display: flex; }
+  .main { padding: 32px 18px 72px; margin-top: 0; }
+  .hero { margin-bottom: 40px; }
+  .hero h1 { font-size: 28px; }
+  .feature-grid { grid-template-columns: 1fr; }
+  .arch-row { flex-direction: column; }
+}
+
+/* ── Print / subtle touches ────────────────────────────────────────────── */
+::selection { background: var(--accent); color: var(--accent-txt); }
+.tag {
+  display: inline-block;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px;
+  background: var(--bg); color: var(--txt-2);
+  border: 1px solid var(--line);
+  letter-spacing: .3px; vertical-align: middle;
+}
+h3.sub {
+  font-size: 17px; font-weight: 700; letter-spacing: -.3px;
+  margin: 24px 0 10px;
+}
+p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div class="mob-overlay" id="mob-overlay" onclick="closeSidebar()"></div>
+
+<!-- Mobile menu toggle -->
+<button class="mob-nav-toggle" onclick="toggleSidebar()" aria-label="Menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18">
+    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+</button>
+
+<div class="layout">
+
+  <!-- ═══ Sidebar ════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+      </div>
+      <div class="sidebar-name">wee rotate<small>Documentation</small></div>
+    </div>
+
+    <div class="nav-section">Introduction</div>
+    <a class="nav-link active" href="#presentation" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 21V9"/></svg>
+      Présentation
+    </a>
+    <a class="nav-link" href="#architecture" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4M5 17l7-6 7 6"/></svg>
+      Architecture
+    </a>
+
+    <div class="nav-section">Mise en route</div>
+    <a class="nav-link" href="#installation" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3.5v11M8.5 11L12 14.5l3.5-3.5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13A1.5 1.5 0 0 0 20 19.5V17"/></svg>
+      Installation
+    </a>
+    <a class="nav-link" href="#demarrage" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Démarrage
+    </a>
+
+    <div class="nav-section">Utilisation</div>
+    <a class="nav-link" href="#remote" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
+      La télécommande
+    </a>
+    <a class="nav-link" href="#playlist" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Gestion de playlist
+    </a>
+    <a class="nav-link" href="#reglages" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Réglages
+    </a>
+
+    <div class="nav-section">Référence</div>
+    <a class="nav-link" href="#securite" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Sécurité et réseau
+    </a>
+    <a class="nav-link" href="#depannage" onclick="closeSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Dépannage
+    </a>
+  </aside>
+
+  <!-- ═══ Main content ═════════════════════════════════════════════════ -->
+  <main class="main" id="main">
+
+    <!-- ── Hero ─────────────────────────────────────────────────────── -->
+    <div class="hero">
+      <div class="hero-eyebrow">Documentation officielle</div>
+      <h1>wee rotate<br>Remote Control</h1>
+      <p class="hero-sub">
+        Un système complet de pilotage d'affichage kiosque : extension Chrome,
+        serveur Python et télécommande PWA installable sur le téléphone.
+        Gérez vos rotations d'URL depuis votre canapé.
+      </p>
+      <div class="hero-badges">
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Chrome / Edge MV3
+        </span>
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M12 3.5v11M8.5 11L12 14.5l3.5-3.5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13A1.5 1.5 0 0 0 20 19.5V17"/></svg>
+          Python 3.8+
+        </span>
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><rect x="7" y="2" width="10" height="20" rx="3"/></svg>
+          PWA — iOS &amp; Android
+        </span>
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          LAN uniquement
+        </span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         1. PRÉSENTATION
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="presentation">
+      <div class="section-eyebrow">01</div>
+      <h2>Présentation</h2>
+      <p class="section-intro">
+        wee rotate est conçu pour un usage simple : une télé ou un écran de bureau
+        doit afficher en boucle un ensemble de pages web (tableaux de bord, slides Canva,
+        dashboards, pages d'info…). L'extension Chrome gère la rotation ; la télécommande
+        PWA permet de tout piloter depuis le téléphone, sans toucher le PC kiosque.
+      </p>
+      <div class="divider"></div>
+
+      <h3 class="sub">Cas d'usage typiques</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="feature-name">Affichage dynamique</div>
+          <div class="feature-desc">Slides Canva, Google Slides, Notion, Airtable — tout ce qui s'affiche dans un navigateur.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="feature-name">Tableau de bord</div>
+          <div class="feature-desc">Grafana, Metabase, Google Analytics — les outils de monitoring qui tournent en boucle.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="feature-name">Espace d'accueil</div>
+          <div class="feature-desc">Écran de bienvenue, menu du jour, planning hebdomadaire affiché à l'entrée d'un bureau ou d'un espace de travail.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </div>
+          <div class="feature-name">Diffusion vidéo</div>
+          <div class="feature-desc">Lecture de vidéos YouTube en rotation, avec contrôle de volume depuis le téléphone.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div class="feature-name">Horaires planifiés</div>
+          <div class="feature-desc">L'affichage se lance et s'arrête automatiquement selon les jours de la semaine et les plages horaires définies.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="feature-name">Messages urgents</div>
+          <div class="feature-desc">Envoyez un message en surimpression sur l'écran en deux secondes, depuis n'importe où dans le bâtiment.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         2. ARCHITECTURE
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="architecture">
+      <div class="section-eyebrow">02</div>
+      <h2>Architecture technique</h2>
+      <p class="section-intro">
+        Le système repose sur trois composants qui communiquent en temps réel
+        via WebSocket sur le réseau local. Tout reste dans le LAN — aucune
+        donnée ne sort vers internet.
+      </p>
+      <div class="divider"></div>
+
+      <!-- Architecture diagram -->
+      <div class="arch">
+
+        <!-- Phone -->
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-label">Téléphone (iOS / Android)</div>
+            <div class="arch-box-name">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
+              PWA — control.html
+            </div>
+            <div class="arch-box-desc">
+              Application web progressive installable sur l'écran d'accueil.
+              Interface de télécommande : lecture, pause, navigation, volume,
+              messages, gestion de playlist. Se connecte au serveur Python via WebSocket.
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-arrow-down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+        <div class="arch-conn">
+          <div class="arch-line"></div>
+          <span>WebSocket ws://&lt;ip&gt;:8765 · token JWT</span>
+          <div class="arch-line"></div>
+        </div>
+        <div class="arch-arrow-down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+
+        <!-- Server -->
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-label">PC kiosque · Python</div>
+            <div class="arch-box-name">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              remote_server.py · aiohttp
+            </div>
+            <div class="arch-box-desc">
+              Serveur HTTP + WebSocket asynchrone (port 8765). Sert les fichiers statiques
+              de la PWA, relaie les commandes entre le téléphone et l'extension,
+              met en cache l'état et les captures d'écran pour les mobiles qui se reconnectent.
+              Gère aussi la bibliothèque de playlists et la sauvegarde automatique de session.
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-arrow-down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+        <div class="arch-conn">
+          <div class="arch-line"></div>
+          <span>WebSocket ws://localhost:8765</span>
+          <div class="arch-line"></div>
+        </div>
+        <div class="arch-arrow-down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+
+        <!-- Extension -->
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-label">PC kiosque · Chrome / Edge</div>
+            <div class="arch-box-name">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              Extension MV3 — background.js
+            </div>
+            <div class="arch-box-desc">
+              Service Worker Manifest V3. Ouvre et gère une fenêtre kiosque dédiée, pilote la rotation
+              via des alarmes Chrome (<code>chrome.alarms</code>), injecte l'overlay de messages,
+              capture des screenshots de l'onglet actif et les envoie au serveur.
+              Se reconnecte automatiquement au serveur toutes les 500 ms en cas de déconnexion.
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-arrow-down" style="margin-top:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+
+        <!-- Kiosk window -->
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-label">Fenêtre kiosque — Chrome</div>
+            <div class="arch-box-name">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              Onglets kiosque (URLs en rotation)
+            </div>
+            <div class="arch-box-desc">
+              L'extension ouvre une fenêtre séparée contenant un onglet par URL de la playlist.
+              La rotation consiste à rendre l'onglet suivant actif toutes les N secondes.
+              L'overlay de messages est injecté dans chaque onglet via <code>chrome.scripting</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Fichiers clés</h3>
+      <div class="card">
+        <div class="info-row">
+          <div class="info-label"><code>background.js</code></div>
+          <div class="info-val">Point d'entrée du Service Worker. Importe les modules bg/ et définit tous les listeners Chrome (alarms, tabs, runtime…).</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>bg/config.js</code></div>
+          <div class="info-val">Configuration par défaut et migration de schema. Intervalle de 30 s par défaut, horaires Lu–Ve 08:00–18:00.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>bg/tabs.js</code></div>
+          <div class="info-val">Logique de rotation, gestion de la fenêtre kiosque, vérification des horaires, rechargement automatique des pages.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>bg/remote.js</code></div>
+          <div class="info-val">Client WebSocket de l'extension. Connexion au serveur local, envoi des états et captures, réception et exécution des commandes.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>bg/overlay.js</code></div>
+          <div class="info-val">Injection de l'overlay de messages texte dans les onglets kiosque via <code>chrome.scripting.executeScript</code>.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>remote_server.py</code></div>
+          <div class="info-val">Point d'entrée du serveur. Détecte l'IP LAN, génère le QR code, lance le serveur aiohttp sur le port 8765.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>server/ws_handler.py</code></div>
+          <div class="info-val">Cœur du relais WebSocket. Gère les deux types de connexions (extension / mobile), la détection de doublon d'extension et le keepalive.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>server/auth.py</code></div>
+          <div class="info-val">Token hexadécimal de 16 caractères persisté dans <code>.wt_token</code>. Comparaison en temps constant pour éviter les attaques timing.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>server/library.py</code></div>
+          <div class="info-val">Bibliothèque de playlists nommées, stockée localement. Sauvegarde et chargement sans passer par l'extension.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>server/sys_audio.py</code></div>
+          <div class="info-val">Contrôle du volume système Windows via <code>pycaw</code>. Si absent, le volume est appliqué directement sur l'élément <code>&lt;video&gt;</code>.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>control.html</code></div>
+          <div class="info-val">PWA télécommande, servi par le serveur Python sur <code>/app</code>. Application mobile complète en un seul fichier HTML.</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><code>popup.html / popup.js</code></div>
+          <div class="info-val">Interface de l'extension dans Chrome. Affiche le QR code, le statut de connexion et la liste des URLs configurées.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         3. INSTALLATION
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="installation">
+      <div class="section-eyebrow">03</div>
+      <h2>Installation</h2>
+      <p class="section-intro">
+        Tout s'installe sur le PC kiosque. La télécommande n'a pas besoin d'installation
+        séparée : elle est servie automatiquement par le serveur Python.
+      </p>
+      <div class="divider"></div>
+
+      <h3 class="sub">Prérequis</h3>
+      <p class="body">Python 3.8 ou supérieur doit être installé sur le PC kiosque.
+        Google Chrome ou Microsoft Edge (Chromium) doit être disponible.</p>
+
+      <h3 class="sub">1. Dépendances Python</h3>
+      <pre><code><span class="prompt">$ </span>pip install aiohttp qrcode pycaw pywebpush</code></pre>
+      <p class="body">
+        <code>aiohttp</code> est le serveur WebSocket.
+        <code>qrcode</code> génère le QR code dans la popup.
+        <code>pycaw</code> (optionnel, Windows) pilote le volume système Windows.
+        Sans lui, le volume est appliqué sur l'élément vidéo dans l'onglet.
+      </p>
+
+      <h3 class="sub">2. Charger l'extension Chrome</h3>
+      <div class="card">
+        <ul class="step-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <strong>Ouvrez Chrome ou Edge</strong>
+              <span>Naviguez vers <code>chrome://extensions</code> (ou <code>edge://extensions</code>)</span>
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <strong>Activez le mode développeur</strong>
+              <span>Interrupteur en haut à droite de la page des extensions</span>
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <strong>Cliquez sur « Charger l'extension non empaquetée »</strong>
+              <span>Sélectionnez le dossier <code>wt-rotate</code> (celui qui contient <code>manifest.json</code>)</span>
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <strong>Épinglez la popup</strong>
+              <span>Cliquez sur l'icône de puzzle dans la barre Chrome → épinglez « wee rotate »</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <h3 class="sub">3. Démarrage automatique (Windows)</h3>
+      <p class="body">
+        Pour que le serveur démarre automatiquement à chaque connexion Windows,
+        exécutez ce script <strong>en tant qu'Administrateur</strong> :
+      </p>
+      <pre><code><span class="cmd-comment"># Clic droit → Exécuter en tant qu'administrateur</span>
+<span class="prompt">$ </span>python setup_autostart.py</code></pre>
+      <p class="body">
+        Le script crée une tâche planifiée Windows qui lance le serveur
+        30 secondes après chaque session (le temps que le réseau soit disponible),
+        avec relance automatique en cas de plantage.
+        Il crée également un raccourci du navigateur dans le dossier Démarrage.
+      </p>
+
+      <div class="card">
+        <div class="card-hdr">Après l'autostart</div>
+        <div class="card-body">
+          <p>Configurez le navigateur sur <strong>« Ouvrir la page Nouvel onglet »</strong>
+          au démarrage (et non « Reprendre »), pour éviter qu'une ancienne fenêtre
+          kiosque soit restaurée en doublon.</p>
+          <p style="margin-top:10px">Pour le login automatique Windows : <code>Win + R</code> → <code>netplwiz</code>
+          → décochez « Les utilisateurs doivent entrer un nom d'utilisateur... »</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         4. DÉMARRAGE
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="demarrage">
+      <div class="section-eyebrow">04</div>
+      <h2>Démarrage</h2>
+      <p class="section-intro">
+        Trois étapes pour avoir la télécommande dans la main en moins de deux minutes.
+      </p>
+      <div class="divider"></div>
+
+      <div class="card">
+        <ul class="step-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <strong>Lancez le serveur sur le PC kiosque</strong>
+              <span>Dans un terminal dans le dossier <code>wt-rotate</code> :</span>
+            </div>
+          </li>
+        </ul>
+        <pre style="margin:0 20px 16px"><code><span class="prompt">$ </span>python remote_server.py</code></pre>
+        <ul class="step-list">
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <strong>Ouvrez la popup de l'extension</strong>
+              <span>Cliquez sur l'icône wee rotate dans Chrome → un QR code s'affiche avec l'adresse LAN et le token d'authentification</span>
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <strong>Scannez le QR code avec votre téléphone</strong>
+              <span>Le guide d'installation PWA s'ouvre — ajoutez l'app à l'écran d'accueil pour une expérience native. L'URL contient déjà le token : pas besoin de le ressaisir après chaque redémarrage du serveur.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <p class="body">
+        Le serveur affiche dans son terminal l'IP locale, l'URL et le token en cours :
+      </p>
+      <pre><code>╔══════════════════════════════════════════╗
+║    wt-rotate Remote Control Server       ║
+╠══════════════════════════════════════════╣
+║  IP locale  : 192.168.1.42              ║
+║  URL mobile : http://192.168.1.42:8765/ ║
+║  Token auth : a1b2c3d4e5f6a7b8          ║
+║  QR code    : OK                        ║
+╚══════════════════════════════════════════╝</code></pre>
+
+      <div class="card">
+        <div class="card-hdr">Note sur le token</div>
+        <div class="card-body">
+          <p>Le token est généré une seule fois et sauvegardé dans <code>.wt_token</code>.
+          Les redémarrages du serveur ne l'invalident pas — votre QR code scanné reste valide
+          indéfiniment. Pour renouveler le token (ex. changement de téléphone),
+          supprimez le fichier <code>.wt_token</code> puis redémarrez le serveur.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         5. LA TÉLÉCOMMANDE
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="remote">
+      <div class="section-eyebrow">05</div>
+      <h2>La télécommande</h2>
+      <p class="section-intro">
+        La PWA se compose de trois onglets : Accueil (contrôles principaux),
+        Playlist (gestion de la liste d'URLs) et Réglages. Voici le détail
+        de chaque fonctionnalité.
+      </p>
+      <div class="divider"></div>
+
+      <h3 class="sub">Onglet Accueil</h3>
+
+      <div class="card">
+        <div class="card-hdr">Contrôles de lecture</div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">⏮ Précédent / ⏭ Suivant</div>
+          <div class="info-val">Passe immédiatement à l'URL précédente ou suivante dans la playlist, sans attendre la fin du timer.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">⏸ Pause / ▶ Lecture</div>
+          <div class="info-val">Met la rotation en pause (l'URL en cours reste à l'écran) ou la reprend. L'état est conservé même si l'extension se reconnecte.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Volume</div>
+          <div class="info-val">Curseur de 0 à 100 %. Sur Windows avec <code>pycaw</code> installé, règle le volume système. Sinon, règle le volume de l'élément vidéo dans l'onglet actif.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px">
+          <div class="info-label">Indicateur d'état</div>
+          <div class="info-val">La pastille en haut à droite indique si l'extension est connectée (vert), en attente (jaune) ou déconnectée (rouge). Un message d'avertissement s'affiche si l'extension est absente.</div>
+        </div>
+      </div>
+
+      <h3 class="sub">Aperçu en direct</h3>
+      <p class="body">
+        Quand la rotation est active, un aperçu miniature de l'onglet kiosque actuel
+        est affiché dans la télécommande. L'extension capture une capture d'écran
+        et l'envoie au serveur, qui la met en cache et la diffuse à tous les mobiles connectés.
+        Un bouton de rafraîchissement manuel est disponible si l'image n'est pas à jour.
+      </p>
+
+      <h3 class="sub">Mode Spotlight</h3>
+      <div class="card">
+        <div class="card-hdr">Afficher une URL immédiatement</div>
+        <div class="card-body">
+          <p>Le champ « Afficher une URL » en bas de l'onglet Accueil permet de pousser
+          n'importe quelle URL sur l'écran kiosque, en dehors de la playlist normale.
+          La rotation est suspendue pendant l'affichage de l'URL Spotlight.</p>
+          <p>Un bandeau « Revenir à la rotation » apparaît avec un compte à rebours
+          (ou reste affiché indéfiniment selon la configuration).
+          Cliquez dessus pour mettre fin au Spotlight et reprendre la rotation normale.</p>
+          <p>L'onglet Spotlight est également fermé si on le ferme manuellement
+          sur le PC kiosque.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">Message sur la télé</h3>
+      <p class="body">
+        Saisissez un texte dans le champ « Message sur la télé » et envoyez-le.
+        Un overlay est injecté dans <strong>tous les onglets kiosque actifs</strong>
+        via <code>chrome.scripting</code>, et le message s'affiche en surimpression
+        pendant quelques secondes avant de disparaître automatiquement.
+        Idéal pour les annonces rapides (« Réunion dans 5 minutes »).
+      </p>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         6. GESTION DE PLAYLIST
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="playlist">
+      <div class="section-eyebrow">06</div>
+      <h2>Gestion de playlist</h2>
+      <p class="section-intro">
+        L'onglet Playlist permet d'ajouter, retirer, réordonner les URLs
+        et de définir une durée d'affichage individuelle pour chacune.
+      </p>
+      <div class="divider"></div>
+
+      <h3 class="sub">Ajouter une URL</h3>
+      <p class="body">
+        Collez l'URL dans le champ en haut de l'onglet Playlist.
+        Un nom optionnel peut être renseigné — sinon le nom de domaine est utilisé.
+        Pour les vidéos YouTube, l'URL est normalisée automatiquement
+        (liens <code>youtu.be</code>, <code>/shorts/</code>, <code>/embed/</code>
+        sont convertis en <code>youtube.com/watch?v=…</code>).
+      </p>
+
+      <h3 class="sub">Durée par URL</h3>
+      <p class="body">
+        Chaque URL peut avoir sa propre durée d'affichage, indépendante de
+        l'intervalle global. Appuyez sur l'URL en mode Modifier pour ouvrir
+        un sélecteur de durée (de 5 secondes à 1 heure).
+        Si aucune durée n'est définie pour une URL, l'intervalle global s'applique.
+      </p>
+
+      <h3 class="sub">Réordonner</h3>
+      <p class="body">
+        En mode Modifier (bouton « Modifier » en haut à droite de l'onglet),
+        une poignée glisser-déposer apparaît sur chaque entrée.
+        Les flèches haut/bas sont également disponibles.
+        L'ordre est immédiatement synchronisé avec l'extension.
+      </p>
+
+      <h3 class="sub">URLs récentes</h3>
+      <p class="body">
+        Le bouton « Récents » affiche les URLs récemment affichées sur le kiosque,
+        avec leur favicon. Appuyez sur le <code>+</code> pour les ajouter directement
+        à la playlist sans ressaisir l'adresse.
+      </p>
+
+      <h3 class="sub">Bibliothèque de playlists</h3>
+      <div class="card">
+        <div class="card-hdr">Sauvegarder et restaurer</div>
+        <div class="card-body">
+          <p>La bibliothèque permet de nommer et sauvegarder la playlist en cours.
+          Les playlists sauvegardées sont stockées côté serveur Python (pas dans l'extension),
+          ce qui les rend disponibles même après un redémarrage du navigateur.</p>
+          <p>Chaque entrée de la bibliothèque affiche une mosaïque des favicons des pages.
+          Appuyez sur une playlist pour la charger immédiatement dans l'extension.
+          La playlist actuelle est automatiquement sauvegardée en session
+          à chaque modification, comme sauvegarde de secours.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         7. RÉGLAGES
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="reglages">
+      <div class="section-eyebrow">07</div>
+      <h2>Réglages</h2>
+      <p class="section-intro">
+        L'onglet Réglages regroupe tous les paramètres de rotation, de rafraîchissement
+        et d'horaires. Les modifications sont instantanément appliquées sur le kiosque.
+      </p>
+      <div class="divider"></div>
+
+      <h3 class="sub">Rotation</h3>
+      <div class="card">
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Intervalle global</div>
+          <div class="info-val">Durée d'affichage par défaut pour chaque URL. Valeurs possibles : 5 s, 10 s, 15 s, 30 s, 1 min, 2 min, 5 min, 10 min, 15 min, 30 min, 1 h. Défaut : 30 secondes.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Recharger les pages</div>
+          <div class="info-val">Recharge immédiatement tous les onglets kiosque en une seule action. Utile après une mise à jour de contenu.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px">
+          <div class="info-label">Pages actives</div>
+          <div class="info-val">Affiche le nombre d'onglets kiosque ouverts et le statut de connexion de l'extension.</div>
+        </div>
+      </div>
+
+      <h3 class="sub">Rafraîchissement automatique</h3>
+      <div class="card">
+        <div class="card-body">
+          <p>Pour éviter que des pages ne deviennent obsolètes (cache expiré, session expirée…),
+          l'extension peut recharger les onglets automatiquement à intervalles réguliers.</p>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Rafraîchissement pages</div>
+          <div class="info-val">Intervalle entre deux rechargements automatiques d'un onglet. Défaut : 4 heures. Options : désactivé, 1 h, 2 h, 4 h, 8 h, 12 h, 24 h.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px">
+          <div class="info-label">Rafraîchissement Canva</div>
+          <div class="info-val">Canva ne se met pas à jour automatiquement quand on modifie une présentation. Ce paramètre recharge les onglets Canva plus souvent (défaut : 5 min) pour que les modifications soient visibles rapidement sur le kiosque.</div>
+        </div>
+      </div>
+
+      <h3 class="sub">Horaires d'affichage</h3>
+      <div class="card">
+        <div class="card-hdr">Programmation hebdomadaire</div>
+        <div class="card-body">
+          <p>Limitez la rotation à des plages horaires précises, par jour de la semaine.
+          En dehors de la plage, la rotation s'arrête automatiquement.
+          Elle reprend au prochain créneau planifié, sans intervention manuelle.</p>
+          <p>Exemple de configuration par défaut : lundi au vendredi, 08:00 à 18:00.</p>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Activer</div>
+          <div class="info-val">Interrupteur pour activer ou désactiver les horaires. Quand désactivé, la rotation tourne 24 h / 24.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px;border-bottom:1px solid var(--line)">
+          <div class="info-label">Heure début / fin</div>
+          <div class="info-val">Plage horaire quotidienne. Format HH:MM. La fin est exclusive.</div>
+        </div>
+        <div class="info-row" style="padding:12px 20px">
+          <div class="info-label">Jours actifs</div>
+          <div class="info-val">Cercles L M M J V S D sélectionnables. Par défaut, les 5 jours ouvrés sont actifs.</div>
+        </div>
+      </div>
+
+      <h3 class="sub">Thème de la télécommande</h3>
+      <p class="body">
+        Trois options : <strong>Auto</strong> (suit le thème système iOS/Android),
+        <strong>Sombre</strong> ou <strong>Clair</strong>. Le choix est mémorisé
+        dans le <code>localStorage</code> du navigateur.
+      </p>
+
+      <h3 class="sub">Détection d'expiration de session SSO</h3>
+      <div class="card">
+        <div class="card-hdr">Reconnexion automatique</div>
+        <div class="card-body">
+          <p>Certaines pages d'entreprise (Salesforce, Microsoft 365, Google Workspace…)
+          redirigent vers une page de connexion SSO quand la session expire.
+          L'extension surveille les onglets kiosque : si une URL change vers une page
+          de login connue, elle déclenche un rechargement automatique pour tenter
+          de rétablir la session (cookies persistent, refresh OAuth…).</p>
+          <p>Les onglets concernés sont signalés avec une icône ⚠️ dans la liste
+          de la playlist sur la télécommande.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         8. SÉCURITÉ ET RÉSEAU
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="securite">
+      <div class="section-eyebrow">08</div>
+      <h2>Sécurité et réseau</h2>
+      <p class="section-intro">
+        Le système est conçu pour une utilisation sur réseau local uniquement.
+        Le trafic ne quitte jamais le LAN.
+      </p>
+      <div class="divider"></div>
+
+      <div class="card">
+        <div class="sec-row" style="padding:14px 20px;border-bottom:1px solid var(--line)">
+          <div class="sec-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="sec-txt">
+            <strong>Token d'authentification</strong>
+            <span>Chaque connexion mobile doit présenter un token hexadécimal de 16 caractères (128 bits).
+            La comparaison est faite en temps constant (<code>secrets.compare_digest</code>)
+            pour résister aux attaques de timing. Une connexion sans token valide reçoit
+            <code>auth_error: invalid_token</code> et est immédiatement fermée.</span>
+          </div>
+        </div>
+        <div class="sec-row" style="padding:14px 20px;border-bottom:1px solid var(--line)">
+          <div class="sec-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="sec-txt">
+            <strong>LAN uniquement</strong>
+            <span>Le serveur écoute sur <code>0.0.0.0:8765</code> — toutes les interfaces
+            du PC kiosque. Il n'est accessible que depuis le même sous-réseau.
+            Il n'y a pas de tunnel vers Internet, pas de relais externe.
+            Votre pare-feu d'entreprise suffit à isoler le service.</span>
+          </div>
+        </div>
+        <div class="sec-row" style="padding:14px 20px;border-bottom:1px solid var(--line)">
+          <div class="sec-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="sec-txt">
+            <strong>Pas de HTTPS</strong>
+            <span>Le serveur fonctionne en HTTP non chiffré sur le réseau local.
+            Pour les environnements nécessitant HTTPS, placez un reverse proxy
+            (nginx, Caddy) devant le serveur Python avec un certificat auto-signé ou Let's Encrypt.</span>
+          </div>
+        </div>
+        <div class="sec-row" style="padding:14px 20px;border-bottom:1px solid var(--line)">
+          <div class="sec-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 9.5C4 6.5 7.8 5 12 5s8 1.5 11 4.5M4.5 13c2-2 4.6-3 7.5-3s5.5 1 7.5 3M8 16.5c1.1-1.1 2.5-1.6 4-1.6s2.9.5 4 1.6"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div class="sec-txt">
+            <strong>QR code et token intégré</strong>
+            <span>Le QR code généré encode directement l'URL avec le token en paramètre
+            (<code>?token=…</code>). Le token est ainsi stocké dans le <code>localStorage</code>
+            du téléphone lors du premier scan et réutilisé automatiquement ensuite.
+            Il n'est plus nécessaire de rescanner le QR code après un redémarrage du serveur,
+            sauf si le fichier <code>.wt_token</code> est supprimé.</span>
+          </div>
+        </div>
+        <div class="sec-row" style="padding:14px 20px">
+          <div class="sec-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="sec-txt">
+            <strong>Extension sans accès réseau sortant</strong>
+            <span>L'extension ne se connecte qu'à <code>ws://localhost:8765</code>.
+            Elle n'envoie aucune donnée en dehors du PC kiosque.
+            Les permissions demandées dans <code>manifest.json</code> sont limitées
+            aux onglets, alarmes, scripting et stockage local.</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Port et pare-feu</h3>
+      <p class="body">
+        Le serveur utilise le port TCP <strong>8765</strong>. Sur Windows,
+        une règle de pare-feu entrant peut être nécessaire si Windows Defender
+        bloque les connexions entrantes. Commande PowerShell (en admin) :
+      </p>
+      <pre><code>New-NetFirewallRule -DisplayName "wt-rotate" `
+  -Direction Inbound -Protocol TCP `
+  -LocalPort 8765 -Action Allow</code></pre>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         9. DÉPANNAGE
+    ════════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="depannage">
+      <div class="section-eyebrow">09</div>
+      <h2>Dépannage</h2>
+      <p class="section-intro">
+        Les problèmes les plus fréquents et leur résolution.
+      </p>
+      <div class="divider"></div>
+
+      <div class="trouble-card">
+        <h3>La télécommande affiche « Serveur introuvable »</h3>
+        <p>Le téléphone ne parvient pas à joindre le serveur Python sur le PC kiosque.</p>
+        <ul>
+          <li>Vérifiez que <code>python remote_server.py</code> est bien lancé sur le PC kiosque.</li>
+          <li>Téléphone et PC doivent être sur le même réseau Wi-Fi (même sous-réseau).</li>
+          <li>Vérifiez le pare-feu Windows : autorisez le port 8765 en entrée (voir ci-dessus).</li>
+          <li>Vérifiez que l'IP affichée dans le QR code correspond bien à l'IP LAN du PC (pas une IP VPN ou loopback).</li>
+          <li>Si le PC est connecté en câble Ethernet ET Wi-Fi, le serveur peut choisir la mauvaise interface. Arrêtez temporairement l'adaptateur inutilisé.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Le bandeau « Extension non connectée » s'affiche</h3>
+        <p>Le serveur Python tourne, le téléphone est connecté, mais l'extension Chrome ne s'est pas encore connectée au serveur.</p>
+        <ul>
+          <li>Vérifiez que l'extension wee rotate est bien chargée dans Chrome (<code>chrome://extensions</code>).</li>
+          <li>Le Service Worker MV3 peut être endormi — ouvrez la popup de l'extension pour le réveiller.</li>
+          <li>Redémarrez l'extension : désactivez puis réactivez-la dans <code>chrome://extensions</code>.</li>
+          <li>Consultez les erreurs Service Worker : <code>chrome://extensions</code> → Détails → Inspecter les vues : service worker.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Alerte « Deux extensions connectées en même temps »</h3>
+        <p>Chrome et Edge ont tous les deux l'extension chargée et se connectent simultanément au serveur. Les deux envoient leur état, créant des conflits.</p>
+        <ul>
+          <li>Allez dans <code>chrome://extensions</code> <em>et</em> <code>edge://extensions</code>.</li>
+          <li>Désactivez ou supprimez l'extension dans le navigateur que vous n'utilisez pas comme kiosque.</li>
+          <li>Redémarrez le serveur Python après correction.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Le QR code doit être rescanné après chaque redémarrage</h3>
+        <p>Le token change à chaque démarrage du serveur si le fichier <code>.wt_token</code> n'est pas persisté.</p>
+        <ul>
+          <li>Vérifiez que le fichier <code>.wt_token</code> existe dans le dossier <code>wt-rotate</code> et est accessible en écriture.</li>
+          <li>Ne supprimez pas ce fichier volontairement sauf si vous souhaitez renouveler le token.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Les pages de login SSO s'affichent sur le kiosque</h3>
+        <p>Une session expirée redirige vers une page d'authentification (Microsoft 365, Google, Salesforce…).</p>
+        <ul>
+          <li>L'extension tente une reconnexion automatique — attendez quelques secondes.</li>
+          <li>Si le rechargement ne suffit pas, connectez-vous manuellement sur le PC kiosque une fois pour renouveler les cookies.</li>
+          <li>Réduisez l'intervalle de rafraîchissement automatique des pages (Réglages → Rafraîchissement auto) pour que l'extension recharge plus souvent et maintienne la session.</li>
+          <li>Certains SSO nécessitent une interaction humaine — envisagez un compte de service dédié avec session persistante.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Les Canva ne se mettent pas à jour</h3>
+        <p>Canva ne rafraîchit pas automatiquement les présentations modifiées dans un onglet déjà ouvert.</p>
+        <ul>
+          <li>Le rafraîchissement Canva automatique est activé par défaut (5 min). Vérifiez qu'il n'a pas été désactivé dans les Réglages.</li>
+          <li>Pour forcer une mise à jour immédiate : Réglages → « Recharger les pages ».</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>La rotation ne démarre pas / s'arrête toute seule</h3>
+        <ul>
+          <li>Si les horaires sont activés, vérifiez que l'heure actuelle est dans la plage configurée.</li>
+          <li>Vérifiez que la playlist contient au moins 2 URLs avec des adresses valides.</li>
+          <li>Si les onglets kiosque ont été fermés manuellement, l'extension réinitialise son état. Relancez la rotation depuis la popup de l'extension ou depuis la télécommande.</li>
+          <li>Consultez le journal de l'extension : <code>chrome://extensions</code> → service worker → onglet Console.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>L'aperçu en direct ne s'affiche pas</h3>
+        <ul>
+          <li>L'aperçu n'est disponible que si la rotation est active et l'extension connectée.</li>
+          <li>Les captures sont mises en cache 30 secondes côté serveur. Si la connexion a été coupée puis rétablie, l'image apparaît dès la reconnexion si elle date de moins de 30 s.</li>
+          <li>Certaines pages avec politique CSP stricte peuvent bloquer la capture par <code>chrome.tabs.captureVisibleTab</code>. Ce n'est pas un bug — c'est une protection de la page cible.</li>
+        </ul>
+      </div>
+
+      <div class="trouble-card">
+        <h3>Push notifications manquantes</h3>
+        <p>Les notifications de déconnexion du serveur nécessitent l'autorisation des notifications dans le navigateur mobile.</p>
+        <ul>
+          <li>Sur iOS Safari : Réglages → Safari → Notifications → autorisez le site.</li>
+          <li>Sur Android Chrome : appuyez sur le cadenas dans la barre d'adresse → Notifications → Autoriser.</li>
+          <li>Les notifications ne fonctionnent qu'avec la PWA installée en mode standalone (ajoutée à l'écran d'accueil).</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ── Sidebar toggle (mobile) ────────────────────────────────────────── */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mob-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
+}
+
+/* ── Active nav link on scroll ─────────────────────────────────────── */
+(function () {
+  const links = document.querySelectorAll('.nav-link[href^="#"]');
+  const sections = Array.from(links).map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+
+  function update() {
+    let current = sections[0]?.id || '';
+    const scrollY = window.scrollY + 120;
+    for (const s of sections) {
+      if (s.offsetTop <= scrollY) current = s.id;
+    }
+    links.forEach(l => {
+      const isActive = l.getAttribute('href') === '#' + current;
+      l.classList.toggle('active', isActive);
+    });
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>

@@ -495,7 +495,7 @@ async function refreshRemoteInfo() {
       $('remote-dot').classList.add('on');
       $('remote-status-txt').textContent = 'Serveur connecté';
       $('remote-status-txt').style.color = 'var(--green)';
-      $('remote-url-box').textContent = url;
+      if ($('remote-url-box')) $('remote-url-box').textContent = url;
       $('remote-online').classList.remove('hidden');
       $('remote-offline-hint').classList.add('hidden');
       const qrDiv = $('remote-qr');

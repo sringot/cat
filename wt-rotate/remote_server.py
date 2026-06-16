@@ -28,7 +28,15 @@ async def main():
         pass
 
     # QR code encodes URL with auth token so rescanning is only needed after token rotation
-    control_url = f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
+    # Prefer hostname.local (mDNS) over raw IP — hides the IP from the QR code.
+    # iOS supports mDNS natively (Bonjour); modern Android/Chrome does too.
+    # If resolution fails on the phone, the fallback is always the IP-based URL.
+    try:
+        _hn = socket.gethostname()
+        host_url = f'http://{_hn}.local:{state.PORT}/?token={auth.TOKEN}'
+    except Exception:
+        host_url = None
+    control_url = host_url or f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
     try:
         import qrcode
         import qrcode.image.svg
@@ -70,11 +78,16 @@ async def main():
         return await handle_http(request)
 
     plain_url = f'http://{state.local_ip}:{state.PORT}/'
+    try:
+        _hn = socket.gethostname()
+        hostname_url = f'http://{_hn}.local:{state.PORT}/'
+    except Exception:
+        hostname_url = plain_url
     print('╔══════════════════════════════════════════╗')
     print('║    wt-rotate Remote Control Server       ║')
     print('╠══════════════════════════════════════════╣')
     print(f'║  IP locale  : {state.local_ip:<27}║')
-    print(f'║  URL mobile : {plain_url:<27}║')
+    print(f'║  Hostname   : {hostname_url:<27}║')
     print(f'║  Token auth : {auth.TOKEN:<27}║')
     print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
     print('╚══════════════════════════════════════════╝')

@@ -30,7 +30,7 @@ launcher = here / '_autostart_launcher.bat'
 launcher.write_text(
     '@echo off\n'
     f'cd /d "{here}"\n'
-    'python -m pip install aiohttp qrcode pycaw --quiet\n'
+    'python -m pip install aiohttp qrcode pycaw pywebpush --quiet\n'
     ':: Boucle de relance : si le serveur plante, il repart seul apres 5 s\n'
     ':loop\n'
     'python remote_server.py\n'
@@ -40,9 +40,47 @@ launcher.write_text(
     'goto loop\n',
     encoding='utf-8'
 )
-print(f'[1/3] Lanceur créé   : {launcher.name} (relance auto en cas de plantage)')
+print(f'[1/4] Lanceur créé   : {launcher.name} (relance auto en cas de plantage)')
 
-# ── 2. Tâche planifiée (serveur 30 s après le login) ─────────────────────────
+# ── 2. Empêcher la déconnexion NinjaOne / RMM après 24 h ─────────────────────
+# La carte réseau peut se mettre en veille indépendamment du système, ce qui
+# coupe les connexions longues (NinjaOne, TeamViewer…) après ~24 h même si la
+# veille système est désactivée. Ce bloc la désactive via powercfg.
+print()
+print('Configuration de la veille réseau…')
+nic_cmds = [
+    # Empêche la mise en veille de la carte réseau par le gestionnaire d'énergie
+    ['powercfg', '/setacvalueindex', 'SCHEME_CURRENT', 'SUB_NONE', 'HYBRIDSLEEP', '0'],
+    # Désactive les timers de veille (AC et batterie)
+    ['powercfg', '/change', 'standby-timeout-ac', '0'],
+    ['powercfg', '/change', 'hibernate-timeout-ac', '0'],
+    # Applique le schéma modifié
+    ['powercfg', '/setactive', 'SCHEME_CURRENT'],
+]
+nic_ok = True
+for cmd in nic_cmds:
+    r0 = subprocess.run(cmd, capture_output=True, text=True)
+    if r0.returncode != 0:
+        nic_ok = False
+
+# Désactiver la mise en veille de la carte réseau via le Gestionnaire de
+# périphériques (PowerManagement) — nécessite devcon ou pnputil.
+# Alternative fiable : script PowerShell ciblant tous les adaptateurs Ethernet/Wi-Fi.
+ps_nic = (
+    "Get-NetAdapter | ForEach-Object {"
+    "  try { Disable-NetAdapterPowerManagement -Name $_.Name -WakeOnMagicPacket -WakeOnPattern "
+    "        -ErrorAction SilentlyContinue } catch {} }"
+)
+r_nic = subprocess.run(
+    ['powershell', '-NoProfile', '-NonInteractive', '-Command', ps_nic],
+    capture_output=True, text=True
+)
+if nic_ok:
+    print('[2/4] Veille réseau  : désactivée (NinjaOne restera connecté)')
+else:
+    print('[2/4] Veille réseau  : vérifiez manuellement dans les options de l\'adaptateur réseau')
+
+# ── 3. Tâche planifiée (serveur 30 s après le login) ─────────────────────────
 task_name = 'wt-rotate serveur'
 r = subprocess.run([
     'schtasks', '/create',
@@ -54,10 +92,10 @@ r = subprocess.run([
     '/f'
 ], capture_output=True, text=True)
 if r.returncode == 0:
-    print(f'[2/3] Tâche créée    : "{task_name}"')
+    print(f'[3/4] Tâche créée    : "{task_name}"')
     print('       Le serveur démarrera 30 s après chaque connexion Windows.')
 else:
-    print(f'[2/3] ECHEC tâche    : {r.stderr.strip()[:120]}')
+    print(f'[3/4] ECHEC tâche    : {r.stderr.strip()[:120]}')
 
 # ── 3. Raccourci navigateur dans le dossier Démarrage Windows ────────────────
 # Le choix est important : lancer le MAUVAIS navigateur au boot peut faire
@@ -99,11 +137,11 @@ if browser_exe:
         capture_output=True, text=True
     )
     if r2.returncode == 0:
-        print(f'[3/3] {browser_name:<14} : raccourci démarrage créé')
+        print(f'[4/4] {browser_name:<14} : raccourci démarrage créé')
     else:
-        print(f'[3/3] ECHEC {browser_name} : {r2.stderr.strip()[:80]}')
+        print(f'[4/4] ECHEC {browser_name} : {r2.stderr.strip()[:80]}')
 else:
-    print(f'[3/3] {browser_name:<14} : introuvable — ajoutez-le manuellement au dossier Démarrage')
+    print(f'[4/4] {browser_name:<14} : introuvable — ajoutez-le manuellement au dossier Démarrage')
 
 print()
 print('═' * 56)

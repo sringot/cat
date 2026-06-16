@@ -71,6 +71,21 @@ function scheduleReconnect() {
   remoteReconnectTimer = setTimeout(connectRemote, 500);
 }
 
+async function autoScreenshot() {
+  const data = await chrome.storage.local.get('config');
+  const config = migrateConfig(data.config);
+  if (!config.windowId) return;
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab(config.windowId, { format: 'jpeg', quality: 35 });
+    if (dataUrl === lastShotData && Date.now() - lastShotAt < 5000) return;
+    if (remoteWs?.readyState === WebSocket.OPEN) {
+      remoteWs.send(JSON.stringify({ type: 'screenshot', data: dataUrl }));
+      lastShotData = dataUrl;
+      lastShotAt   = Date.now();
+    }
+  } catch {}
+}
+
 function sendCmdAck(action, ok, reason) {
   if (remoteWs?.readyState !== WebSocket.OPEN) return;
   remoteWs.send(JSON.stringify({ type: 'cmd_ack', action, ok, reason: reason || null }));
@@ -330,7 +345,7 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
-    // Capture l'onglet kiosque et renvoie un JPEG base64 aux mobiles
+    // Capture l'onglet kiosque et renvoie un JPEG base64 aux mobiles (aussi appelé en interne)
     case 'screenshot': {
       if (!config.windowId) return;
       try {
@@ -353,7 +368,7 @@ async function handleRemoteCommand(cmd) {
     // Affiche un bandeau de message sur les onglets kiosque
     case 'announce': {
       const text = (cmd.text || '').trim().slice(0, 300);
-      const duration = Math.min(300, Math.max(5, Number(cmd.duration) || 30));
+      const duration = Math.min(86400, Math.max(5, Number(cmd.duration) || 30));
       if (!text) { ok = false; reason = 'empty_text'; break; }
       // Injecté dans TOUS les onglets kiosque : la rotation peut changer de
       // page pendant l'affichage, le message doit rester visible

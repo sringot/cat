@@ -68,7 +68,7 @@ body {
 }
 @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* ── En-tête ──────────────────────────────────────────────── */
+/* ── Hero ──────────────────────────────────────────────────── */
 .hero { text-align: center; padding: 6px 0 26px; }
 .hero img {
   width: 86px; height: 86px; border-radius: 22px;
@@ -81,6 +81,7 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
   margin-top: 9px; max-width: 300px; margin-left: auto; margin-right: auto;
 }
 
+/* ── Card ──────────────────────────────────────────────────── */
 .card {
   background: var(--card);
   border-radius: 22px;
@@ -94,7 +95,7 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
   padding: 18px 20px 4px;
 }
 
-/* ── Étapes ───────────────────────────────────────────────── */
+/* ── Steps ─────────────────────────────────────────────────── */
 .step {
   display: flex; align-items: center; gap: 15px;
   padding: 15px 20px;
@@ -115,15 +116,48 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Android ──────────────────────────────────────────────── */
-.android {
-  display: flex; align-items: center; gap: 15px;
-  padding: 16px 20px;
-  font-size: 14px; color: var(--txt-2); line-height: 1.45;
+/* ── Platform selector ─────────────────────────────────────── */
+.platform-selector {
+  display: flex; gap: 8px;
+  background: var(--card);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  margin-bottom: 14px;
 }
-.android b { color: var(--txt); font-weight: 600; }
+.platform-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--txt-2);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease);
+  -webkit-appearance: none; appearance: none;
+}
+.platform-btn.active {
+  background: var(--accent);
+  color: var(--accent-txt);
+  border-color: transparent;
+}
+.platform-btn svg { flex-shrink: 0; }
 
-/* ── Lien navigateur ──────────────────────────────────────── */
+/* ── Tutorial panels ───────────────────────────────────────── */
+.tutorial-panel {
+  display: none;
+  animation: panel-in .25s var(--ease);
+}
+.tutorial-panel.visible {
+  display: block;
+}
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Browser link ──────────────────────────────────────────── */
 .browser-link {
   display: flex; align-items: center; justify-content: center; gap: 7px;
   margin-top: 22px;
@@ -146,47 +180,90 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
     <p>Contrôlez l'affichage depuis votre téléphone, comme une vraie app.</p>
   </div>
 
-  <div class="card">
-    <div class="card-hdr">Ajouter à l'écran d'accueil — iPhone</div>
-    <div class="step">
-      <div class="step-ic">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-          <path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/>
-          <path d="M6 11.5H5.5A1.5 1.5 0 0 0 4 13v6.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V13a1.5 1.5 0 0 0-1.5-1.5H18"/>
-        </svg>
+  <!-- Sélecteur de plateforme -->
+  <div class="platform-selector">
+    <button class="platform-btn" id="btn-ios" onclick="selectPlatform('ios')">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      iPhone / iPad
+    </button>
+    <button class="platform-btn" id="btn-android" onclick="selectPlatform('android')">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+        <path d="M17.523 15.341a.85.85 0 0 1-.848.848.85.85 0 0 1-.848-.848.85.85 0 0 1 .848-.848.85.85 0 0 1 .848.848zm-9.35 0a.85.85 0 0 1-.848.848.85.85 0 0 1-.848-.848.85.85 0 0 1 .848-.848.85.85 0 0 1 .848.848zM17.705 9l1.517-2.627a.315.315 0 0 0-.115-.43.315.315 0 0 0-.43.115L17.147 8.55A8.617 8.617 0 0 0 12 7.5a8.617 8.617 0 0 0-5.147 1.05L5.323 6.058a.315.315 0 0 0-.43-.115.315.315 0 0 0-.115.43L6.295 9C4.261 10.27 3 12.48 3 15h18c0-2.52-1.261-4.73-3.295-6z"/>
+      </svg>
+      Android
+    </button>
+  </div>
+
+  <!-- Tuto iOS -->
+  <div class="tutorial-panel" id="panel-ios">
+    <div class="card">
+      <div class="card-hdr">Ajouter à l'écran d'accueil — iPhone / iPad</div>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/>
+            <path d="M6 11.5H5.5A1.5 1.5 0 0 0 4 13v6.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V13a1.5 1.5 0 0 0-1.5-1.5H18"/>
+          </svg>
+        </div>
+        <div class="step-txt">Touchez <b>Partager</b><small>dans la barre de Safari, en bas de l'écran</small></div>
+        <div class="step-n">1</div>
       </div>
-      <div class="step-txt">Touchez <b>Partager</b><small>dans la barre de Safari, en bas de l'écran</small></div>
-      <div class="step-n">1</div>
-    </div>
-    <div class="step">
-      <div class="step-ic">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-          <rect x="4" y="4" width="16" height="16" rx="4.5"/>
-          <path d="M12 8.8v6.4M8.8 12h6.4"/>
-        </svg>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <rect x="4" y="4" width="16" height="16" rx="4.5"/>
+            <path d="M12 8.8v6.4M8.8 12h6.4"/>
+          </svg>
+        </div>
+        <div class="step-txt">Choisissez <b>« Sur l'écran d'accueil »</b><small>faites défiler la liste si besoin</small></div>
+        <div class="step-n">2</div>
       </div>
-      <div class="step-txt">Choisissez <b>« Sur l'écran d'accueil »</b><small>faites défiler la liste si besoin</small></div>
-      <div class="step-n">2</div>
-    </div>
-    <div class="step">
-      <div class="step-ic">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-          <path d="M4.5 12.5l5 5 10-11"/>
-        </svg>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M4.5 12.5l5 5 10-11"/>
+          </svg>
+        </div>
+        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>
+        <div class="step-n">3</div>
       </div>
-      <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>
-      <div class="step-n">3</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="android">
-      <div class="step-ic">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>
-        </svg>
+  <!-- Tuto Android -->
+  <div class="tutorial-panel" id="panel-android">
+    <div class="card">
+      <div class="card-hdr">Ajouter à l'écran d'accueil — Android</div>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>
+          </svg>
+        </div>
+        <div class="step-txt">Touchez le menu <b>⋮</b><small>en haut à droite de Chrome</small></div>
+        <div class="step-n">1</div>
       </div>
-      <div>Sur <b>Android</b> : menu <b>⋮</b> de Chrome, puis <b>« Ajouter à l'écran d'accueil »</b>.</div>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <rect x="4" y="4" width="16" height="16" rx="4.5"/>
+            <path d="M12 8.8v6.4M8.8 12h6.4"/>
+          </svg>
+        </div>
+        <div class="step-txt">Touchez <b>« Ajouter à l'écran d'accueil »</b><small>ou « Installer l'appli » selon votre version</small></div>
+        <div class="step-n">2</div>
+      </div>
+      <div class="step">
+        <div class="step-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M4.5 12.5l5 5 10-11"/>
+          </svg>
+        </div>
+        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>
+        <div class="step-n">3</div>
+      </div>
     </div>
   </div>
 
@@ -200,12 +277,42 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
 </div>
 
 <script>
-// Le lien « navigateur » embarque le token pour que la télécommande s'authentifie
+// Inject token into browser link
 (function () {
   let t = '';
   try { t = localStorage.getItem('wt_token') || ''; } catch {}
   document.getElementById('open-app').href =
     '/app' + (t ? '?token=' + encodeURIComponent(t) : '');
+})();
+
+// Platform selector
+function selectPlatform(platform) {
+  document.getElementById('btn-ios').classList.toggle('active', platform === 'ios');
+  document.getElementById('btn-android').classList.toggle('active', platform === 'android');
+  var iosPanel = document.getElementById('panel-ios');
+  var androidPanel = document.getElementById('panel-android');
+  // Remove and re-add visible to retrigger animation
+  if (platform === 'ios') {
+    androidPanel.classList.remove('visible');
+    iosPanel.classList.remove('visible');
+    // Trigger reflow so animation replays
+    void iosPanel.offsetWidth;
+    iosPanel.classList.add('visible');
+  } else {
+    iosPanel.classList.remove('visible');
+    androidPanel.classList.remove('visible');
+    void androidPanel.offsetWidth;
+    androidPanel.classList.add('visible');
+  }
+}
+
+// Auto-detect OS on load
+(function () {
+  var ua = navigator.userAgent || '';
+  var isAndroid = /android/i.test(ua);
+  var isIOS = /iP(hone|od|ad)/i.test(ua);
+  // Default: iOS selected (or when neither detected)
+  selectPlatform(isAndroid && !isIOS ? 'android' : 'ios');
 })();
 </script>
 </body>

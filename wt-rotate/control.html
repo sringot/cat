@@ -30,10 +30,10 @@
   --txt-3:      #566053;
   --line:       rgba(0,0,0,.3);
   --accent:     #ECDFCC;   /* même teinte que le texte — accord parfait */
-  --accent-2:   #D3B589;
+  --accent-2:   #D4D0CB;
   --accent-txt: #181C14;
   --accent-gl:  rgba(236,223,204,.12);
-  --grad:       linear-gradient(150deg, #ECDFCC, #D3B589);
+  --grad:       linear-gradient(150deg, #ECDFCC, #D4D0CB);
   --red:        #F0524C;
   --good:       #4ADE80;
   --warn:       #FBBF24;
@@ -252,14 +252,14 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 #ext-note, #dual-banner {
   display: none;
   padding: 14px 20px;
-  font-size: 13.5px; line-height: 1.45; color: #FF9B95;
+  font-size: 13.5px; line-height: 1.45; color: var(--red);
 }
 #ext-note.show, #dual-banner.show { display: block; }
 #dual-banner b { font-weight: 700; }
 #warn-banner {
   display: none;
   padding: 14px 20px;
-  font-size: 13.5px; line-height: 1.45; color: #FBBF24;
+  font-size: 13.5px; line-height: 1.45; color: var(--warn);
 }
 #warn-banner.show { display: block; }
 #install-banner {
@@ -904,6 +904,52 @@ nav {
 .num-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .num-field span { font-size: 15px; font-weight: 600; color: var(--txt-2); }
 
+/* ── Bouton « Lancer la rotation » (état stopped) ───────────── */
+.launch-face {
+  display: none;
+  padding: 22px 24px 28px;
+  text-align: center;
+}
+.launch-face.show { display: block; animation: fadeUpIn .4s var(--ease); }
+@keyframes fadeUpIn {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+.launch-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 36px; border-radius: 100px;
+  background: var(--grad); color: var(--accent-txt);
+  font-size: 15.5px; font-weight: 750; letter-spacing: -.2px;
+  box-shadow: var(--sh-accent);
+}
+.launch-btn:active { box-shadow: var(--sh-in), 0 0 14px var(--accent-gl); transform: scale(.95); }
+.launch-face-sub {
+  margin-top: 12px; font-size: 12.5px; color: var(--txt-3);
+}
+
+/* ── Sélecteur H:M:S (durée d'annonce) ──────────────────────── */
+.hms-picker {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 4px 8px 22px;
+}
+.hms-col {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+}
+.hms-in {
+  width: 64px; text-align: center;
+  font-size: 28px; font-weight: 750; letter-spacing: -.4px; color: var(--txt);
+  background: var(--sink); box-shadow: var(--sh-in); border-radius: 14px;
+  padding: 10px 6px; -moz-appearance: textfield; appearance: textfield;
+  font-variant-numeric: tabular-nums;
+}
+.hms-in::-webkit-outer-spin-button,
+.hms-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.hms-lbl { font-size: 11px; font-weight: 700; color: var(--txt-3); letter-spacing: .5px; }
+.hms-sep {
+  font-size: 26px; font-weight: 700; color: var(--txt-3);
+  align-self: center; padding-bottom: 18px; margin: 0 2px;
+}
+
 /* toast — pastille convexe */
 .toast {
   position: fixed;
@@ -985,6 +1031,14 @@ nav {
           <div class="now-label" id="now-label"><div class="dot"></div><span id="now-label-txt">—</span></div>
           <div class="now-name" id="now-name">—</div>
         </div>
+        <!-- Bouton démarrage (visible uniquement quand rien ne tourne) -->
+        <div class="launch-face" id="launch-face">
+          <button class="launch-btn" id="b-launch" aria-label="Lancer la rotation">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+            Lancer la rotation
+          </button>
+          <div class="launch-face-sub">Aucune page en rotation</div>
+        </div>
         <div class="transport" id="transport">
           <button class="t-side" id="b-prev" aria-label="Précédent">
             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
@@ -1063,19 +1117,23 @@ nav {
         <button class="edit-btn" id="pl-edit">Modifier</button>
       </div>
 
-      <!-- Ajouter une URL -->
-      <div class="card" id="pl-addcard">
-        <div class="open-row" style="margin:14px 14px 8px">
-          <input id="add-url" type="url" placeholder="Ajouter une URL…"
-                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-          <button class="send-btn" id="b-add" aria-label="Ajouter">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          </button>
-        </div>
-        <div style="margin:0 14px 12px">
-          <input id="add-name" type="text" placeholder="Nom (optionnel)"
-                 autocomplete="off" autocorrect="off" spellcheck="false"
-                 style="display:block;width:100%;font-size:14px;padding:10px 14px;background:var(--sink);box-shadow:var(--sh-in-sm);border-radius:12px;color:var(--txt)">
+      <!-- Liste des pages + ajout URL (carte unifiée) -->
+      <div class="card">
+        <div class="pl" id="pl"></div>
+        <div style="height:1px;background:var(--line);margin:0 18px" id="pl-divider"></div>
+        <div id="pl-addcard">
+          <div class="open-row" style="margin:14px 14px 8px">
+            <input id="add-url" type="url" placeholder="Ajouter une URL…"
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <button class="send-btn" id="b-add" aria-label="Ajouter">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+          </div>
+          <div style="margin:0 14px 14px">
+            <input id="add-name" type="text" placeholder="Nom (optionnel)"
+                   autocomplete="off" autocorrect="off" spellcheck="false"
+                   style="display:block;width:100%;font-size:14px;padding:10px 14px;background:var(--sink);box-shadow:var(--sh-in-sm);border-radius:12px;color:var(--txt)">
+          </div>
         </div>
       </div>
 
@@ -1094,11 +1152,6 @@ nav {
       <!-- Récents (repliable) -->
       <div class="card" id="recents-card" style="display:none">
         <div id="recents-list"></div>
-      </div>
-
-      <!-- Liste des pages -->
-      <div class="card">
-        <div class="pl" id="pl"></div>
       </div>
     </div>
 
@@ -1190,6 +1243,15 @@ nav {
         </div>
       </div>
 
+      <!-- Notifications push -->
+      <div class="sec-lbl">Notifications</div>
+      <div class="card">
+        <div class="row">Alertes push
+          <button class="row-btn" id="b-push-subscribe">Activer</button>
+        </div>
+        <div id="push-status" style="display:none;padding:0 20px 14px;font-size:12.5px;color:var(--txt-2)"></div>
+      </div>
+
       <!-- Informations -->
       <div class="sec-lbl">Informations</div>
       <div class="card">
@@ -1247,34 +1309,35 @@ nav {
   </div>
 </div>
 
-<!-- Feuille : durée du message kiosque -->
+<!-- Feuille : minuteur H:M:S pour le message kiosque -->
 <div class="sheet" id="ann-sheet">
   <div class="sheet-bg" id="ann-sheet-bg"></div>
   <div class="sheet-card">
     <div class="sheet-title">Durée d'affichage</div>
-    <button class="sheet-opt" data-ann-dur="300">5 minutes</button>
-    <button class="sheet-opt" data-ann-dur="600">10 minutes</button>
-    <button class="sheet-opt" data-ann-dur="900">15 minutes</button>
-    <button class="sheet-opt" data-ann-dur="-1">Personnalisé…</button>
-    <button class="sheet-cancel" id="ann-sheet-cancel">Annuler</button>
-  </div>
-</div>
-
-<!-- Feuille : durée personnalisée du message kiosque -->
-<div class="sheet" id="ann-custom-sheet">
-  <div class="sheet-bg" id="ann-custom-bg"></div>
-  <div class="sheet-card">
-    <div class="sheet-title">Durée personnalisée</div>
-    <div class="num-stepper">
-      <button class="num-btn" id="ann-custom-minus" aria-label="Diminuer">−</button>
-      <div class="num-field">
-        <input id="ann-custom-in" type="number" inputmode="numeric" min="1" max="240" value="5">
-        <span>min</span>
+    <div class="hms-picker">
+      <div class="hms-col">
+        <button class="num-btn" id="ann-h-plus" aria-label="Augmenter heures">+</button>
+        <input class="hms-in" id="ann-h" type="number" inputmode="numeric" min="0" max="23" value="0">
+        <button class="num-btn" id="ann-h-minus" aria-label="Diminuer heures">−</button>
+        <div class="hms-lbl">h</div>
       </div>
-      <button class="num-btn" id="ann-custom-plus" aria-label="Augmenter">+</button>
+      <div class="hms-sep">:</div>
+      <div class="hms-col">
+        <button class="num-btn" id="ann-m-plus" aria-label="Augmenter minutes">+</button>
+        <input class="hms-in" id="ann-m" type="number" inputmode="numeric" min="0" max="59" value="5">
+        <button class="num-btn" id="ann-m-minus" aria-label="Diminuer minutes">−</button>
+        <div class="hms-lbl">min</div>
+      </div>
+      <div class="hms-sep">:</div>
+      <div class="hms-col">
+        <button class="num-btn" id="ann-s-plus" aria-label="Augmenter secondes">+</button>
+        <input class="hms-in" id="ann-s" type="number" inputmode="numeric" min="0" max="59" value="0">
+        <button class="num-btn" id="ann-s-minus" aria-label="Diminuer secondes">−</button>
+        <div class="hms-lbl">s</div>
+      </div>
     </div>
-    <button class="sheet-primary" id="ann-custom-confirm">Afficher le message</button>
-    <button class="sheet-cancel" id="ann-custom-cancel">Annuler</button>
+    <button class="sheet-primary" id="ann-confirm">Afficher le message</button>
+    <button class="sheet-cancel" id="ann-cancel">Annuler</button>
   </div>
 </div>
 
@@ -1459,7 +1522,32 @@ function boot() {
   }
   $('set-ip').textContent = ip + ':' + port;
   initTheme();
+  initSwipe();
   connect();
+}
+
+// ── Swipe horizontal pour changer d'onglet ───────────────────────────────────
+function initSwipe() {
+  const PAGES = ['home', 'playlist', 'settings'];
+  let sx = 0, sy = 0, swiping = false;
+  const sc = $('s-main');
+  sc.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiping = false;
+  }, { passive: true });
+  sc.addEventListener('touchmove', e => {
+    if (swiping) { e.preventDefault(); return; }
+    const dx = e.touches[0].clientX - sx;
+    const dy = e.touches[0].clientY - sy;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 12) swiping = true;
+  }, { passive: false });
+  sc.addEventListener('touchend', e => {
+    if (!swiping) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) < 55) return;
+    const cur = PAGES.indexOf(currentPage);
+    if (dx < 0 && cur < PAGES.length - 1) showPage(PAGES[cur + 1]);
+    else if (dx > 0 && cur > 0) showPage(PAGES[cur - 1]);
+  }, { passive: true });
 }
 
 function setTheme(t) {
@@ -1708,6 +1796,19 @@ function sync(s) {
     setNow(cur.name || shortUrl(cur.url) || '—');
   }
 
+  // Face « Lancer la rotation » vs contrôles normaux
+  const stopped = mode === 'stopped';
+  const lf = $('launch-face');
+  const wasShown = lf.classList.contains('show');
+  if (stopped !== wasShown) {
+    // Mode transition : re-animer seulement au vrai changement
+    lf.classList.remove('show');
+    void lf.offsetWidth; // force reflow pour relancer l'animation
+    if (stopped) lf.classList.add('show');
+  }
+  $('transport').style.display = stopped ? 'none' : '';
+  $('volrow').style.display    = stopped ? 'none' : '';
+
   // bouton principal :
   // – rotation active → pause
   // – spotlight YouTube → pause/lecture vidéo (sans quitter le spotlight)
@@ -1721,7 +1822,7 @@ function sync(s) {
 
   // Boutons ±15 s quand la page affichée est une vidéo YouTube
   const curUrl = mode === 'external' ? (s.remoteUrl || '') : (cur.url || '');
-  $('seekrow').classList.toggle('show', /(?:youtube\.com|youtu\.be)\//i.test(curUrl));
+  $('seekrow').classList.toggle('show', !stopped && /(?:youtube\.com|youtu\.be)\//i.test(curUrl));
 
   // Sessions expirées (onglet bloqué sur une page de login côté kiosque)
   const warns = s.warnings || [];
@@ -2133,22 +2234,21 @@ function openAnnSheet() {
   pendingAnn = text;
   $('ann-in').blur();
   $('ann-sheet').classList.add('show');
+  setTimeout(() => $('ann-m').focus(), 320);
 }
 function closeAnnSheet() {
+  pendingAnn = null;
   $('ann-sheet').classList.remove('show');
 }
-
-// Durée personnalisée du message — remplace l'ancienne boîte prompt()
-function openAnnCustomSheet() {
-  $('ann-custom-in').value = 5;
-  $('ann-custom-sheet').classList.add('show');
-  setTimeout(() => { const i = $('ann-custom-in'); i.focus(); i.select(); }, 320);
+function annTotalSeconds() {
+  const h = Math.max(0, Math.min(23, parseInt($('ann-h').value) || 0));
+  const m = Math.max(0, Math.min(59, parseInt($('ann-m').value) || 0));
+  const s = Math.max(0, Math.min(59, parseInt($('ann-s').value) || 0));
+  return h * 3600 + m * 60 + s;
 }
-function closeAnnCustomSheet() {
-  pendingAnn = null;
-  $('ann-custom-sheet').classList.remove('show');
+function clampHms(id, min, max) {
+  const el = $(id); el.value = Math.max(min, Math.min(max, parseInt(el.value) || 0));
 }
-function clampAnnMin(v) { return Math.max(1, Math.min(240, parseInt(v) || 5)); }
 
 // Feuille de confirmation générique — remplace l'ancienne boîte confirm()
 let confirmCb = null;
@@ -2210,6 +2310,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('b-preview-refresh').addEventListener('click', requestScreenshot);
 
+  $('b-launch').addEventListener('click', () => {
+    const mode = lastState ? modeOf(lastState) : 'stopped';
+    if (mode === 'stopped') {
+      const action = lastState?.hasTabs ? 'resume' : 'start';
+      if (cmd(action) && lastState) {
+        lastState.active = true; lastState.remotePaused = false;
+        // Optimistic UI : hide launch face immédiatement
+        $('launch-face').classList.remove('show');
+        $('transport').style.display = '';
+        $('volrow').style.display = '';
+        flipMain(true, 'Actif');
+      }
+    }
+  });
+
   $('b-ann').addEventListener('click', openAnnSheet);
   $('ann-in').addEventListener('keydown', e => { if (e.key === 'Enter') openAnnSheet(); });
 
@@ -2252,42 +2367,30 @@ document.addEventListener('DOMContentLoaded', () => {
   $('sheet-cancel').addEventListener('click', closeSheet);
   $('sheet-bg').addEventListener('click', closeSheet);
 
-  document.querySelectorAll('[data-ann-dur]').forEach(b =>
-    b.addEventListener('click', () => {
-      const dur = parseInt(b.dataset.annDur);
-      if (dur === -1) {            // « Personnalisé… » → feuille de saisie propre
-        closeAnnSheet();           // masque cette feuille, garde pendingAnn
-        openAnnCustomSheet();
-        return;
-      }
-      if (pendingAnn) {
-        cmd('announce', { text: pendingAnn, duration: dur });
-        $('ann-in').value = '';
-      }
-      pendingAnn = null;
-      closeAnnSheet();
-    }));
-  $('ann-sheet-cancel').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
-  $('ann-sheet-bg').addEventListener('click', () => { pendingAnn = null; closeAnnSheet(); });
-
-  // Durée personnalisée du message
-  $('ann-custom-minus').addEventListener('click', () => {
-    $('ann-custom-in').value = clampAnnMin(parseInt($('ann-custom-in').value) - 1);
+  // Minuteur H:M:S pour le message kiosque
+  $('ann-h-plus').addEventListener('click',  () => { $('ann-h').value = Math.min(23, (parseInt($('ann-h').value)||0)+1); });
+  $('ann-h-minus').addEventListener('click', () => { $('ann-h').value = Math.max(0,  (parseInt($('ann-h').value)||0)-1); });
+  $('ann-m-plus').addEventListener('click',  () => { $('ann-m').value = Math.min(59, (parseInt($('ann-m').value)||0)+1); });
+  $('ann-m-minus').addEventListener('click', () => { $('ann-m').value = Math.max(0,  (parseInt($('ann-m').value)||0)-1); });
+  $('ann-s-plus').addEventListener('click',  () => { $('ann-s').value = Math.min(59, (parseInt($('ann-s').value)||0)+1); });
+  $('ann-s-minus').addEventListener('click', () => { $('ann-s').value = Math.max(0,  (parseInt($('ann-s').value)||0)-1); });
+  ['ann-h','ann-m','ann-s'].forEach(id => {
+    $(id).addEventListener('blur', () => {
+      const [min, max] = id === 'ann-h' ? [0,23] : [0,59];
+      clampHms(id, min, max);
+    });
   });
-  $('ann-custom-plus').addEventListener('click', () => {
-    $('ann-custom-in').value = clampAnnMin(parseInt($('ann-custom-in').value) + 1);
-  });
-  $('ann-custom-confirm').addEventListener('click', () => {
-    const mins = clampAnnMin($('ann-custom-in').value);
+  $('ann-confirm').addEventListener('click', () => {
+    const secs = annTotalSeconds();
+    if (secs < 5) { showToast('Durée trop courte (min. 5 secondes)'); return; }
     if (pendingAnn) {
-      cmd('announce', { text: pendingAnn, duration: mins * 60 });
+      cmd('announce', { text: pendingAnn, duration: secs });
       $('ann-in').value = '';
     }
-    closeAnnCustomSheet();
+    closeAnnSheet();
   });
-  $('ann-custom-cancel').addEventListener('click', closeAnnCustomSheet);
-  $('ann-custom-bg').addEventListener('click', closeAnnCustomSheet);
-  $('ann-custom-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('ann-custom-confirm').click(); });
+  $('ann-cancel').addEventListener('click', closeAnnSheet);
+  $('ann-sheet-bg').addEventListener('click', closeAnnSheet);
 
   // Feuille de confirmation générique
   $('confirm-yes').addEventListener('click', () => {
@@ -2423,6 +2526,61 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   window.addEventListener('pageshow', ensureAlive);
   window.addEventListener('focus', ensureAlive);
+
+  // ── Notifications push ──────────────────────────────────────────────────────
+  (async function initPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      $('b-push-subscribe').textContent = 'Non supporté';
+      $('b-push-subscribe').disabled = true;
+      return;
+    }
+    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => null);
+    if (!reg) return;
+
+    async function updatePushUI() {
+      const perm = Notification.permission;
+      const sub = await reg.pushManager.getSubscription().catch(() => null);
+      const btn = $('b-push-subscribe');
+      const status = $('push-status');
+      if (sub && perm === 'granted') {
+        btn.textContent = 'Désactiver';
+        status.textContent = 'Vous recevrez une alerte si le kiosque se déconnecte.';
+        status.style.display = '';
+      } else {
+        btn.textContent = 'Activer';
+        status.style.display = 'none';
+      }
+    }
+
+    await updatePushUI();
+
+    $('b-push-subscribe').addEventListener('click', async () => {
+      const sub = await reg.pushManager.getSubscription().catch(() => null);
+      if (sub) {
+        await sub.unsubscribe();
+        await updatePushUI();
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { showToast('Autorisation de notification refusée'); return; }
+      try {
+        const resp = await fetch('/push-pubkey');
+        if (!resp.ok) { showToast('Push non disponible (pywebpush requis)'); return; }
+        const { publicKey } = await resp.json();
+        const vapidKey = Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+        const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey });
+        await fetch('/push-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSub.toJSON())
+        });
+        await updatePushUI();
+        showToast('Notifications activées');
+      } catch (e) {
+        showToast('Erreur : ' + (e.message || 'push indisponible'));
+      }
+    });
+  })();
 
   boot();
 });

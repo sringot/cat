@@ -404,6 +404,26 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 #card-preview.loading .preview-wrap img { filter: brightness(.82); transition: filter .2s; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Skeleton shimmer — aperçu en attente de la première capture ── */
+.preview-skel {
+  display: none;
+  width: 100%; aspect-ratio: 16/9;
+  background: var(--sink); box-shadow: var(--sh-in);
+  position: relative; overflow: hidden;
+}
+#card-preview.skeleton .preview-skel   { display: block; }
+#card-preview.skeleton .preview-wrap img,
+#card-preview.skeleton .preview-ts     { display: none; }
+.preview-skel::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--neu-l) 50%, transparent 100%);
+  animation: previewShimmer 1.6s ease-in-out infinite;
+}
+@keyframes previewShimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
 
 /* volume — piste concave, pastille convexe verte */
 .volrow {
@@ -1044,6 +1064,7 @@ nav {
       <!-- Aperçu en direct -->
       <div class="card" id="card-preview" style="display:none">
         <div class="preview-wrap">
+          <div class="preview-skel" aria-hidden="true"></div>
           <img id="preview-img" alt="Aperçu remote">
           <div class="preview-ts" id="preview-ts"></div>
           <button class="preview-refresh" id="b-preview-refresh" aria-label="Actualiser l'aperçu">
@@ -1599,6 +1620,7 @@ function initSwipe() {
       if (dx < 0 && startIdx < _PAGES.length - 1) next = startIdx + 1;
       else if (dx > 0 && startIdx > 0)            next = startIdx - 1;
     }
+    if (navigator.vibrate && next !== startIdx) navigator.vibrate(6);
     showPage(_PAGES[next]);
   }, { passive: true });
 }
@@ -1690,6 +1712,7 @@ function connect() {
       previewPending = false;
       clearTimeout(previewPendingTimer);
       $('card-preview').classList.remove('loading');
+      $('card-preview').classList.remove('skeleton');
       if (m.data) {
         $('preview-img').src = m.data;
         $('card-preview').style.display = '';
@@ -1736,7 +1759,15 @@ function setExtOnline(on) {
   $('volrow').classList.toggle('off', !on);
   $('set-ext').textContent = on ? 'Connectée' : 'Hors ligne';
   $('set-ext-dot').style.background = on ? 'var(--good)' : 'var(--red)';
-  if (on) startPreview(); else stopPreview();
+  if (on) {
+    if (!$('preview-img').naturalWidth) {
+      $('card-preview').style.display = '';
+      $('card-preview').classList.add('skeleton');
+    }
+    startPreview();
+  } else {
+    stopPreview();
+  }
 }
 
 // ── Aperçu en direct ──────────────────────────────────────────────────────────
@@ -2256,6 +2287,7 @@ function flipMain(playing, label) {
 }
 
 function mainAction() {
+  if (navigator.vibrate) navigator.vibrate(10);
   if (!lastState) { cmd('start'); return; }
   const mode = modeOf(lastState);
   const extIsYouTube = mode === 'external'
@@ -2368,8 +2400,8 @@ function toggleEdit() {
 
 document.addEventListener('DOMContentLoaded', () => {
   $('b-main').addEventListener('click', mainAction);
-  $('b-prev').addEventListener('click', () => cmd('prev'));
-  $('b-next').addEventListener('click', () => cmd('next'));
+  $('b-prev').addEventListener('click', () => { if (navigator.vibrate) navigator.vibrate(8); cmd('prev'); });
+  $('b-next').addEventListener('click', () => { if (navigator.vibrate) navigator.vibrate(8); cmd('next'); });
   $('b-release').addEventListener('click', () => {
     if (cmd('release') && lastState) {
       lastState.active = true; lastState.remotePaused = false; lastState.remoteUrl = null;
@@ -2385,6 +2417,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('b-launch').addEventListener('click', () => {
+    if (navigator.vibrate) navigator.vibrate(12);
     const mode = lastState ? modeOf(lastState) : 'stopped';
     if (mode === 'stopped') {
       const action = lastState?.hasTabs ? 'resume' : 'start';

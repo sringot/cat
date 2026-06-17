@@ -1,4 +1,8 @@
-wt-rotate/.wt_token
+# Secrets locaux (jamais versionnés) : token d'auth + clé privée VAPID + abonnements push
+wt-rotate/.wt_*
+# Données runtime du serveur (regénérées à l'usage)
+wt-rotate/playlist_backup.json
+wt-rotate/library.json
 __pycache__/
 *.pyc
 *.zip

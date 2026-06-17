@@ -15,3 +15,4 @@ html_cache: Optional[bytes] = None
 guide_cache: Optional[bytes] = None
 manifest_cache: Optional[bytes] = None
 icon_cache: dict = {}
+keepalive_task = None   # asyncio.Task | None — référence forte (anti-GC)

@@ -5,6 +5,7 @@ pip install aiohttp qrcode
 """
 import asyncio
 import io
+import logging
 import socket
 from pathlib import Path
 
@@ -14,6 +15,11 @@ async def main():
     from server import state, auth, backup, library
     from server.http_handler import handle_http
     from server.ws_handler import handle_ws, keepalive_loop
+
+    # Journalisation : événements runtime horodatés (le bandeau reste en print)
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s  %(levelname)-7s %(message)s',
+                        datefmt='%H:%M:%S')
 
     backup.load()   # playlist auto-sauvegardée lors d'une session précédente
     library.load()  # bibliothèque de playlists nommées
@@ -95,7 +101,9 @@ async def main():
     site = web.TCPSite(runner, '0.0.0.0', state.PORT)
     await site.start()
 
-    asyncio.create_task(keepalive_loop())
+    # Référence forte conservée sur l'état : empêche le GC de la tâche et
+    # la rend inspectable (la boucle est par ailleurs résiliente aux erreurs).
+    state.keepalive_task = asyncio.create_task(keepalive_loop())
     await asyncio.Future()
 
 

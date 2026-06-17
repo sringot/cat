@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import time
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
+
+log = logging.getLogger('wt-rotate.library')
 
 FILE = Path(__file__).parent.parent / 'library.json'
 data: dict = {'playlists': []}
@@ -93,5 +96,5 @@ def _persist() -> None:
             json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8'
         )
         os.replace(tmp, FILE)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning('Échec sauvegarde bibliothèque: %s', e)

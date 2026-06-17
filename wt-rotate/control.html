@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#181C14">
@@ -1624,9 +1624,21 @@ function boot() {
 
 // ── Swipe horizontal pour changer d'onglet ───────────────────────────────────
 function initSwipe() {
-  const sc    = $('s-main');
-  const rail  = document.getElementById('pages-rail');
+  const sc      = $('s-main');
+  const rail    = document.getElementById('pages-rail');
+  const navBtns = [...document.querySelectorAll('.nav-btn')];
   let sx = 0, sy = 0, dragging = false, startIdx = 0, locked = false;
+  let pendingPct = null, rafId = 0, lastNearest = -1;
+
+  // Écriture du transform coalescée sur le rafraîchissement écran : plusieurs
+  // touchmove dans une même frame ne produisent qu'un seul repaint → glisse
+  // plus fluide, surtout sur mobile bas de gamme.
+  const paint = () => {
+    rafId = 0;
+    if (pendingPct === null) return;
+    rail.style.transform = `translateX(${pendingPct}%)`;
+    pendingPct = null;
+  };
 
   sc.addEventListener('touchstart', e => {
     // Le slider de volume est un geste horizontal : il ne doit pas
@@ -1635,8 +1647,9 @@ function initSwipe() {
     if (locked) return;
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
-    dragging  = false;
-    startIdx  = _PAGES.indexOf(currentPage);
+    dragging    = false;
+    startIdx    = _PAGES.indexOf(currentPage);
+    lastNearest = startIdx;
     rail.style.transition = 'none';
   }, { passive: true });
 
@@ -1652,15 +1665,20 @@ function initSwipe() {
     const vw      = window.innerWidth;
     const raw     = startIdx * vw - dx;
     const clamped = Math.max(0, Math.min((_PAGES.length - 1) * vw, raw));
-    rail.style.transform = `translateX(${-(clamped / vw) * 33.333}%)`;
-    // La pastille de nav suit le doigt : surbrillance de la page la plus proche
+    pendingPct = -(clamped / vw) * 33.333;
+    if (!rafId) rafId = requestAnimationFrame(paint);
+    // La pastille de nav suit le doigt, mais on ne touche au DOM que quand la
+    // page la plus proche change (et plus à chaque pixel parcouru).
     const nearest = Math.round(clamped / vw);
-    document.querySelectorAll('.nav-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.pg === _PAGES[nearest]));
+    if (nearest !== lastNearest) {
+      lastNearest = nearest;
+      navBtns.forEach(b => b.classList.toggle('active', b.dataset.pg === _PAGES[nearest]));
+    }
   }, { passive: false });
 
   sc.addEventListener('touchend', e => {
     if (locked || !dragging) return;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; pendingPct = null; }
     const dx  = e.changedTouches[0].clientX - sx;
     let next  = startIdx;
     if (Math.abs(dx) > 50) {
@@ -1670,6 +1688,86 @@ function initSwipe() {
     if (navigator.vibrate && next !== startIdx) navigator.vibrate(6);
     showPage(_PAGES[next]);
   }, { passive: true });
+
+  // Geste interrompu (notification système, appel, gesture OS…) : on annule
+  // proprement et on revient à la page de départ, sinon le rail reste figé
+  // au milieu d'un glissement.
+  sc.addEventListener('touchcancel', () => {
+    if (locked || !dragging) return;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; pendingPct = null; }
+    dragging = false;
+    showPage(_PAGES[startIdx]);
+  }, { passive: true });
+}
+
+// ── Accessibilité des feuilles : focus-trap + Échap + restitution du focus ───
+// Un seul mécanisme pour TOUTES les feuilles (.sheet), pas de code par feuille.
+// On observe l'ajout/retrait de .show ; Échap réutilise le bouton « Annuler »
+// existant (donc tout le nettoyage d'état déjà câblé s'exécute aussi).
+function initSheetA11y() {
+  const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])';
+  const sheets = [...document.querySelectorAll('.sheet')];
+  let lastFocus = null;
+
+  const cardOf   = s => s.querySelector('.sheet-card');
+  const itemsIn  = card => [...card.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+  const topSheet = () => sheets.filter(s => s.classList.contains('show')).pop() || null;
+
+  sheets.forEach(sheet => {
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    const title = sheet.querySelector('.sheet-title');
+    if (title) {
+      if (!title.id) title.id = sheet.id + '-title';
+      sheet.setAttribute('aria-labelledby', title.id);
+    }
+    new MutationObserver(() => {
+      const open = sheet.classList.contains('show');
+      if (open && !sheet._open) {
+        sheet._open = true;
+        lastFocus = document.activeElement;
+        // Focus différé : la carte glisse (.52s) ; focaliser au 1er frame
+        // annule l'animation sur certains navigateurs.
+        setTimeout(() => {
+          if (!sheet.classList.contains('show')) return;
+          const card = cardOf(sheet);
+          if (card && !card.contains(document.activeElement)) {
+            const f = itemsIn(card);
+            if (f.length) f[0].focus();
+          }
+        }, 80);
+      } else if (!open && sheet._open) {
+        sheet._open = false;
+        // Ne reprend le focus que s'il est resté dans la feuille fermée
+        // (évite de voler le focus lors d'un enchaînement feuille → feuille).
+        if (lastFocus && lastFocus.focus &&
+            (sheet.contains(document.activeElement) || document.activeElement === document.body)) {
+          try { lastFocus.focus(); } catch {}
+        }
+      }
+    }).observe(sheet, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  document.addEventListener('keydown', e => {
+    const sheet = topSheet();
+    if (!sheet) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      const close = sheet.querySelector('.sheet-cancel') || sheet.querySelector('.sheet-bg');
+      if (close) close.click(); else sheet.classList.remove('show');
+      return;
+    }
+    if (e.key === 'Tab') {
+      const card = cardOf(sheet);
+      if (!card) return;
+      const f = itemsIn(card);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (!card.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
 }
 
 function setTheme(t) {
@@ -2757,6 +2855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
+  initSheetA11y();
   boot();
 });
 </script>

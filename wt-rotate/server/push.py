@@ -67,8 +67,8 @@ def _load_subs() -> list:
 def _save_subs(subs: list):
     try:
         _SUBS_FILE.write_text(json.dumps(subs))
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning('Échec sauvegarde abonnements push: %s', e)
 
 async def save_subscription(sub: dict):
     if not sub.get('endpoint') or not isinstance(sub.get('endpoint'), str):

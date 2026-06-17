@@ -1,8 +1,36 @@
 import asyncio
+import ipaddress
 import json
+import logging
 import time
 from aiohttp import web, WSMsgType
 from server import state, auth, sys_audio, backup, library
+
+log = logging.getLogger('wt-rotate.ws')
+
+# Adresses de bouclage : seule l'extension kiosque (même machine que le serveur)
+# s'y connecte. Les téléphones arrivent eux par l'IP du LAN.
+_LOOPBACK = {'127.0.0.1', '::1', 'localhost'}
+
+
+def _is_local(request) -> bool:
+    """True si la connexion vient de la machine locale (loopback)."""
+    peer = (request.remote or '').strip()
+    if peer in _LOOPBACK:
+        return True
+    try:
+        return ipaddress.ip_address(peer).is_loopback
+    except ValueError:
+        return False
+
+
+async def _reject(ws, reason: str) -> None:
+    """Refuse une socket : prévient le client puis ferme proprement."""
+    try:
+        await ws.send_str(json.dumps({'type': 'auth_error', 'reason': reason}))
+    except Exception:
+        pass
+    await ws.close()
 
 
 async def _broadcast_mobiles(msg: str) -> None:
@@ -32,25 +60,24 @@ async def handle_ws(request):
         return ws
 
     if msg.get('type') == 'extension':
-        # Accept empty token (first-boot, before the extension has received its token).
-        # Reject any non-empty token that is wrong — prevents LAN impersonation after
-        # the real extension has connected at least once.
+        # L'extension kiosque tourne TOUJOURS sur la machine du serveur et s'y
+        # connecte en ws://localhost (cf. manifest + bg/remote.js). On exige donc
+        # une origine locale : ça ferme à la fois l'amorçage à token vide (qui
+        # renvoie le vrai token dans l'ack) ET l'usurpation d'extension par un
+        # client du LAN. Le téléphone, lui, arrive par l'IP du LAN avec un token.
+        if not _is_local(request):
+            log.warning('Connexion extension refusée depuis %s (origine non locale)',
+                        request.remote)
+            await _reject(ws, 'local_only')
+            return ws
         token = msg.get('token', '')
         if token and not auth.validate(token):
-            try:
-                await ws.send_str(json.dumps({'type': 'auth_error', 'reason': 'invalid_token'}))
-            except Exception:
-                pass
-            await ws.close()
+            await _reject(ws, 'invalid_token')
             return ws
         await _handle_extension(ws)
     elif msg.get('type') == 'mobile':
         if not auth.validate(msg.get('token', '')):
-            try:
-                await ws.send_str(json.dumps({'type': 'auth_error', 'reason': 'invalid_token'}))
-            except Exception:
-                pass
-            await ws.close()
+            await _reject(ws, 'invalid_token')
             return ws
         await _handle_mobile(ws)
 
@@ -74,9 +101,9 @@ async def _handle_extension(ws) -> None:
         except Exception:
             pass
         if len(state.ext_takeovers) >= 3:
-            print('[!] CONFLIT : plusieurs extensions kiosque connectées en même temps')
+            log.warning('Conflit : plusieurs extensions kiosque connectées en même temps')
             await _broadcast_mobiles(json.dumps({'type': 'warn_dual_ext'}))
-    print('[+] Extension connectée')
+    log.info('Extension connectée')
     await ws.send_str(json.dumps({
         'type': 'ack', 'ip': state.local_ip, 'http_port': state.PORT,
         'control_url': f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}',
@@ -106,7 +133,7 @@ async def _handle_extension(ws) -> None:
     except Exception:
         pass
     finally:
-        print('[-] Extension déconnectée')
+        log.info('Extension déconnectée')
         if state.ext_ws is ws:
             # Only broadcast offline if no new extension took over during reconnect
             state.ext_ws = None
@@ -121,7 +148,7 @@ async def _handle_extension(ws) -> None:
 
 async def _handle_mobile(ws) -> None:
     state.mob_clients.add(ws)
-    print(f'[+] Mobile connecté ({len(state.mob_clients)} actif(s))')
+    log.info('Mobile connecté (%d actif(s))', len(state.mob_clients))
     await ws.send_str(json.dumps({'type': 'auth_ok'}))
     ext_online = state.ext_ws is not None and not state.ext_ws.closed
     await ws.send_str(json.dumps({'type': 'ext_status', 'connected': ext_online}))
@@ -210,17 +237,25 @@ async def _handle_mobile(ws) -> None:
         pass
     finally:
         state.mob_clients.discard(ws)
-        print(f'[-] Mobile déconnecté ({len(state.mob_clients)} actif(s))')
+        log.info('Mobile déconnecté (%d actif(s))', len(state.mob_clients))
 
 
 async def keepalive_loop() -> None:
-    """Application-level pings every 20s keep extension SW and mobile connections alive."""
+    """Pings applicatifs toutes les 20 s : maintiennent vivants le service
+    worker de l'extension et les connexions mobiles. Chaque itération est
+    isolée — une erreur transitoire ne doit jamais tuer la boucle, sinon les
+    pings s'arrêtent en silence et les sockets finissent par tomber."""
     ping = json.dumps({'type': 'ping'})
     while True:
-        await asyncio.sleep(20)
-        if state.ext_ws and not state.ext_ws.closed:
-            try:
-                await state.ext_ws.send_str(ping)
-            except Exception:
-                pass
-        await _broadcast_mobiles(ping)
+        try:
+            await asyncio.sleep(20)
+            if state.ext_ws and not state.ext_ws.closed:
+                try:
+                    await state.ext_ws.send_str(ping)
+                except Exception:
+                    pass
+            await _broadcast_mobiles(ping)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception('keepalive : itération en échec, on continue')

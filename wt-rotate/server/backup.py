@@ -6,9 +6,12 @@ Le serveur garde donc une copie de la dernière playlist non vide reçue,
 restaurable depuis le téléphone (commande pl_restore).
 """
 import json
+import logging
 import os
 import time
 from pathlib import Path
+
+log = logging.getLogger('wt-rotate.backup')
 
 FILE = Path(__file__).parent.parent / 'playlist_backup.json'
 
@@ -47,8 +50,8 @@ def maybe_save(urls) -> bool:
         tmp = FILE.parent / (FILE.name + '.tmp')
         tmp.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
         os.replace(tmp, FILE)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning('Échec sauvegarde playlist: %s', e)
     return True
 
 

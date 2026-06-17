@@ -156,7 +156,9 @@ async def _handle_mobile(ws) -> None:
                     # Captures : un frame vient d'être diffusé à TOUS les
                     # mobiles — inutile de redemander une capture identique
                     # quand plusieurs téléphones tournent en même temps.
-                    if d.get('action') == 'screenshot' and time.time() - state.cached_shot_ts < 3:
+                    # force=true (rafraîchissement manuel) court-circuite ce throttle.
+                    if (d.get('action') == 'screenshot' and not d.get('force')
+                            and time.time() - state.cached_shot_ts < 3):
                         continue
                     # Restauration : la playlist sauvegardée vit côté serveur,
                     # on l'injecte dans la commande avant de la forwarder.

@@ -390,6 +390,10 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   display: flex; align-items: center; justify-content: center;
   color: rgba(255,255,255,.92);
 }
+.preview-refresh svg { transition: transform .3s var(--ease); }
+#card-preview.loading .preview-refresh svg { animation: spin .7s linear infinite; }
+#card-preview.loading .preview-wrap img { filter: brightness(.82); transition: filter .2s; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 
 /* volume — piste concave, pastille convexe verte */
@@ -1632,6 +1636,9 @@ function connect() {
     if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
     if (m.type === 'warn_dual_ext') { $('dual-banner').classList.add('show'); return; }
     if (m.type === 'screenshot') {
+      previewPending = false;
+      clearTimeout(previewPendingTimer);
+      $('card-preview').classList.remove('loading');
       if (m.data) {
         $('preview-img').src = m.data;
         $('card-preview').style.display = '';
@@ -1682,11 +1689,24 @@ function setExtOnline(on) {
 }
 
 // ── Aperçu en direct ──────────────────────────────────────────────────────────
-function requestScreenshot() {
+let previewPending = false, previewPendingTimer = null;
+function requestScreenshot(force) {
   // envoi silencieux : un tick automatique pendant une reconnexion ne doit
   // pas afficher le toast « Connexion perdue » toutes les 20 s
-  if (extOnline && ws?.readyState === 1)
-    ws.send(JSON.stringify({ type: 'command', action: 'screenshot' }));
+  if (extOnline && ws?.readyState === 1) {
+    if (force) {
+      // retour visuel immédiat : la carte « tourne » tant que la capture
+      // n'est pas revenue (le force court-circuite les throttles serveur/ext)
+      $('card-preview').classList.add('loading');
+      previewPending = true;
+      clearTimeout(previewPendingTimer);
+      previewPendingTimer = setTimeout(() => {
+        previewPending = false;
+        $('card-preview').classList.remove('loading');
+      }, 4000);
+    }
+    ws.send(JSON.stringify({ type: 'command', action: 'screenshot', force: !!force }));
+  }
 }
 function startPreview() {
   stopPreview();
@@ -2308,7 +2328,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-send').addEventListener('click', sendUrl);
   $('urlin').addEventListener('keydown', e => { if (e.key === 'Enter') sendUrl(); });
 
-  $('b-preview-refresh').addEventListener('click', requestScreenshot);
+  $('b-preview-refresh').addEventListener('click', () => {
+    if (navigator.vibrate) navigator.vibrate(8);
+    requestScreenshot(true);
+  });
 
   $('b-launch').addEventListener('click', () => {
     const mode = lastState ? modeOf(lastState) : 'stopped';

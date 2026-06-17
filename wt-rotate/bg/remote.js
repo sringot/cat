@@ -355,7 +355,8 @@ async function handleRemoteCommand(cmd) {
         // le même JPEG en boucle (réseau + batterie téléphone). On re-pousse
         // quand même toutes les ~25 s pour alimenter le cache serveur, qui
         // sert l'aperçu aux téléphones fraîchement connectés.
-        if (dataUrl === lastShotData && Date.now() - lastShotAt < 25000) return;
+        // force=true (rafraîchissement manuel) renvoie toujours, même identique.
+        if (!cmd.force && dataUrl === lastShotData && Date.now() - lastShotAt < 25000) return;
         if (remoteWs?.readyState === WebSocket.OPEN) {
           remoteWs.send(JSON.stringify({ type: 'screenshot', data: dataUrl }));
           lastShotData = dataUrl;

@@ -135,7 +135,7 @@ input { font: inherit; color: inherit; border: 0; outline: none; background: non
   display: none; opacity: 0;
   transition: opacity .45s var(--ease), transform .45s var(--ease);
   transform: scale(.97);
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 .screen.show { display: block; opacity: 1; transform: none; animation: screenIn .55s var(--ease); }
 @keyframes screenIn {
@@ -181,17 +181,20 @@ input { font: inherit; color: inherit; border: 0; outline: none; background: non
   max-width: 520px; margin: 0 auto;
   padding: calc(16px + env(safe-area-inset-top)) 20px calc(100px + env(safe-area-inset-bottom));
 }
-.page { display: none; }
-.page.show { display: block; animation: pgin .45s var(--ease); }
-@keyframes pgin { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
-
-/* Cascade d'entrée des cartes */
-.page.show .card {
-  animation: cardIn .5s var(--ease) calc(var(--ci,0) * 70ms) both;
+/* Rail de pages – swipe horizontal natif */
+#pages-rail {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  will-change: transform;
+  transition: transform .38s cubic-bezier(.3,0,.1,1);
 }
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(22px) scale(.97); }
-  to   { opacity: 1; transform: none; }
+.page {
+  flex: 0 0 33.333%;
+  min-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Ripple sur tous les boutons */
@@ -991,10 +994,11 @@ nav {
 
 <!-- Main -->
 <div class="screen show" id="s-main">
-  <div class="wrap">
+  <div id="pages-rail">
 
     <!-- ════ Accueil ════ -->
-    <div class="page show" id="pg-home">
+    <div class="page" id="pg-home">
+    <div class="wrap">
       <div class="pg-head">
         <h1>Remote</h1>
         <div class="chip" id="chip"><div class="dot"></div><span id="chip-txt">Connexion…</span></div>
@@ -1110,9 +1114,11 @@ nav {
         </div>
       </div>
     </div>
+    </div>
 
     <!-- ════ Playlist ════ -->
     <div class="page" id="pg-playlist">
+    <div class="wrap">
       <div class="pg-head">
         <div>
           <h1>Playlist</h1>
@@ -1158,9 +1164,11 @@ nav {
         <div id="recents-list"></div>
       </div>
     </div>
+    </div>
 
     <!-- ════ Réglages ════ -->
     <div class="page" id="pg-settings">
+    <div class="wrap">
       <div class="pg-head">
         <h1>Réglages</h1>
       </div>
@@ -1272,6 +1280,7 @@ nav {
           <div class="row-v" style="text-align:right;max-width:55%">Partager → Sur l'écran d'accueil</div>
         </div>
       </div>
+    </div>
     </div>
 
   </div>
@@ -1526,31 +1535,48 @@ function boot() {
   }
   $('set-ip').textContent = ip + ':' + port;
   initTheme();
+  showPage('home', false);
   initSwipe();
   connect();
 }
 
 // ── Swipe horizontal pour changer d'onglet ───────────────────────────────────
 function initSwipe() {
-  const PAGES = ['home', 'playlist', 'settings'];
-  let sx = 0, sy = 0, swiping = false;
-  const sc = $('s-main');
+  const sc    = $('s-main');
+  const rail  = document.getElementById('pages-rail');
+  let sx = 0, sy = 0, dragging = false, startIdx = 0;
+
   sc.addEventListener('touchstart', e => {
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiping = false;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+    dragging  = false;
+    startIdx  = _PAGES.indexOf(currentPage);
+    rail.style.transition = 'none';
   }, { passive: true });
+
   sc.addEventListener('touchmove', e => {
-    if (swiping) { e.preventDefault(); return; }
     const dx = e.touches[0].clientX - sx;
     const dy = e.touches[0].clientY - sy;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 12) swiping = true;
+    if (!dragging) {
+      if (Math.abs(dy) > Math.abs(dx) + 4 || Math.abs(dx) < 10) return;
+      dragging = true;
+    }
+    e.preventDefault();
+    const vw      = window.innerWidth;
+    const raw     = startIdx * vw - dx;
+    const clamped = Math.max(0, Math.min((_PAGES.length - 1) * vw, raw));
+    rail.style.transform = `translateX(${-(clamped / vw) * 33.333}%)`;
   }, { passive: false });
+
   sc.addEventListener('touchend', e => {
-    if (!swiping) return;
-    const dx = e.changedTouches[0].clientX - sx;
-    if (Math.abs(dx) < 55) return;
-    const cur = PAGES.indexOf(currentPage);
-    if (dx < 0 && cur < PAGES.length - 1) showPage(PAGES[cur + 1]);
-    else if (dx > 0 && cur > 0) showPage(PAGES[cur - 1]);
+    if (!dragging) return;
+    const dx  = e.changedTouches[0].clientX - sx;
+    let next  = startIdx;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0 && startIdx < _PAGES.length - 1) next = startIdx + 1;
+      else if (dx > 0 && startIdx > 0)            next = startIdx - 1;
+    }
+    showPage(_PAGES[next]);
   }, { passive: true });
 }
 
@@ -1573,15 +1599,16 @@ function show(id) {
     el.classList.toggle('show', el.id === id));
 }
 
-function showPage(name) {
+const _PAGES = ['home', 'playlist', 'settings'];
+
+function showPage(name, animate = true) {
   currentPage = name;
-  document.querySelectorAll('.page').forEach(p => {
-    const active = p.id === 'pg-' + name;
-    p.classList.toggle('show', active);
-    if (active) {
-      p.querySelectorAll('.card').forEach((c, i) => c.style.setProperty('--ci', i));
-    }
-  });
+  const idx  = _PAGES.indexOf(name);
+  const rail = document.getElementById('pages-rail');
+  rail.style.transition = animate
+    ? 'transform .38s cubic-bezier(.3,0,.1,1)'
+    : 'none';
+  rail.style.transform = `translateX(${-idx * 33.333}%)`;
   document.querySelectorAll('.nav-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.pg === name));
   if (name === 'home') startPreview(); else stopPreview();

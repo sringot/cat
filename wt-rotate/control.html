@@ -27,7 +27,7 @@
   --sink:       #10120D;   /* concave */
   --txt:        #ECDFCC;   /* blanc cassé */
   --txt-2:      #95A092;
-  --txt-3:      #566053;
+  --txt-3:      #717B6E;   /* relevé pour lisibilité (≈3.9:1) */
   --line:       rgba(0,0,0,.3);
   --accent:     #ECDFCC;   /* même teinte que le texte — accord parfait */
   --accent-2:   #D4D0CB;
@@ -59,7 +59,7 @@
     --sink:       #BED0BE;   /* creux, légèrement plus sombre */
     --txt:        #242825;   /* olive très foncé, net */
     --txt-2:      #4E554F;
-    --txt-3:      #9AA39A;
+    --txt-3:      #5F6A5F;   /* assombri pour lisibilité (≈4:1) */
     --line:       rgba(0,0,0,.08);
     --accent:     #242825;
     --accent-2:   #616B63;
@@ -89,7 +89,7 @@
   --sink:       #BED0BE;
   --txt:        #242825;
   --txt-2:      #4E554F;
-  --txt-3:      #9AA39A;
+  --txt-3:      #5F6A5F;   /* assombri pour lisibilité (≈4:1) */
   --line:       rgba(0,0,0,.08);
   --accent:     #242825;
   --accent-2:   #616B63;
@@ -128,6 +128,12 @@ button {
 }
 button:active { transform: scale(.97); }
 input { font: inherit; color: inherit; border: 0; outline: none; background: none; }
+
+/* Anneau de focus clavier — visible uniquement à la navigation clavier,
+   invisible au tap/souris (préserve l'esthétique tactile) */
+:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, .nav-btn:focus-visible, .sheet-opt:focus-visible,
+.pl-item:focus-visible, .lib-card:focus-visible { outline-offset: 3px; }
 
 /* ── Écrans (boot / erreur / main) ────────────────────────── */
 .screen {
@@ -971,6 +977,19 @@ nav {
   max-width: calc(100vw - 48px); text-align: center; z-index: 100;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── Accessibilité : mouvement réduit ─────────────────────────
+   Respecte « Réduire les animations » du système. Coupe les
+   boucles décoratives (orbite, pulsation, égaliseur…) et rend
+   les transitions instantanées tout en gardant l'UI fonctionnelle. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1422,7 +1441,7 @@ nav {
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
 const RECENTS_KEY = 'wt_recents';
@@ -1566,6 +1585,10 @@ function initSwipe() {
     const raw     = startIdx * vw - dx;
     const clamped = Math.max(0, Math.min((_PAGES.length - 1) * vw, raw));
     rail.style.transform = `translateX(${-(clamped / vw) * 33.333}%)`;
+    // La pastille de nav suit le doigt : surbrillance de la page la plus proche
+    const nearest = Math.round(clamped / vw);
+    document.querySelectorAll('.nav-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.pg === _PAGES[nearest]));
   }, { passive: false });
 
   sc.addEventListener('touchend', e => {

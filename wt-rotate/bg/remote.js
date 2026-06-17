@@ -38,7 +38,12 @@ function connectRemote() {
   clearTimeout(remoteReconnectTimer);
   try { remoteWs = new WebSocket('ws://localhost:8765'); } catch { scheduleReconnect(); return; }
 
-  remoteWs.onopen = () => { remoteLastMsg = Date.now(); remoteWs.send(JSON.stringify({ type: 'extension' })); };
+  remoteWs.onopen = async () => {
+    remoteLastMsg = Date.now();
+    const data = await chrome.storage.local.get('remoteInfo');
+    const token = data.remoteInfo?.ext_token || '';
+    remoteWs.send(JSON.stringify({ type: 'extension', token }));
+  };
 
   remoteWs.onmessage = async evt => {
     remoteLastMsg = Date.now();
@@ -48,7 +53,8 @@ function connectRemote() {
         remoteWs.send(JSON.stringify({ type: 'pong' }));
       } else if (msg.type === 'ack') {
         await chrome.storage.local.set({
-          remoteInfo: { ip: msg.ip, http_port: msg.http_port, control_url: msg.control_url, connected: true }
+          remoteInfo: { ip: msg.ip, http_port: msg.http_port, control_url: msg.control_url,
+                        connected: true, ext_token: msg.ext_token || '' }
         });
         await sendStateToRemote();
         await injectOverlayAll();
@@ -63,7 +69,11 @@ function connectRemote() {
     await chrome.storage.local.set({ remoteInfo: { ...(d.remoteInfo || {}), connected: false } });
     scheduleReconnect();
   };
-  remoteWs.onerror = () => scheduleReconnect();
+  remoteWs.onerror = async () => {
+    const d = await chrome.storage.local.get('remoteInfo');
+    await chrome.storage.local.set({ remoteInfo: { ...(d.remoteInfo || {}), connected: false } });
+    scheduleReconnect();
+  };
 }
 
 function scheduleReconnect() {
@@ -107,6 +117,7 @@ async function sendStateToRemote() {
   const warnings = config.tabIds
     .map((tid, i) => sessionWarn[tid] ? i : -1)
     .filter(i => i >= 0 && i < activeUrls.length);
+  if (remoteWs?.readyState !== WebSocket.OPEN) return;
   remoteWs.send(JSON.stringify({
     type: 'state', active: config.active,
     remotePaused: config.remotePaused || false,

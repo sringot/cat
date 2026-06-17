@@ -38,7 +38,7 @@ async function rotateToNext() {
     await log('OK → ' + (entry.name || entry.url.slice(0, 50)));
     await sendStateToRemote();
     // Refresh preview 1.5 s after the switch (let the page load first)
-    setTimeout(autoScreenshot, 1500);
+    setTimeout(autoScreenshot, 3000);
   } catch (err) {
     await log('tabs.update ERR: ' + err.message);
     config.active = false; config.tabIds = []; config.windowId = null;

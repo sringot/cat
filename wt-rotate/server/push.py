@@ -3,8 +3,11 @@ Push notification support via Web Push (VAPID).
 Requires:  pip install pywebpush
 Falls back gracefully if pywebpush is not installed.
 """
-import json, base64, asyncio
+import json, base64, asyncio, logging
 from pathlib import Path
+
+_subs_lock = asyncio.Lock()
+log = logging.getLogger(__name__)
 
 _KEY_FILE  = Path(__file__).parent.parent / '.wt_vapid'
 _SUBS_FILE = Path(__file__).parent.parent / '.wt_push_subs.json'
@@ -67,14 +70,28 @@ def _save_subs(subs: list):
     except Exception:
         pass
 
-def save_subscription(sub: dict):
-    if not sub.get('endpoint'):
+async def save_subscription(sub: dict):
+    if not sub.get('endpoint') or not isinstance(sub.get('endpoint'), str):
         return
-    subs = _load_subs()
-    # Replace existing subscription for same endpoint
-    subs = [s for s in subs if s.get('endpoint') != sub['endpoint']]
-    subs.append(sub)
-    _save_subs(subs)
+    try:
+        if len(json.dumps(sub)) > 4096:
+            return
+    except Exception:
+        return
+    async with _subs_lock:
+        subs = _load_subs()
+        subs = [s for s in subs if s.get('endpoint') != sub['endpoint']]
+        subs.append(sub)
+        _save_subs(subs)
+
+async def remove_subscription(endpoint: str):
+    """Remove a subscription by endpoint URL (called on client unsubscribe)."""
+    if not endpoint:
+        return
+    async with _subs_lock:
+        subs = _load_subs()
+        subs = [s for s in subs if s.get('endpoint') != endpoint]
+        _save_subs(subs)
 
 def _send_one(sub: dict, title: str, body: str) -> bool:
     """Returns True on success, False on error, 'expired' if 410 Gone."""
@@ -88,27 +105,30 @@ def _send_one(sub: dict, title: str, body: str) -> bool:
             data=json.dumps({'title': title, 'body': body}),
             vapid_private_key=VAPID_PRIVATE,
             vapid_claims={'sub': 'mailto:admin@wt-rotate.local'},
-            ttl=120
+            ttl=3600
         )
         return True
     except Exception as e:
-        if hasattr(e, 'response') and getattr(e.response, 'status_code', None) == 410:
+        status = getattr(getattr(e, 'response', None), 'status_code', None)
+        if status == 410:
             return 'expired'
+        log.warning('Push delivery failed: %s', e)
         return False
 
 async def notify(title: str, body: str):
     """Send push notification to all subscribers (runs in thread pool to avoid blocking)."""
     if not VAPID_AVAILABLE:
         return
-    subs = _load_subs()
-    if not subs:
-        return
-    loop = asyncio.get_event_loop()
-    to_remove = []
-    for sub in subs:
-        result = await loop.run_in_executor(None, _send_one, sub, title, body)
-        if result == 'expired':
-            to_remove.append(sub['endpoint'])
-    if to_remove:
-        subs = [s for s in subs if s.get('endpoint') not in to_remove]
-        _save_subs(subs)
+    async with _subs_lock:
+        subs = _load_subs()
+        if not subs:
+            return
+        loop = asyncio.get_running_loop()
+        to_remove = []
+        for sub in subs:
+            result = await loop.run_in_executor(None, _send_one, sub, title, body)
+            if result == 'expired':
+                to_remove.append(sub['endpoint'])
+        if to_remove:
+            subs = [s for s in subs if s.get('endpoint') not in to_remove]
+            _save_subs(subs)

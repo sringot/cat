@@ -32,6 +32,17 @@ async def handle_ws(request):
         return ws
 
     if msg.get('type') == 'extension':
+        # Accept empty token (first-boot, before the extension has received its token).
+        # Reject any non-empty token that is wrong — prevents LAN impersonation after
+        # the real extension has connected at least once.
+        token = msg.get('token', '')
+        if token and not auth.validate(token):
+            try:
+                await ws.send_str(json.dumps({'type': 'auth_error', 'reason': 'invalid_token'}))
+            except Exception:
+                pass
+            await ws.close()
+            return ws
         await _handle_extension(ws)
     elif msg.get('type') == 'mobile':
         if not auth.validate(msg.get('token', '')):
@@ -68,7 +79,8 @@ async def _handle_extension(ws) -> None:
     print('[+] Extension connectée')
     await ws.send_str(json.dumps({
         'type': 'ack', 'ip': state.local_ip, 'http_port': state.PORT,
-        'control_url': f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
+        'control_url': f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}',
+        'ext_token': auth.TOKEN
     }))
     await _broadcast_mobiles(json.dumps({'type': 'ext_status', 'connected': True}))
     try:

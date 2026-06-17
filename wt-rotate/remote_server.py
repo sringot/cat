@@ -27,16 +27,9 @@ async def main():
     except Exception:
         pass
 
-    # QR code encodes URL with auth token so rescanning is only needed after token rotation
-    # Prefer hostname.local (mDNS) over raw IP — hides the IP from the QR code.
-    # iOS supports mDNS natively (Bonjour); modern Android/Chrome does too.
-    # If resolution fails on the phone, the fallback is always the IP-based URL.
-    try:
-        _hn = socket.gethostname()
-        host_url = f'http://{_hn}.local:{state.PORT}/?token={auth.TOKEN}'
-    except Exception:
-        host_url = None
-    control_url = host_url or f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
+    # QR code always uses the raw LAN IP — hostname.local requires mDNS which
+    # Android Chrome does not support reliably, causing QR scans to fail.
+    control_url = f'http://{state.local_ip}:{state.PORT}/?token={auth.TOKEN}'
     try:
         import qrcode
         import qrcode.image.svg

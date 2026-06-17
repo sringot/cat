@@ -1602,8 +1602,9 @@ function show(id) {
 const _PAGES = ['home', 'playlist', 'settings'];
 
 function showPage(name, animate = true) {
-  currentPage = name;
   const idx  = _PAGES.indexOf(name);
+  if (idx < 0) return;
+  currentPage = name;
   const rail = document.getElementById('pages-rail');
   rail.style.transition = animate
     ? 'transform .38s cubic-bezier(.3,0,.1,1)'
@@ -2608,6 +2609,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const sub = await reg.pushManager.getSubscription().catch(() => null);
       if (sub) {
         await sub.unsubscribe();
+        try {
+          await fetch('/push-subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'Authorization': wsToken },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+        } catch {}
         await updatePushUI();
         return;
       }
@@ -2619,11 +2627,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const { publicKey } = await resp.json();
         const vapidKey = Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
         const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey });
-        await fetch('/push-subscribe', {
+        const postResp = await fetch('/push-subscribe', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': wsToken },
           body: JSON.stringify(newSub.toJSON())
         });
+        if (!postResp.ok) { showToast('Erreur activation push (' + postResp.status + ')'); return; }
         await updatePushUI();
         showToast('Notifications activées');
       } catch (e) {

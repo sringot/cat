@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -84,9 +85,13 @@ def info_msg() -> dict:
 
 
 def _persist() -> None:
+    # Écriture atomique (cf. backup.py) : pas de bibliothèque corrompue si le
+    # serveur est tué pendant la sauvegarde.
     try:
-        FILE.write_text(
+        tmp = FILE.parent / (FILE.name + '.tmp')
+        tmp.write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8'
         )
+        os.replace(tmp, FILE)
     except Exception:
         pass

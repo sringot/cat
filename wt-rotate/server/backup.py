@@ -6,6 +6,7 @@ Le serveur garde donc une copie de la dernière playlist non vide reçue,
 restaurable depuis le téléphone (commande pl_restore).
 """
 import json
+import os
 import time
 from pathlib import Path
 
@@ -40,8 +41,12 @@ def maybe_save(urls) -> bool:
     if urls == data['urls']:
         return False
     data = {'urls': urls, 'ts': time.time()}
+    # Écriture atomique : un .bat tué en plein write ne doit jamais laisser
+    # un JSON tronqué (load() repartirait alors de zéro = playlist perdue).
     try:
-        FILE.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+        tmp = FILE.parent / (FILE.name + '.tmp')
+        tmp.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+        os.replace(tmp, FILE)
     except Exception:
         pass
     return True

@@ -1801,6 +1801,16 @@ const _PAGES = ['home', 'playlist', 'settings'];
 function showPage(name, animate = true) {
   const idx  = _PAGES.indexOf(name);
   if (idx < 0) return;
+  // Si un glisser-déposer est actif sur la playlist et que l'utilisateur
+  // change d'onglet (tap nav avec un autre doigt), on annule proprement le
+  // drag : sinon drag.active reste vrai et bloque tout touchmove — y compris
+  // les roues du minuteur d'annonce.
+  if (drag) {
+    clearTimeout(drag.timer);
+    const d = drag; drag = null;
+    d.el.classList.remove('drag'); d.el.style.transform = '';
+    d.items.forEach(it => { it.classList.remove('shift'); it.style.transform = ''; });
+  }
   currentPage = name;
   const rail = document.getElementById('pages-rail');
   rail.style.transition = animate

@@ -17,7 +17,7 @@
     const containerH      = container.offsetHeight;
     const viewportH       = window.innerHeight;
     const scrollable      = containerH - viewportH;
-    const rawProgress     = clamp(-rect.top / scrollable, 0, 1);
+    const rawProgress     = scrollable > 0 ? clamp(-rect.top / scrollable, 0, 1) : 0;
 
     const scaleStart  = isMobile() ? 0.75 : 1.08;
     const scaleEnd    = 1;
@@ -111,7 +111,9 @@ revealTargets.forEach((el, i) => {
    ============================ */
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', (e) => {
-    const target = document.querySelector(link.getAttribute('href'));
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+    const target = document.querySelector(href);
     if (!target) return;
     e.preventDefault();
     const offset = 80;

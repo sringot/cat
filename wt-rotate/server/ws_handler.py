@@ -61,14 +61,29 @@ async def handle_ws(request):
 
     if msg.get('type') == 'extension':
         # L'extension kiosque tourne TOUJOURS sur la machine du serveur et s'y
-        # connecte en ws://localhost (cf. manifest + bg/remote.js). On exige donc
-        # une origine locale : ça ferme à la fois l'amorçage à token vide (qui
-        # renvoie le vrai token dans l'ack) ET l'usurpation d'extension par un
-        # client du LAN. Le téléphone, lui, arrive par l'IP du LAN avec un token.
+        # connecte en ws://localhost (cf. manifest + bg/remote.js). On exige
+        # une origine locale. ATTENTION : ça ne suffit PAS — une page web
+        # ouverte dans le navigateur du kiosque se connecte aussi en loopback
+        # (127.0.0.1). Sans le filtre d'origine ci-dessous, une page malveillante
+        # affichée par la rotation pourrait s'annoncer comme « extension » avec
+        # un token vide, récupérer le vrai token renvoyé dans l'ack (CSWSH) puis
+        # piloter le kiosque. Le téléphone, lui, arrive par l'IP du LAN + token.
         if not _is_local(request):
             log.warning('Connexion extension refusée depuis %s (origine non locale)',
                         request.remote)
             await _reject(ws, 'local_only')
+            return ws
+        # Le navigateur fixe lui-même l'en-tête Origin ; une page web ne peut pas
+        # la falsifier. Une vraie extension a une origine chrome-extension:// (ou
+        # moz-extension://), ou aucune (clients locaux non-navigateurs). On refuse
+        # donc toute origine web (http/https/ws…) → bloque le CSWSH depuis le
+        # navigateur du kiosque sans casser l'amorçage de l'extension.
+        origin = request.headers.get('Origin', '')
+        if origin and not (origin.startswith('chrome-extension://') or
+                           origin.startswith('moz-extension://')):
+            log.warning('Connexion extension refusée (origine web « %s ») — CSWSH bloqué',
+                        origin)
+            await _reject(ws, 'bad_origin')
             return ws
         token = msg.get('token', '')
         if token and not auth.validate(token):

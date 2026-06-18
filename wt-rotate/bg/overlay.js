@@ -26,14 +26,31 @@ async function injectOverlay(tabId, info, qrSrc = null) {
           'font-family:-apple-system,sans-serif',
           'transition:opacity .2s'
         ].join('!important;') + '!important';
-        el.innerHTML = qrSrc
-          ? `<img src="${qrSrc}" width="86" height="86" style="display:block;border-radius:4px">
-             <div style="font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.5px">REMOTE</div>`
-          : `<div style="font-size:9px;color:#333;padding:4px 6px;max-width:90px;word-break:break-all;font-weight:600">${ctrlUrl}</div>
-             <div style="font-size:9px;color:#555;font-weight:700">REMOTE</div>`;
+        // Pas d'innerHTML : ctrlUrl/qrSrc viennent du serveur local via l'ack
+        // WebSocket. On construit les nœuds et on pose les valeurs en texte/src
+        // (jamais en HTML) pour qu'aucune chaîne ne puisse injecter de balise
+        // dans la page du kiosque.
+        const cap = document.createElement('div');
+        cap.textContent = 'REMOTE';
+        if (qrSrc) {
+          const img = document.createElement('img');
+          img.src = qrSrc; img.width = 86; img.height = 86;
+          img.style.cssText = 'display:block;border-radius:4px';
+          cap.style.cssText = 'font-size:9px;color:#555;margin-top:4px;font-weight:700;letter-spacing:.5px';
+          el.append(img, cap);
+        } else {
+          const u = document.createElement('div');
+          u.style.cssText = 'font-size:9px;color:#333;padding:4px 6px;max-width:90px;word-break:break-all;font-weight:600';
+          u.textContent = ctrlUrl;
+          cap.style.cssText = 'font-size:9px;color:#555;font-weight:700';
+          el.append(u, cap);
+        }
         el.addEventListener('mouseenter', () => el.style.opacity = '.6');
         el.addEventListener('mouseleave', () => el.style.opacity = '1');
-        el.addEventListener('click', () => window.open(ctrlUrl, '_blank'));
+        // N'ouvre que des URL http(s) : empêche un javascript:/data: éventuel
+        el.addEventListener('click', () => {
+          if (/^https?:\/\//i.test(ctrlUrl)) window.open(ctrlUrl, '_blank');
+        });
         document.body?.appendChild(el);
       },
       args: [qrSrc, controlUrl]

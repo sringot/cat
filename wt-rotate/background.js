@@ -119,7 +119,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   } catch {}
 });
 
-chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  // N'accepte que les messages internes (popup de cette extension). Sans
+  // externally_connectable une page web ne peut déjà pas atteindre le SW ; ce
+  // filtre ferme en plus le cas d'une autre extension installée.
+  if (sender.id !== chrome.runtime.id) return false;
   // ── Popup actions (run in SW so popup closing doesn't interrupt them) ─────
   if (msg.action === 'startRotation') {
     (async () => {

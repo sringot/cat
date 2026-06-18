@@ -1707,7 +1707,6 @@ function initSwipe() {
 function initSheetA11y() {
   const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])';
   const sheets = [...document.querySelectorAll('.sheet')];
-  let lastFocus = null;
 
   const cardOf   = s => s.querySelector('.sheet-card');
   const itemsIn  = card => [...card.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
@@ -1725,7 +1724,9 @@ function initSheetA11y() {
       const open = sheet.classList.contains('show');
       if (open && !sheet._open) {
         sheet._open = true;
-        lastFocus = document.activeElement;
+        // Chaque feuille sauvegarde son propre déclencheur pour que les
+        // enchaînements feuille → feuille restituent le bon élément.
+        sheet._savedFocus = document.activeElement;
         // Focus différé : la carte glisse (.52s) ; focaliser au 1er frame
         // annule l'animation sur certains navigateurs.
         setTimeout(() => {
@@ -1733,16 +1734,18 @@ function initSheetA11y() {
           const card = cardOf(sheet);
           if (card && !card.contains(document.activeElement)) {
             const f = itemsIn(card);
-            if (f.length) f[0].focus();
+            if (f.length) try { f[0].focus(); } catch {}
           }
         }, 80);
       } else if (!open && sheet._open) {
         sheet._open = false;
         // Ne reprend le focus que s'il est resté dans la feuille fermée
         // (évite de voler le focus lors d'un enchaînement feuille → feuille).
-        if (lastFocus && lastFocus.focus &&
+        const saved = sheet._savedFocus;
+        sheet._savedFocus = null;
+        if (saved && saved.focus &&
             (sheet.contains(document.activeElement) || document.activeElement === document.body)) {
-          try { lastFocus.focus(); } catch {}
+          try { saved.focus(); } catch {}
         }
       }
     }).observe(sheet, { attributes: true, attributeFilter: ['class'] });
@@ -2142,7 +2145,6 @@ function openRenameSheet(index, name) {
   pendingRenameIndex = index;
   $('rename-in').value = name;
   $('rename-sheet').classList.add('show');
-  setTimeout(() => $('rename-in').focus(), 320);
 }
 function closeRenameSheet() {
   pendingRenameIndex = null;
@@ -2160,7 +2162,6 @@ function openLibNameSheet() {
   $('lib-name-in').value = '';
   closeLibSheet();
   $('lib-name-sheet').classList.add('show');
-  setTimeout(() => $('lib-name-in').focus(), 320);
 }
 function closeLibNameSheet() { $('lib-name-sheet').classList.remove('show'); }
 

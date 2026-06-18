@@ -142,8 +142,10 @@ async def _handle_extension(ws) -> None:
                 from server import push as _push
                 await _push.notify('Remote — Kiosque déconnecté',
                                    'Le PC kiosque s\'est déconnecté du serveur.')
+            except ImportError:
+                pass  # pywebpush non installé — notifications push désactivées
             except Exception:
-                pass
+                log.warning('Notification push de déconnexion échouée')
 
 
 async def _handle_mobile(ws) -> None:

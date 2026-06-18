@@ -119,16 +119,19 @@ async def notify(title: str, body: str):
     """Send push notification to all subscribers (runs in thread pool to avoid blocking)."""
     if not VAPID_AVAILABLE:
         return
+    # Snapshot quickly, then deliver outside the lock so that save_subscription /
+    # remove_subscription are not blocked during slow HTTP deliveries.
     async with _subs_lock:
         subs = _load_subs()
-        if not subs:
-            return
-        loop = asyncio.get_running_loop()
-        to_remove = []
-        for sub in subs:
-            result = await loop.run_in_executor(None, _send_one, sub, title, body)
-            if result == 'expired':
-                to_remove.append(sub['endpoint'])
-        if to_remove:
-            subs = [s for s in subs if s.get('endpoint') not in to_remove]
-            _save_subs(subs)
+    if not subs:
+        return
+    loop = asyncio.get_running_loop()
+    to_remove = []
+    for sub in subs:
+        result = await loop.run_in_executor(None, _send_one, sub, title, body)
+        if result == 'expired':
+            to_remove.append(sub['endpoint'])
+    if to_remove:
+        async with _subs_lock:
+            current = _load_subs()
+            _save_subs([s for s in current if s.get('endpoint') not in to_remove])

@@ -20,6 +20,10 @@ async def main():
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s  %(levelname)-7s %(message)s',
                         datefmt='%H:%M:%S')
+    # aiohttp loguerait chaque requête HTTP (screenshots, assets…) en INFO —
+    # c'est du bruit continu ; on garde uniquement les warnings aiohttp.
+    logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
+    logging.getLogger('aiohttp.server').setLevel(logging.WARNING)
 
     backup.load()   # playlist auto-sauvegardée lors d'une session précédente
     library.load()  # bibliothèque de playlists nommées

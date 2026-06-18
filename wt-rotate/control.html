@@ -1655,6 +1655,10 @@ function initSwipe() {
 
   sc.addEventListener('touchmove', e => {
     if (locked) return;
+    // Un item de playlist est soulevé sous le doigt : la page reste fixe,
+    // sinon un léger mouvement horizontal ferait défiler d'onglet en plein
+    // glisser-déposer.
+    if (drag?.active) return;
     const dx = e.touches[0].clientX - sx;
     const dy = e.touches[0].clientY - sy;
     if (!dragging) {
@@ -2103,7 +2107,12 @@ function sync(s) {
   $('canva-minus').disabled = cvM <= CANVA_STEPS[0];
   $('canva-plus').disabled  = cvM >= CANVA_STEPS[CANVA_STEPS.length - 1];
 
-  renderPlaylist(urls, s.currentIndex || 0, mode, warns);
+  // Pendant un glisser-déposer actif, on NE reconstruit PAS la liste : sinon
+  // pl.innerHTML='' détache l'élément tenu sous le doigt. Le pointeur devient
+  // alors orphelin, drag.active reste figé à true, et le preventDefault global
+  // sur touchmove gèle tout défilement de l'app (le minuteur d'annonce inclus).
+  // L'état à jour est ré-appliqué au lâcher via endDrag → sync.
+  if (!(drag && drag.active)) renderPlaylist(urls, s.currentIndex || 0, mode, warns);
   if (recentsOpen) renderRecents();
 }
 
@@ -2348,6 +2357,9 @@ function watchLongPress(el, index, items) {
              h: el.offsetHeight, pid: e.pointerId, active: false };
     drag.timer = setTimeout(() => {
       if (!drag) return;
+      // Liste reconstruite pendant l'appui (push d'état) : l'élément n'est plus
+      // dans le DOM — ne pas activer un glisser sur un nœud détaché.
+      if (!el.isConnected) { drag = null; return; }
       drag.active = true;
       el.classList.add('drag');
       el.style.transform = 'scale(1.03)';
@@ -2409,6 +2421,19 @@ function endDrag(e) {
 }
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
+
+// Filet de sécurité : si l'app passe en arrière-plan en plein glisser
+// (notification, changement d'app), ni pointerup ni pointercancel ne sont
+// garantis. On annule alors proprement pour ne jamais laisser drag.active
+// figé — ce qui bloquerait tout défilement via le preventDefault global.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden || !drag) return;
+  clearTimeout(drag.timer);
+  const d = drag; drag = null;
+  d.el.classList.remove('drag'); d.el.style.transform = '';
+  d.items.forEach(it => { it.classList.remove('shift'); it.style.transform = ''; });
+  if (lastState) sync(lastState);
+});
 
 function cmd(action, extra) {
   if (ws?.readyState === 1) {

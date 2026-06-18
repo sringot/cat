@@ -75,12 +75,14 @@ async def handle_ws(request):
             return ws
         # Le navigateur fixe lui-même l'en-tête Origin ; une page web ne peut pas
         # la falsifier. Une vraie extension a une origine chrome-extension:// (ou
-        # moz-extension://), ou aucune (clients locaux non-navigateurs). On refuse
-        # donc toute origine web (http/https/ws…) → bloque le CSWSH depuis le
+        # moz-extension://). Les service workers MV3 peuvent sérialiser leur
+        # origine en « null » (origine opaque cross-origin) selon la version Chrome.
+        # On refuse donc toute origine HTTP(S) réelle → bloque le CSWSH depuis le
         # navigateur du kiosque sans casser l'amorçage de l'extension.
         origin = request.headers.get('Origin', '')
-        if origin and not (origin.startswith('chrome-extension://') or
-                           origin.startswith('moz-extension://')):
+        if (origin and origin != 'null' and
+                not (origin.startswith('chrome-extension://') or
+                     origin.startswith('moz-extension://'))):
             log.warning('Connexion extension refusée (origine web « %s ») — CSWSH bloqué',
                         origin)
             await _reject(ws, 'bad_origin')

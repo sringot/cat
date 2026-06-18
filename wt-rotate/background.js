@@ -116,9 +116,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   try {
     const tab = await chrome.tabs.get(tabId);
     if (/youtube\.com\/watch/.test(tab.url || '')) await injectYouTubeMaximize(tabId);
-    // Détection en temps réel des redirections vers une page de login (session expirée).
-    // Sans ça, le délai peut atteindre 1 min (prochain tick du watchdog).
-    if (isKiosk && LOGIN_RX.test(tab.url || '')) await checkSessions();
   } catch {}
 });
 

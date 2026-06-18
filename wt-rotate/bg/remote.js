@@ -101,11 +101,6 @@ function sendCmdAck(action, ok, reason) {
   remoteWs.send(JSON.stringify({ type: 'cmd_ack', action, ok, reason: reason || null }));
 }
 
-function sendPushRequest(title, body) {
-  if (remoteWs?.readyState !== WebSocket.OPEN) return;
-  remoteWs.send(JSON.stringify({ type: 'push_request', title, body }));
-}
-
 async function sendStateToRemote() {
   if (remoteWs?.readyState !== WebSocket.OPEN) return;
   const data = await chrome.storage.local.get(['config', 'sessionWarn']);

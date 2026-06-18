@@ -129,17 +129,6 @@ async def _handle_extension(ws) -> None:
                     await _broadcast_mobiles(msg_data.data)
                 elif d.get('type') == 'cmd_ack':
                     await _broadcast_mobiles(msg_data.data)
-                elif d.get('type') == 'push_request':
-                    title = str(d.get('title', ''))[:100].strip()
-                    body  = str(d.get('body',  ''))[:200].strip()
-                    if title:
-                        try:
-                            from server import push as _push
-                            asyncio.create_task(_push.notify(title, body))
-                        except ImportError:
-                            pass
-                        except Exception:
-                            log.warning('push_request: notification échouée')
                 # pong responses silently ignored
     except Exception:
         pass

@@ -166,7 +166,6 @@ async function refreshStaleTabsIfNeeded() {
 
 const LOGIN_RX = /(login\.microsoftonline\.com|b2clogin\.com|okta\.com|auth0\.com|accounts\.google\.com|onelogin\.com|duosecurity\.com)|[\/.](login|log-?in|sign-?in|sso|authenticate|authentication)([\/?#.]|$)/i;
 const LOGIN_RETRY_MS = 10 * 60 * 1000; // re-navigation au plus toutes les 10 min
-const SESSION_PLACEHOLDER = chrome.runtime.getURL('session_expired.html');
 
 async function checkSessions() {
   const data = await chrome.storage.local.get(['config', 'sessionWarn']);
@@ -189,38 +188,17 @@ async function checkSessions() {
     try { tab = await chrome.tabs.get(tabId); } catch { continue; }
 
     if (tab.autoDiscardable !== false) await keepTabAlive(tabId);
-    if (tab.status === 'loading') continue;
+    if (tab.status === 'loading') continue;          // redirection SSO en cours
 
-    const url = tab.url || '';
-    // Si l'URL configurée ressemble elle-même à une page de login, indétectable.
-    // On traite aussi le placeholder comme "expirée" pour continuer les retries.
-    const onLogin = !LOGIN_RX.test(entry.url) &&
-                    (LOGIN_RX.test(url) || url.startsWith(SESSION_PLACEHOLDER));
+    // Si l'URL configurée ressemble elle-même à une page de login, indétectable
+    const onLogin = !LOGIN_RX.test(entry.url) && LOGIN_RX.test(tab.url || '');
 
     if (onLogin) {
       if (!warn[tabId]) {
-        // Première détection : on affiche le placeholder sur la télé au lieu de
-        // la page de login, et on planifie le premier retry dans LOGIN_RETRY_MS.
-        const name = entry.name || entry.url.slice(0, 40);
-        warn[tabId] = { name, since: now, lastRetry: now, notified: false };
+        warn[tabId] = { name: entry.name || entry.url.slice(0, 40), since: now, lastRetry: 0 };
         changed = true;
-        await log('session expirée détectée: ' + name);
-        try {
-          await chrome.tabs.update(tabId, { url: SESSION_PLACEHOLDER + '?name=' + encodeURIComponent(name) });
-        } catch {}
-      } else if (LOGIN_RX.test(url)) {
-        // Un retry a échoué (tab revenue sur la page de login) → placeholder.
-        try {
-          await chrome.tabs.update(tabId, { url: SESSION_PLACEHOLDER + '?name=' + encodeURIComponent(warn[tabId].name) });
-        } catch {}
+        await log('session expirée détectée: ' + warn[tabId].name);
       }
-      // Notification push unique à la première détection
-      if (!warn[tabId].notified) {
-        warn[tabId].notified = true;
-        changed = true;
-        sendPushRequest('⚠ Session expirée', warn[tabId].name + ' affiche une page de connexion');
-      }
-      // Tentative de reconnexion SSO toutes les LOGIN_RETRY_MS
       if (now - warn[tabId].lastRetry >= LOGIN_RETRY_MS) {
         warn[tabId].lastRetry = now;
         changed = true;

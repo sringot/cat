@@ -104,7 +104,7 @@ def _send_one(sub: dict, title: str, body: str) -> bool:
             },
             data=json.dumps({'title': title, 'body': body}),
             vapid_private_key=VAPID_PRIVATE,
-            vapid_claims={'sub': 'mailto:admin@wt-rotate.local'},
+            vapid_claims={'sub': 'mailto:admin@example.com'},
             ttl=3600
         )
         return True

@@ -19,6 +19,22 @@
   --shadow-sm: 0 1px 2px rgba(20,18,14,.04), 0 3px 10px rgba(20,18,14,.05);
   --ease:      cubic-bezier(.25,.8,.25,1);
   --sidebar-w: 230px;
+
+  /* ── Color accents ─────────────────────────────────────────────────── */
+  --indigo:    #4F46E5;
+  --indigo-bg: rgba(79,70,229,.08);
+  --orange:    #EA580C;
+  --orange-bg: rgba(234,88,12,.08);
+  --green:     #059669;
+  --green-bg:  rgba(5,150,105,.08);
+  --amber:     #D97706;
+  --amber-bg:  rgba(217,119,6,.08);
+  --red:       #DC2626;
+  --red-bg:    rgba(220,38,38,.08);
+  --purple:    #7C3AED;
+  --purple-bg: rgba(124,58,237,.08);
+  --teal:      #0D9488;
+  --teal-bg:   rgba(13,148,136,.08);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -119,8 +135,8 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
 }
 .nav-link.active {
-  color: var(--accent);
-  border-left-color: var(--accent);
+  color: var(--indigo);
+  border-left-color: var(--indigo);
   font-weight: 650;
   background: var(--bg);
 }
@@ -136,8 +152,18 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
+@keyframes heroShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
 .hero {
+  position: relative;
   margin-bottom: 56px;
+  background: linear-gradient(135deg, var(--indigo-bg) 0%, var(--orange-bg) 50%, var(--green-bg) 100%);
+  background-size: 400% 400%;
+  animation: heroShimmer 8s ease infinite;
+  border-radius: 24px;
+  padding: 40px 36px 48px;
 }
 .hero-eyebrow {
   font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px;
@@ -145,7 +171,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: 10px;
 }
 .hero h1 {
-  font-size: 42px; font-weight: 800; letter-spacing: -1.2px;
+  font-size: 48px; font-weight: 900; letter-spacing: -2px;
   line-height: 1.08; margin-bottom: 16px;
 }
 .hero-sub {
@@ -166,6 +192,14 @@ a:hover { text-decoration: underline; }
   box-shadow: var(--shadow-sm);
 }
 .badge svg { opacity: .7; }
+.badge-indigo { color: var(--indigo); background: var(--indigo-bg); border-color: transparent; }
+.badge-indigo svg { opacity: 1; }
+.badge-green  { color: var(--green);  background: var(--green-bg);  border-color: transparent; }
+.badge-green svg { opacity: 1; }
+.badge-orange { color: var(--orange); background: var(--orange-bg); border-color: transparent; }
+.badge-orange svg { opacity: 1; }
+.badge-teal   { color: var(--teal);   background: var(--teal-bg);   border-color: transparent; }
+.badge-teal svg { opacity: 1; }
 
 /* ── Sections ──────────────────────────────────────────────────────────── */
 .section {
@@ -173,13 +207,16 @@ a:hover { text-decoration: underline; }
   scroll-margin-top: 32px;
 }
 .section-eyebrow {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--txt-3);
-  margin-bottom: 6px;
+  display: inline-block;
+  font-size: 11px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--orange);
+  background: var(--orange-bg);
+  padding: 3px 10px; border-radius: 100px;
+  margin-bottom: 10px;
 }
 .section h2 {
-  font-size: 28px; font-weight: 750; letter-spacing: -.6px;
-  margin-bottom: 6px; line-height: 1.2;
+  font-size: 34px; font-weight: 800; letter-spacing: -1px;
+  margin-bottom: 10px; line-height: 1.2;
 }
 .section-intro {
   font-size: 15.5px; color: var(--txt-2); line-height: 1.65;
@@ -218,12 +255,11 @@ a:hover { text-decoration: underline; }
 }
 .step-item:last-child { border-bottom: 0; }
 .step-num {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--bg); color: var(--txt-2);
-  font-size: 12px; font-weight: 750;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--orange); color: #fff;
+  font-size: 13px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; margin-top: 1px;
-  box-shadow: var(--shadow-sm);
 }
 .step-content { flex: 1; min-width: 0; }
 .step-content strong {
@@ -234,8 +270,8 @@ a:hover { text-decoration: underline; }
 
 /* ── Code blocks ───────────────────────────────────────────────────────── */
 pre {
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: #0F172A;
+  border: none;
   border-radius: 14px;
   padding: 16px 20px;
   overflow-x: auto;
@@ -243,10 +279,11 @@ pre {
   line-height: 1.6;
   margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
+  color: #E2E8F0;
 }
 pre code {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
-  color: var(--txt);
+  color: #E2E8F0;
   background: none;
   border: 0;
   padding: 0;
@@ -263,11 +300,11 @@ code {
   color: var(--txt);
 }
 .prompt {
-  color: var(--txt-3);
+  color: #64748B;
   user-select: none;
 }
 .cmd-comment {
-  color: var(--txt-3);
+  color: #475569;
   font-style: italic;
 }
 
@@ -308,6 +345,13 @@ code {
   gap: 10px; margin-bottom: 8px;
   font-size: 12px; font-weight: 600; color: var(--txt-3);
 }
+.arch-conn span {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 4px 14px;
+  font-size: 12px;
+}
 .arch-line {
   flex: 1; height: 1px;
   background: linear-gradient(to right, transparent, var(--txt-3), transparent);
@@ -333,10 +377,10 @@ code {
 }
 .feature-ic {
   width: 40px; height: 40px; border-radius: 12px;
-  background: var(--bg);
+  background: var(--ic-bg, var(--bg));
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 12px;
-  color: var(--txt);
+  color: var(--ic-clr, var(--txt));
   box-shadow: var(--shadow-sm);
 }
 .feature-name {
@@ -371,7 +415,8 @@ code {
   border-left: 3px solid var(--txt-3);
 }
 .trouble-card h3 {
-  font-size: 14.5px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.2px;
+  font-size: 15px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.2px;
+  color: var(--txt);
 }
 .trouble-card p {
   font-size: 13.5px; color: var(--txt-2); line-height: 1.55;
@@ -391,9 +436,9 @@ code {
 .sec-row:last-child { border-bottom: 0; }
 .sec-ic {
   width: 36px; height: 36px; border-radius: 10px;
-  background: var(--bg); flex-shrink: 0;
+  background: rgba(5,150,105,.12); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  color: var(--txt-2); box-shadow: var(--shadow-sm);
+  color: var(--green); box-shadow: var(--shadow-sm);
 }
 .sec-txt strong { display: block; font-size: 14px; font-weight: 650; margin-bottom: 2px; }
 .sec-txt span { font-size: 13px; color: var(--txt-2); line-height: 1.5; }
@@ -418,7 +463,7 @@ code {
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .main { padding: 40px 28px 80px; }
-  .hero h1 { font-size: 32px; }
+  .hero h1 { font-size: 36px; }
 }
 @media (max-width: 700px) {
   .sidebar {
@@ -535,19 +580,19 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         Gérez vos rotations d'URL depuis votre canapé.
       </p>
       <div class="hero-badges">
-        <span class="badge">
+        <span class="badge badge-indigo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           Chrome / Edge MV3
         </span>
-        <span class="badge">
+        <span class="badge badge-green">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M12 3.5v11M8.5 11L12 14.5l3.5-3.5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13A1.5 1.5 0 0 0 20 19.5V17"/></svg>
           Python 3.8+
         </span>
-        <span class="badge">
+        <span class="badge badge-orange">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><rect x="7" y="2" width="10" height="20" rx="3"/></svg>
           PWA — iOS &amp; Android
         </span>
-        <span class="badge">
+        <span class="badge badge-teal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           LAN uniquement
         </span>
@@ -570,42 +615,42 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
 
       <h3 class="sub">Cas d'usage typiques</h3>
       <div class="feature-grid">
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--indigo-bg); --ic-clr: var(--indigo)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           </div>
           <div class="feature-name">Affichage dynamique</div>
           <div class="feature-desc">Slides Canva, Google Slides, Notion, Airtable — tout ce qui s'affiche dans un navigateur.</div>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--purple-bg); --ic-clr: var(--purple)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div class="feature-name">Tableau de bord</div>
           <div class="feature-desc">Grafana, Metabase, Google Analytics — les outils de monitoring qui tournent en boucle.</div>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--green-bg); --ic-clr: var(--green)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="feature-name">Espace d'accueil</div>
           <div class="feature-desc">Écran de bienvenue, menu du jour, planning hebdomadaire affiché à l'entrée d'un bureau ou d'un espace de travail.</div>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--red-bg); --ic-clr: var(--red)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
           </div>
           <div class="feature-name">Diffusion vidéo</div>
           <div class="feature-desc">Lecture de vidéos YouTube en rotation, avec contrôle de volume depuis le téléphone.</div>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--teal-bg); --ic-clr: var(--teal)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
           </div>
           <div class="feature-name">Horaires planifiés</div>
           <div class="feature-desc">L'affichage se lance et s'arrête automatiquement selon les jours de la semaine et les plages horaires définies.</div>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="--ic-bg: var(--amber-bg); --ic-clr: var(--amber)">
           <div class="feature-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
@@ -633,7 +678,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
 
         <!-- Phone -->
         <div class="arch-row">
-          <div class="arch-box">
+          <div class="arch-box" style="border-left: 3px solid var(--indigo)">
             <div class="arch-box-label">Téléphone (iOS / Android)</div>
             <div class="arch-box-name">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
@@ -661,7 +706,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
 
         <!-- Server -->
         <div class="arch-row">
-          <div class="arch-box">
+          <div class="arch-box" style="border-left: 3px solid var(--green)">
             <div class="arch-box-label">PC kiosque · Python</div>
             <div class="arch-box-name">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
@@ -690,7 +735,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
 
         <!-- Extension -->
         <div class="arch-row">
-          <div class="arch-box">
+          <div class="arch-box" style="border-left: 3px solid var(--orange)">
             <div class="arch-box-label">PC kiosque · Chrome / Edge</div>
             <div class="arch-box-name">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -711,7 +756,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
 
         <!-- Kiosk window -->
         <div class="arch-row">
-          <div class="arch-box">
+          <div class="arch-box" style="border-left: 3px solid var(--teal)">
             <div class="arch-box-label">Fenêtre kiosque — Chrome</div>
             <div class="arch-box-name">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -1155,7 +1200,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
       </p>
       <div class="divider"></div>
 
-      <div class="card">
+      <div class="card" style="background: var(--green-bg)">
         <div class="sec-row" style="padding:14px 20px;border-bottom:1px solid var(--line)">
           <div class="sec-ic">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1240,7 +1285,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
       </p>
       <div class="divider"></div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--red)">
         <h3>La télécommande affiche « Serveur introuvable »</h3>
         <p>Le téléphone ne parvient pas à joindre le serveur Python sur le PC kiosque.</p>
         <ul>
@@ -1252,7 +1297,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--red)">
         <h3>Le bandeau « Extension non connectée » s'affiche</h3>
         <p>Le serveur Python tourne, le téléphone est connecté, mais l'extension Chrome ne s'est pas encore connectée au serveur.</p>
         <ul>
@@ -1263,7 +1308,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--amber)">
         <h3>Alerte « Deux extensions connectées en même temps »</h3>
         <p>Chrome et Edge ont tous les deux l'extension chargée et se connectent simultanément au serveur. Les deux envoient leur état, créant des conflits.</p>
         <ul>
@@ -1273,7 +1318,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--amber)">
         <h3>Le QR code doit être rescanné après chaque redémarrage</h3>
         <p>Le token change à chaque démarrage du serveur si le fichier <code>.wt_token</code> n'est pas persisté.</p>
         <ul>
@@ -1282,7 +1327,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--amber)">
         <h3>Les pages de login SSO s'affichent sur le kiosque</h3>
         <p>Une session expirée redirige vers une page d'authentification (Microsoft 365, Google, Salesforce…).</p>
         <ul>
@@ -1293,7 +1338,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--amber)">
         <h3>Les Canva ne se mettent pas à jour</h3>
         <p>Canva ne rafraîchit pas automatiquement les présentations modifiées dans un onglet déjà ouvert.</p>
         <ul>
@@ -1302,7 +1347,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--indigo)">
         <h3>La rotation ne démarre pas / s'arrête toute seule</h3>
         <ul>
           <li>Si les horaires sont activés, vérifiez que l'heure actuelle est dans la plage configurée.</li>
@@ -1312,7 +1357,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--indigo)">
         <h3>L'aperçu en direct ne s'affiche pas</h3>
         <ul>
           <li>L'aperçu n'est disponible que si la rotation est active et l'extension connectée.</li>
@@ -1321,7 +1366,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         </ul>
       </div>
 
-      <div class="trouble-card">
+      <div class="trouble-card" style="border-left: 3px solid var(--indigo)">
         <h3>Push notifications manquantes</h3>
         <p>Les notifications de déconnexion du serveur nécessitent l'autorisation des notifications dans le navigateur mobile.</p>
         <ul>

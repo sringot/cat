@@ -3,7 +3,7 @@ Push notification support via Web Push (VAPID).
 Requires:  pip install pywebpush
 Falls back gracefully if pywebpush is not installed.
 """
-import json, base64, asyncio, logging
+import json, base64, asyncio, logging, os
 from pathlib import Path
 
 _subs_lock = asyncio.Lock()
@@ -65,8 +65,13 @@ def _load_subs() -> list:
         return []
 
 def _save_subs(subs: list):
+    # Écriture atomique (cf. backup.py / library.py) : un arrêt brutal en plein
+    # write ne doit pas laisser un JSON tronqué — sinon _load_subs() repart de
+    # zéro et tous les abonnements push sont perdus.
     try:
-        _SUBS_FILE.write_text(json.dumps(subs))
+        tmp = _SUBS_FILE.parent / (_SUBS_FILE.name + '.tmp')
+        tmp.write_text(json.dumps(subs))
+        os.replace(tmp, _SUBS_FILE)
     except Exception as e:
         log.warning('Échec sauvegarde abonnements push: %s', e)
 
@@ -81,6 +86,10 @@ async def save_subscription(sub: dict):
     async with _subs_lock:
         subs = _load_subs()
         subs = [s for s in subs if s.get('endpoint') != sub['endpoint']]
+        # Garde-fou : un client authentifié ne peut pas faire gonfler le fichier
+        # indéfiniment (chaque notify parcourt toute la liste).
+        if len(subs) >= 100:
+            return
         subs.append(sub)
         _save_subs(subs)
 
@@ -126,11 +135,12 @@ async def notify(title: str, body: str):
     if not subs:
         return
     loop = asyncio.get_running_loop()
-    to_remove = []
-    for sub in subs:
-        result = await loop.run_in_executor(None, _send_one, sub, title, body)
-        if result == 'expired':
-            to_remove.append(sub['endpoint'])
+    # Livraisons en parallèle : un abonné injoignable (timeout) ne doit pas
+    # retarder tous les autres (l'envoi séquentiel coûtait O(N × timeout)).
+    results = await asyncio.gather(
+        *(loop.run_in_executor(None, _send_one, sub, title, body) for sub in subs)
+    )
+    to_remove = [sub['endpoint'] for sub, result in zip(subs, results) if result == 'expired']
     if to_remove:
         async with _subs_lock:
             current = _load_subs()

@@ -94,6 +94,10 @@ async def main():
     print(f'║  Token auth : {auth.TOKEN:<27}║')
     print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
     print('╚══════════════════════════════════════════╝')
+    if state.local_ip == '127.0.0.1':
+        print('[!] IP LAN non détectée (réseau indisponible au démarrage).')
+        print('    Le QR code pointe vers 127.0.0.1 et ne sera PAS scannable')
+        print('    depuis le téléphone. → Branchez le réseau puis relancez.')
     print('\nEn attente de connexions...\n')
 
     app = web.Application()

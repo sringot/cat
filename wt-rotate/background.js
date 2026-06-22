@@ -57,6 +57,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === 'wt-watchdog') {
     await checkSchedule();
     connectRemote();
+    await resyncTabsIfNeeded();
     await checkSessions();
     await injectOverlayAll();
     await refreshCanvaTabsIfNeeded();
@@ -174,8 +175,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       try {
         await chrome.tabs.update(config.tabIds[next], { active: true });
         config.currentIndex = next; config.lastAlarmTime = Date.now();
+        config.currentAlarmSec = urls[next].interval || config.interval;
         await chrome.storage.local.set({ config });
-        if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+        if (config.active) await setNextAlarm(config.currentAlarmSec);
         await sendStateToRemote();
         reply({ ok: true });
       } catch (e) { reply({ ok: false, error: e.message }); }
@@ -193,8 +195,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       try {
         await chrome.tabs.update(config.tabIds[prev], { active: true });
         config.currentIndex = prev; config.lastAlarmTime = Date.now();
+        config.currentAlarmSec = urls[prev].interval || config.interval;
         await chrome.storage.local.set({ config });
-        if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+        if (config.active) await setNextAlarm(config.currentAlarmSec);
         await sendStateToRemote();
         reply({ ok: true });
       } catch (e) { reply({ ok: false, error: e.message }); }

@@ -1,15 +1,24 @@
-// injectOverlay: qrSrc is a pre-fetched data-URI (or null to fetch inline for single-tab calls)
+// Cache du QR (data-URI). Le QR encode une URL+token quasi-fixe : inutile de
+// refetch /qr.svg pour chaque onglet à chaque tick du watchdog. TTL 10 min pour
+// tolérer un éventuel changement de token au redémarrage du serveur.
+let _qrCache = null, _qrCacheAt = 0;
+async function getQrDataUri(httpPort) {
+  if (_qrCache && Date.now() - _qrCacheAt < 600000) return _qrCache;
+  try {
+    const resp = await fetch(`http://localhost:${httpPort}/qr.svg`);
+    if (resp.ok) {
+      const svg = await resp.text();
+      _qrCache = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      _qrCacheAt = Date.now();
+    }
+  } catch {}
+  return _qrCache;
+}
+
+// injectOverlay: qrSrc is a pre-fetched data-URI (or null to fetch via cache)
 async function injectOverlay(tabId, info, qrSrc = null) {
   const controlUrl = info.control_url || `http://${info.ip}:${info.http_port}/`;
-  if (qrSrc === null) {
-    try {
-      const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);
-      if (resp.ok) {
-        const svg = await resp.text();
-        qrSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      }
-    } catch {}
-  }
+  if (qrSrc === null) qrSrc = await getQrDataUri(info.http_port);
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
@@ -58,20 +67,13 @@ async function injectOverlay(tabId, info, qrSrc = null) {
   } catch {}
 }
 
-// Fetch QR once, then inject into every kiosk tab (fixes N-fetch-per-watchdog-tick)
+// Fetch QR once (cached), then inject into every kiosk tab
 async function injectOverlayAll() {
   const data = await chrome.storage.local.get(['config', 'remoteInfo']);
   const config = migrateConfig(data.config);
   const info = data.remoteInfo;
   if (!info?.ip || !config.tabIds.length) return;
-  let qrSrc = null;
-  try {
-    const resp = await fetch(`http://localhost:${info.http_port}/qr.svg`);
-    if (resp.ok) {
-      const svg = await resp.text();
-      qrSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    }
-  } catch {}
+  const qrSrc = await getQrDataUri(info.http_port);
   for (const tabId of config.tabIds) {
     await injectOverlay(tabId, info, qrSrc);
   }

@@ -119,8 +119,30 @@ async function autoStartRotation(config) {
     await sendStateToRemote();
   } catch (e) {
     await log('autoStart ERR: ' + e.message);
+    // Échec en cours de (re)construction des onglets : on ne laisse pas tourner
+    // une rotation sur un jeu d'onglets incomplet (sinon currentIndex pointe
+    // dans le vide). Retour à un état arrêté propre ; le prochain démarrage
+    // (popup, horaire, resync) repart de zéro.
+    config.active = false; config.tabIds = []; config.windowId = null;
     await chrome.storage.local.set({ config });
   }
+}
+
+// Le popup peut éditer config.urls (ajout/suppression) sans toucher tabIds :
+// l'alignement tabIds[i] ↔ activeUrls[i] — sur lequel reposent la rotation, la
+// détection de session et le refresh Canva — se rompt alors. On reconstruit les
+// onglets sur la playlist courante, exactement comme le fait une édition mobile.
+// (Un simple réordonnancement garde les longueurs égales et n'est pas rattrapé
+// ici : le mobile, lui, synchronise tabIds lors d'un pl_move.)
+async function resyncTabsIfNeeded() {
+  const data = await chrome.storage.local.get('config');
+  const config = migrateConfig(data.config);
+  if (!config.active || !config.windowId || config.remoteTabId) return;
+  const activeUrls = config.urls.filter(u => u?.url?.trim());
+  if (!activeUrls.length || config.tabIds.length === activeUrls.length) return;
+  await log('resync — tabIds(' + config.tabIds.length + ') ≠ playlist('
+    + activeUrls.length + '), reconstruction des onglets');
+  await autoStartRotation(config);
 }
 
 // ── Auto-refresh des onglets kiosque (sessions expirantes type WithSecure) ─────
@@ -137,9 +159,6 @@ async function refreshStaleTabsIfNeeded() {
   let changed = false;
   for (let i = 0; i < config.tabIds.length; i++) {
     const tabId = config.tabIds[i];
-    // Re-read currentIndex before each reload to avoid reloading a tab that just became active
-    const fresh = await chrome.storage.local.get('config');
-    if (i === migrateConfig(fresh.config).currentIndex) continue;
     if (!(tabId in times)) {
       // First time we see this tab — seed the clock so it isn't reloaded immediately
       times[tabId] = now;
@@ -147,6 +166,10 @@ async function refreshStaleTabsIfNeeded() {
       continue;
     }
     if (now - times[tabId] >= intervalMs) {
+      // Re-read currentIndex only when about to reload (rare) : it may have
+      // changed during the awaits, and we must never reload the active tab.
+      const fresh = await chrome.storage.local.get('config');
+      if (i === migrateConfig(fresh.config).currentIndex) continue;
       try {
         await chrome.tabs.reload(tabId);
         times[tabId] = now;
@@ -237,15 +260,15 @@ async function refreshCanvaTabsIfNeeded() {
   for (let i = 0; i < config.tabIds.length; i++) {
     if (!activeUrls[i]?.url?.includes('canva.com')) continue;
     const tabId = config.tabIds[i];
-    // Re-read currentIndex to avoid reloading the active tab
-    const fresh = await chrome.storage.local.get('config');
-    if (i === migrateConfig(fresh.config).currentIndex) continue;
     if (!(tabId in times)) {
       times[tabId] = now;
       changed = true;
       continue;
     }
     if (now - times[tabId] >= minMs) {
+      // Re-read currentIndex only when about to reload (rare) to avoid the active tab
+      const fresh = await chrome.storage.local.get('config');
+      if (i === migrateConfig(fresh.config).currentIndex) continue;
       try {
         await chrome.tabs.reload(tabId);
         times[tabId] = now;

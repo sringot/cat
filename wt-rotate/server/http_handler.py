@@ -93,9 +93,12 @@ async def handle_http(request):
 
     if path == '/qr.svg':
         if state.qr_cache:
+            # Pas de CORS '*' ici : le QR encode l'URL + token. L'extension le lit
+            # en local (host_permissions <all_urls> → non soumise au CORS) ; une
+            # page web tierce ne doit pas pouvoir fetch le SVG pour en extraire le
+            # token et prendre la main sur le kiosque.
             return web.Response(body=state.qr_cache, content_type='image/svg+xml',
-                                headers={'Cache-Control': 'no-store',
-                                         'Access-Control-Allow-Origin': '*'})
+                                headers={'Cache-Control': 'no-store'})
         return web.Response(status=503, text='pip install qrcode')
 
     # /app → la télécommande ; / (cible du QR code) → le guide d'installation

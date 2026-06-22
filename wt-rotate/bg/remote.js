@@ -286,8 +286,9 @@ async function handleRemoteCommand(cmd) {
       try { await chrome.tabs.update(config.tabIds[n], { active: true }); }
       catch { ok = false; reason = 'rotation_stopped'; break; }
       config.currentIndex = n; config.lastAlarmTime = Date.now();
+      config.currentAlarmSec = urls[n].interval || config.interval;
       await chrome.storage.local.set({ config });
-      if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+      if (config.active) await setNextAlarm(config.currentAlarmSec);
       await log('remote — ' + cmd.action);
       break;
     }
@@ -305,8 +306,9 @@ async function handleRemoteCommand(cmd) {
       try { await chrome.tabs.update(config.tabIds[idx], { active: true }); }
       catch { ok = false; reason = 'rotation_stopped'; break; }
       config.currentIndex = idx; config.lastAlarmTime = Date.now();
+      config.currentAlarmSec = urls[idx].interval || config.interval;
       await chrome.storage.local.set({ config });
-      if (config.active) await setNextAlarm(config.currentAlarmSec || config.interval);
+      if (config.active) await setNextAlarm(config.currentAlarmSec);
       await log('remote — goto ' + idx);
       break;
     }

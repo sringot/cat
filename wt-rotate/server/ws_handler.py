@@ -132,7 +132,11 @@ async def _handle_extension(ws) -> None:
             if state.ext_ws is not ws:
                 break  # connexion évincée : elle ne diffuse plus rien
             if msg_data.type == WSMsgType.TEXT:
-                d = json.loads(msg_data.data)
+                try:
+                    d = json.loads(msg_data.data)
+                except (ValueError, TypeError):
+                    log.warning('Message extension non-JSON ignoré')
+                    continue
                 if d.get('type') == 'state':
                     state.cached_state = d
                     if backup.maybe_save(d.get('urls') or []):
@@ -180,7 +184,11 @@ async def _handle_mobile(ws) -> None:
     try:
         async for msg_data in ws:
             if msg_data.type == WSMsgType.TEXT:
-                d = json.loads(msg_data.data)
+                try:
+                    d = json.loads(msg_data.data)
+                except (ValueError, TypeError):
+                    log.warning('Message mobile non-JSON ignoré')
+                    continue
                 if d.get('type') == 'command':
                     payload = msg_data.data
                     # Bibliothèque de playlists — traitée côté serveur, pas forwardée

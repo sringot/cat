@@ -80,6 +80,12 @@ async def main():
             return await handle_ws(request)
         return await handle_http(request)
 
+    def _fit(s: str, w: int = 27) -> str:
+        """Tronque s à w caractères pour tenir dans la boîte ASCII du bandeau."""
+        if len(s) <= w:
+            return s.ljust(w)
+        return s[:w - 3] + '...'
+
     plain_url = f'http://{state.local_ip}:{state.PORT}/'
     try:
         _hn = socket.gethostname()
@@ -90,9 +96,9 @@ async def main():
     print('║    wt-rotate Remote Control Server       ║')
     print('╠══════════════════════════════════════════╣')
     print(f'║  IP locale  : {state.local_ip:<27}║')
-    print(f'║  Hostname   : {hostname_url:<27}║')
-    print(f'║  Token auth : {auth.TOKEN:<27}║')
-    print(f'║  QR code    : {"OK" if state.qr_cache else "manquant (pip install qrcode)":<27}║')
+    print(f'║  Hostname   : {_fit(hostname_url)}║')
+    print(f'║  Token auth : {_fit(auth.TOKEN)}║')
+    print(f'║  QR code    : {_fit("OK" if state.qr_cache else "manquant (pip install qrcode)")}║')
     print('╚══════════════════════════════════════════╝')
     if state.local_ip == '127.0.0.1':
         print('[!] IP LAN non détectée (réseau indisponible au démarrage).')

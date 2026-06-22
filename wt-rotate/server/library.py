@@ -11,6 +11,8 @@ log = logging.getLogger('wt-rotate.library')
 FILE = Path(__file__).parent.parent / 'library.json'
 data: dict = {'playlists': []}
 
+MAX_PLAYLISTS = 50
+
 
 def _host(url: str) -> str:
     """Hôte normalisé (sans www) d'une URL, tolérant aux URLs sans schéma."""
@@ -48,6 +50,9 @@ def load() -> None:
 
 
 def save_playlist(name: str, urls: list) -> None:
+    if len(data['playlists']) >= MAX_PLAYLISTS:
+        log.warning('Bibliothèque pleine (%d playlists max) — sauvegarde ignorée', MAX_PLAYLISTS)
+        return
     entry = {
         'id': uuid.uuid4().hex[:8],
         'name': (name[:40].strip()) or 'Playlist',

@@ -9,6 +9,7 @@ const DEFAULT_CONFIG = {
 
 let config        = null;
 let progressTimer = null;
+let progressTick  = null;
 let dragSrcIndex  = null;
 let toastTimer    = null;
 
@@ -374,13 +375,16 @@ function setArt(name) {
 
 function startProgressBar(remainSec, totalSec) {
   stopProgressBar();
-  const bar = $('prog-bar');
-  const pct = (remainSec / totalSec) * 100;
-  bar.style.transition = 'none';
-  bar.style.width = pct + '%';
-  bar.offsetWidth; // force reflow
-  bar.style.transition = `width ${remainSec}s linear`;
-  bar.style.width = '0%';
+  const bar    = $('prog-bar');
+  const origin = Date.now() - (totalSec - remainSec) * 1000;
+
+  function tick() {
+    const left = Math.max(0, totalSec - (Date.now() - origin) / 1000);
+    bar.style.width = (left / totalSec * 100).toFixed(2) + '%';
+  }
+  tick();
+  progressTick = setInterval(tick, 200);
+
   progressTimer = setTimeout(async () => {
     try {
       const d = await chrome.storage.local.get('config');
@@ -391,8 +395,8 @@ function startProgressBar(remainSec, totalSec) {
 
 function stopProgressBar() {
   if (progressTimer) { clearTimeout(progressTimer); progressTimer = null; }
+  if (progressTick)  { clearInterval(progressTick);  progressTick  = null; }
   const bar = $('prog-bar');
-  bar.style.transition = 'none';
   bar.style.width = '0%';
 }
 

@@ -2387,6 +2387,7 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
 // autres s'écartent. Au lâcher, pl_move est envoyé au kiosque.
 let drag = null;           // état du glisser en cours
 let suppressClick = false; // évite le tap fantôme (goto/rename) après un drop
+function blockScroll(e) { e.preventDefault(); }
 
 function watchLongPress(el, index, items) {
   el.addEventListener('pointerdown', e => {
@@ -2399,6 +2400,7 @@ function watchLongPress(el, index, items) {
       // dans le DOM — ne pas activer un glisser sur un nœud détaché.
       if (!el.isConnected) { drag = null; return; }
       drag.active = true;
+      document.addEventListener('touchmove', blockScroll, { passive: false });
       el.classList.add('drag');
       el.style.transform = 'scale(1.03)';
       try { el.setPointerCapture(drag.pid); } catch {}
@@ -2430,14 +2432,15 @@ document.addEventListener('pointermove', e => {
   }
 });
 
-// pendant un glisser actif, on bloque le scroll de la page (iOS)
-document.addEventListener('touchmove', e => { if (drag?.active) e.preventDefault(); }, { passive: false });
+// blockScroll est ajouté/retiré dynamiquement (uniquement quand drag.active est vrai)
+// pour ne pas geler le scroll natif des wheels iOS quand aucun glisser n'est actif.
 
 function endDrag(e) {
   if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.pid)) return;
   clearTimeout(drag.timer);
   const d = drag; drag = null;
   if (!d.active) return;
+  document.removeEventListener('touchmove', blockScroll);
   d.el.classList.remove('drag');
   d.items.forEach(it => { it.classList.remove('shift'); it.style.transform = ''; });
   suppressClick = true;
@@ -2468,6 +2471,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden || !drag) return;
   clearTimeout(drag.timer);
   const d = drag; drag = null;
+  document.removeEventListener('touchmove', blockScroll);
   d.el.classList.remove('drag'); d.el.style.transform = '';
   d.items.forEach(it => { it.classList.remove('shift'); it.style.transform = ''; });
   if (lastState) sync(lastState);

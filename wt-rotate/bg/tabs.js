@@ -21,7 +21,7 @@ async function rotateToNext() {
   }
   const activeUrls = config.urls.filter(u => u?.url?.trim());
   if (activeUrls.length < 2) { await log('moins de 2 URLs — abandon'); return; }
-  const next = (config.currentIndex + 1) % activeUrls.length;
+  const next = nextIndex(config.currentIndex, activeUrls.length);
   if (next >= config.tabIds.length) {
     await log('tabIds désynchronisé — arrêt');
     config.active = false; config.tabIds = []; config.windowId = null;

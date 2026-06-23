@@ -34,8 +34,17 @@ function isInSchedule(config) {
   return cur >= sh * 60 + sm && cur < eh * 60 + em;
 }
 
+// ── Arithmétique d'index de la playlist (pure, partagée rotate/next/prev/goto) ─
+// len peut valoir 0 (playlist vide) : on renvoie 0 plutôt que NaN. Les appelants
+// garantissent toujours len > 0 avant de tourner, mais ce garde-fou empêche
+// qu'une régression amont ne propage un NaN dans currentIndex.
+function nextIndex(current, len) { return len > 0 ? (current + 1) % len : 0; }
+function prevIndex(current, len) { return len > 0 ? (current - 1 + len) % len : 0; }
+function isValidIndex(idx, len) { return Number.isInteger(idx) && idx >= 0 && idx < len; }
+
 // Export pour les tests Node (`module` est undefined dans le service worker
 // MV3 : ce bloc y est donc ignoré et n'affecte pas le runtime de l'extension).
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DEFAULT_CONFIG, migrateConfig, isInSchedule };
+  module.exports = { DEFAULT_CONFIG, migrateConfig, isInSchedule,
+                     nextIndex, prevIndex, isValidIndex };
 }

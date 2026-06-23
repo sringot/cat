@@ -2,7 +2,10 @@
 // Lancés avec le runner natif : `node --test tests/`
 const test = require('node:test');
 const assert = require('node:assert');
-const { DEFAULT_CONFIG, migrateConfig, isInSchedule } = require('../bg/config.js');
+const {
+  DEFAULT_CONFIG, migrateConfig, isInSchedule,
+  nextIndex, prevIndex, isValidIndex,
+} = require('../bg/config.js');
 
 test('migrateConfig(null) renvoie une config par défaut saine', () => {
   const c = migrateConfig(null);
@@ -71,4 +74,35 @@ test('isInSchedule: mauvais jour → faux', () => {
     scheduleEnabled: true, scheduleDays: [wrongDay],
     scheduleStart: '00:00', scheduleEnd: '24:00',
   }), false);
+});
+
+// ── Arithmétique d'index (next / prev / goto) ────────────────────────────────
+
+test('nextIndex: avance et boucle sur la fin', () => {
+  assert.strictEqual(nextIndex(0, 3), 1);
+  assert.strictEqual(nextIndex(1, 3), 2);
+  assert.strictEqual(nextIndex(2, 3), 0);       // wrap
+  assert.strictEqual(nextIndex(0, 1), 0);       // une seule page
+});
+
+test('prevIndex: recule et boucle sur le début', () => {
+  assert.strictEqual(prevIndex(2, 3), 1);
+  assert.strictEqual(prevIndex(1, 3), 0);
+  assert.strictEqual(prevIndex(0, 3), 2);       // wrap
+  assert.strictEqual(prevIndex(0, 1), 0);
+});
+
+test('next/prevIndex: longueur 0 → 0 (pas de NaN)', () => {
+  assert.strictEqual(nextIndex(0, 0), 0);
+  assert.strictEqual(prevIndex(0, 0), 0);
+});
+
+test('isValidIndex: bornes et type', () => {
+  assert.strictEqual(isValidIndex(0, 3), true);
+  assert.strictEqual(isValidIndex(2, 3), true);
+  assert.strictEqual(isValidIndex(3, 3), false);   // hors borne haute
+  assert.strictEqual(isValidIndex(-1, 3), false);  // négatif
+  assert.strictEqual(isValidIndex(1.5, 3), false); // non entier
+  assert.strictEqual(isValidIndex('1', 3), false); // non entier (string)
+  assert.strictEqual(isValidIndex(0, 0), false);   // playlist vide
 });

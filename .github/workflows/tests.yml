@@ -21,10 +21,10 @@ jobs:
         with:
           node-version: '22'
 
-      # Seules dépendances runtime du serveur nécessaires aux tests.
-      # La suite elle-même n'ajoute aucune dépendance (unittest + node:test).
+      # Dépendances runtime du serveur (pycaw est ignoré hors Windows via son
+      # marqueur). La suite de tests elle-même n'ajoute aucune dépendance.
       - name: Install server deps
-        run: python -m pip install aiohttp cryptography
+        run: python -m pip install -r wt-rotate/requirements.txt
 
       - name: Run test suite
         run: ./wt-rotate/run_tests.sh

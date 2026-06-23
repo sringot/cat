@@ -170,7 +170,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       const config = migrateConfig(data.config);
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { reply({ ok: false, error: 'not_running' }); return; }
-      const next = (config.currentIndex + 1) % urls.length;
+      const next = nextIndex(config.currentIndex, urls.length);
       if (next >= config.tabIds.length) { reply({ ok: false, error: 'sync_error' }); return; }
       try {
         await chrome.tabs.update(config.tabIds[next], { active: true });
@@ -190,7 +190,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       const config = migrateConfig(data.config);
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { reply({ ok: false, error: 'not_running' }); return; }
-      const prev = (config.currentIndex - 1 + urls.length) % urls.length;
+      const prev = prevIndex(config.currentIndex, urls.length);
       if (prev >= config.tabIds.length) { reply({ ok: false, error: 'sync_error' }); return; }
       try {
         await chrome.tabs.update(config.tabIds[prev], { active: true });

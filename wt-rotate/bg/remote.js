@@ -280,8 +280,8 @@ async function handleRemoteCommand(cmd) {
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
       const n = cmd.action === 'next'
-        ? (config.currentIndex + 1) % urls.length
-        : (config.currentIndex - 1 + urls.length) % urls.length;
+        ? nextIndex(config.currentIndex, urls.length)
+        : prevIndex(config.currentIndex, urls.length);
       if (n >= config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
       try { await chrome.tabs.update(config.tabIds[n], { active: true }); }
       catch { ok = false; reason = 'rotation_stopped'; break; }
@@ -302,7 +302,7 @@ async function handleRemoteCommand(cmd) {
       const idx = Number.isInteger(cmd.index) ? cmd.index : -1;
       const urls = config.urls.filter(u => u?.url?.trim());
       if (!urls.length || !config.tabIds.length) { ok = false; reason = 'rotation_stopped'; break; }
-      if (idx < 0 || idx >= urls.length || idx >= config.tabIds.length) { ok = false; reason = 'bad_index'; break; }
+      if (!isValidIndex(idx, urls.length) || idx >= config.tabIds.length) { ok = false; reason = 'bad_index'; break; }
       try { await chrome.tabs.update(config.tabIds[idx], { active: true }); }
       catch { ok = false; reason = 'rotation_stopped'; break; }
       config.currentIndex = idx; config.lastAlarmTime = Date.now();
@@ -627,4 +627,10 @@ async function handleRemoteCommand(cmd) {
 
   sendCmdAck(cmd.action, ok, reason);
   await sendStateToRemote();
+}
+
+// Export pour les tests Node (`module` est undefined dans le service worker
+// MV3 : ce bloc y est ignoré et n'affecte pas le runtime de l'extension).
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { activeIndices, transformUrl };
 }

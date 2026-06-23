@@ -33,3 +33,9 @@ function isInSchedule(config) {
   const [eh, em] = (config.scheduleEnd   || '18:00').split(':').map(Number);
   return cur >= sh * 60 + sm && cur < eh * 60 + em;
 }
+
+// Export pour les tests Node (`module` est undefined dans le service worker
+// MV3 : ce bloc y est donc ignoré et n'affecte pas le runtime de l'extension).
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { DEFAULT_CONFIG, migrateConfig, isInSchedule };
+}

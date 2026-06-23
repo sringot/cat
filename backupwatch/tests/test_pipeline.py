@@ -22,11 +22,16 @@ def test_demo_pipeline_generates_dashboard(tmp_path):
     assert counts[BackupStatus.SUCCESS] == 20
     assert counts[BackupStatus.UNKNOWN] == 0
 
-    # Le dashboard doit exister et contenir les sections clés.
+    # Le dashboard doit exister et contenir les éléments clés du board de supervision.
     assert result.dashboard_path.exists()
     html = result.dashboard_path.read_text(encoding="utf-8")
     assert "BackupWatch" in html
-    assert "Supervision des sauvegardes" in html
-    assert "Par logiciel" in html
-    assert "Statistiques" in html
-    assert "hawaii-syno" in html  # dernier échec (carte Top)
+    # Bandeau d'état glançable : une sauvegarde a échoué cette nuit (jeu démo).
+    assert 'class="status status--fail"' in html
+    # Les trois compteurs.
+    assert "Succès" in html and "Avertissements" in html and "Échecs" in html
+    # La liste « à vérifier » nomme le client en échec.
+    assert "À vérifier" in html
+    assert "hawaii-syno" in html
+    # Aucune dépendance externe : le board doit s'afficher hors-ligne.
+    assert "jsdelivr" not in html and "googleapis" not in html

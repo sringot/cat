@@ -488,6 +488,21 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   to   { transform: translateX(100%); }
 }
 
+/* ── Placeholder « rien à l'écran » — affiché quand la rotation est arrêtée ── */
+.preview-empty {
+  display: none;
+  width: 100%; aspect-ratio: 16/9;
+  background: var(--sink); box-shadow: var(--sh-in);
+  border-radius: 11px; line-height: normal;
+  flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  color: var(--txt-3); text-align: center;
+}
+.preview-empty span { font-size: 13px; font-weight: 600; letter-spacing: .2px; }
+#card-preview.empty .preview-empty { display: flex; }
+#card-preview.empty .preview-wrap img,
+#card-preview.empty .preview-ts,
+#card-preview.empty .preview-refresh { display: none; }
+
 
 /* volume — piste concave, pastille convexe verte */
 .volrow {
@@ -1103,6 +1118,10 @@ nav {
       <div class="card" id="card-preview" style="display:none">
         <div class="preview-wrap">
           <div class="preview-skel" aria-hidden="true"></div>
+          <div class="preview-empty" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="30" height="30"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4M3 4l18 13"/></svg>
+            <span>Aucune page affichée</span>
+          </div>
           <img id="preview-img" alt="Aperçu remote">
           <div class="preview-ts" id="preview-ts"></div>
           <button class="preview-refresh" id="b-preview-refresh" aria-label="Actualiser l'aperçu">
@@ -2057,6 +2076,18 @@ function sync(s) {
   }
   $('transport').style.display = stopped ? 'none' : '';
   $('volrow').style.display    = stopped ? 'none' : '';
+
+  // Aperçu : rotation arrêtée → on remplace la capture du bureau du PC par un
+  // placeholder « Aucune page affichée » (sinon le remote laisse croire qu'une
+  // page tourne encore). La capture reprend dès que la rotation redémarre.
+  const prev = $('card-preview');
+  if (stopped) {
+    prev.style.display = '';
+    prev.classList.add('empty');
+    prev.classList.remove('skeleton');
+  } else {
+    prev.classList.remove('empty');
+  }
 
   // bouton principal :
   // – rotation active → pause

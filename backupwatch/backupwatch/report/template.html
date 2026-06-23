@@ -53,28 +53,27 @@
     .status-title { font-size: clamp(20px, 2.4vw, 30px); font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
     .status-sub { font-size: clamp(13px, 1.1vw, 15px); color: var(--ink-2); margin-top: 3px; }
 
-    .status--ok   { background: var(--ok-bg);   border-color: var(--ok-line); }
-    .status--ok   .status-ico { background: var(--ok-chip); color: var(--ok); }
+    /* Bandeau neutre (blanc) ; seule l'icône porte une touche de couleur légère. */
+    .status--ok   .status-ico { background: var(--ok-bg);   color: var(--ok); }
     .status--ok   .ico-ok { display: block; }
-    .status--warn { background: var(--warn-bg); border-color: var(--warn-line); }
-    .status--warn .status-ico { background: var(--warn-chip); color: var(--warn); }
+    .status--warn .status-ico { background: var(--warn-bg); color: var(--warn); }
     .status--warn .ico-warn { display: block; }
-    .status--fail { background: var(--fail-bg); border-color: var(--fail-line); }
-    .status--fail .status-ico { background: var(--fail-chip); color: var(--fail); }
+    .status--fail .status-ico { background: var(--fail-bg); color: var(--fail); }
     .status--fail .ico-fail { display: block; }
-    .status--none { background: var(--surface); border-color: var(--line); }
     .status--none .status-ico { background: #F2F4F7; color: var(--ink-3); }
     .status--none .ico-none { display: block; }
 
     /* ── Trois compteurs ── */
     .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px, 1.4vw, 16px); }
     .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); padding: clamp(16px, 2vh, 22px) clamp(14px, 1.6vw, 20px); text-align: center; }
-    .tile-num { font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -.02em; line-height: 1; }
-    .tile-lbl { font-size: clamp(11px, 1vw, 12.5px); color: var(--ink-3); margin-top: 9px; font-weight: 600; }
-    .tile--ok   .tile-num { color: var(--ok-ink); }
-    .tile--warn .tile-num { color: var(--warn-ink); }
-    .tile--fail .tile-num { color: var(--fail-ink); }
+    .tile-num { font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
     .tile.is-zero .tile-num { color: var(--ink-4); }
+    .tile-lbl { font-size: clamp(11px, 1vw, 12.5px); color: var(--ink-3); margin-top: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .tile-lbl::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
+    .tile--ok   .tile-lbl::before { background: var(--ok); }
+    .tile--warn .tile-lbl::before { background: var(--warn); }
+    .tile--fail .tile-lbl::before { background: var(--fail); }
+    .tile.is-zero .tile-lbl::before { background: var(--ink-4); }
 
     /* ── À vérifier ── */
     .att { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); overflow: hidden; }
@@ -82,10 +81,10 @@
     .att-list { padding: 2px 10px 8px; }
     .att-row { display: flex; align-items: center; gap: 14px; padding: 13px 10px; }
     .att-row + .att-row { border-top: 1px solid var(--line); }
-    .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; min-width: 76px; font-size: 11.5px; font-weight: 600; padding: 3px 10px 3px 9px; border-radius: 100px; }
-    .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
-    .pill--fail { background: var(--fail-bg); color: var(--fail-ink); }
-    .pill--warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .pill { flex: none; display: inline-flex; align-items: center; gap: 8px; min-width: 66px; font-size: 12px; font-weight: 500; color: var(--ink-2); }
+    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
+    .pill--fail::before { background: var(--fail); }
+    .pill--warn::before { background: var(--warn); }
     .att-client { font-size: clamp(14px, 1.2vw, 15.5px); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .att-meta { margin-left: auto; flex: none; font-size: 12.5px; color: var(--ink-3); }
     .att-more { padding: 11px 12px 6px; font-size: 12.5px; color: var(--ink-3); }

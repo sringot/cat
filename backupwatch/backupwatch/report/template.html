@@ -7,15 +7,14 @@
   <title>BackupWatch</title>
   <style>
     :root {
-      --bg: #0F172A; --surface: #172033;
-      --ink: #F1F5F9; --ink-2: #94A3B8; --ink-3: #64748B;
-      --line: rgba(148,163,184,.14);
-      --ok: #34D399;   --ok-bg: rgba(52,211,153,.10);  --ok-line: rgba(52,211,153,.30);
-      --warn: #FBBF24; --warn-bg: rgba(251,191,36,.10); --warn-line: rgba(251,191,36,.30);
-      --fail: #F87171; --fail-bg: rgba(248,113,113,.12); --fail-line: rgba(248,113,113,.40);
-      --none: #94A3B8; --none-bg: rgba(148,163,184,.07); --none-line: rgba(148,163,184,.20);
-      --mono: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Menlo, Consolas, monospace;
-      --r: 18px;
+      --bg: #F9FAFB; --surface: #FFFFFF;
+      --ink: #101828; --ink-2: #475467; --ink-3: #667085; --ink-4: #98A2B3;
+      --line: #EAECF0;
+      --ok: #079455;   --ok-ink: #067647;   --ok-bg: #ECFDF3;   --ok-line: #ABEFC6;   --ok-chip: #D1FADF;
+      --warn: #DC6803; --warn-ink: #B54708; --warn-bg: #FFFAEB; --warn-line: #FEDF89; --warn-chip: #FEF0C7;
+      --fail: #D92D20; --fail-ink: #B42318; --fail-bg: #FEF3F2; --fail-line: #FECDCA; --fail-chip: #FEE4E2;
+      --r: 12px;
+      --shadow-xs: 0 1px 2px rgba(16,24,40,.05);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -23,76 +22,78 @@
       background: var(--bg); color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      font-variant-numeric: tabular-nums;
       display: flex; min-height: 100dvh;
     }
     .wrap {
-      width: min(960px, 100%); margin: auto;
-      padding: clamp(24px, 4vh, 56px) clamp(20px, 4vw, 40px);
-      display: flex; flex-direction: column; gap: clamp(18px, 2.4vh, 30px);
+      width: min(940px, 100%); margin: auto;
+      padding: clamp(24px, 4vh, 52px) clamp(20px, 4vw, 36px);
+      display: flex; flex-direction: column; gap: clamp(16px, 2.2vh, 24px);
     }
 
     /* ── En-tête ── */
     .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-size: clamp(15px, 1.4vw, 18px); font-weight: 650; letter-spacing: -.01em; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: clamp(15px, 1.3vw, 17px); font-weight: 600; letter-spacing: -.01em; }
     .logo { width: 26px; height: 26px; display: block; flex: none; }
     .logo svg { width: 100%; height: 100%; display: block; }
-    .head-meta { text-align: right; line-height: 1.45; }
-    .head-date { font-size: clamp(13px, 1.2vw, 15px); font-weight: 600; }
-    .head-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+    .head-meta { text-align: right; line-height: 1.5; }
+    .head-date { font-size: clamp(13px, 1.1vw, 14px); font-weight: 600; color: var(--ink-2); }
+    .head-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
 
     /* ── Bandeau d'état (le coup d'œil) ── */
     .status {
-      display: flex; align-items: center; gap: clamp(14px, 1.6vw, 22px);
-      padding: clamp(20px, 2.6vh, 30px) clamp(20px, 2.4vw, 30px);
-      border-radius: var(--r); border: 1px solid var(--line); background: var(--surface);
+      display: flex; align-items: center; gap: clamp(14px, 1.6vw, 20px);
+      padding: clamp(18px, 2.4vh, 26px) clamp(18px, 2.2vw, 26px);
+      border-radius: 16px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-xs);
     }
-    .status-ico { flex: none; width: clamp(40px, 3.6vw, 52px); height: clamp(40px, 3.6vw, 52px); display: grid; place-items: center; border-radius: 50%; }
-    .status-ico svg { width: 58%; height: 58%; }
+    .status-ico { flex: none; width: clamp(40px, 3.4vw, 50px); height: clamp(40px, 3.4vw, 50px); display: grid; place-items: center; border-radius: 50%; }
+    .status-ico svg { width: 56%; height: 56%; }
     .status-ico .ico { display: none; }
-    .status-title { font-size: clamp(22px, 2.7vw, 34px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
-    .status-sub { font-size: clamp(13px, 1.2vw, 15px); color: var(--ink-2); margin-top: 4px; }
+    .status-title { font-size: clamp(20px, 2.4vw, 30px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+    .status-sub { font-size: clamp(13px, 1.1vw, 15px); color: var(--ink-2); margin-top: 3px; }
 
     .status--ok   { background: var(--ok-bg);   border-color: var(--ok-line); }
-    .status--ok   .status-ico { background: rgba(52,211,153,.14); color: var(--ok); }
+    .status--ok   .status-ico { background: var(--ok-chip); color: var(--ok); }
     .status--ok   .ico-ok { display: block; }
     .status--warn { background: var(--warn-bg); border-color: var(--warn-line); }
-    .status--warn .status-ico { background: rgba(251,191,36,.14); color: var(--warn); }
+    .status--warn .status-ico { background: var(--warn-chip); color: var(--warn); }
     .status--warn .ico-warn { display: block; }
     .status--fail { background: var(--fail-bg); border-color: var(--fail-line); }
-    .status--fail .status-ico { background: rgba(248,113,113,.16); color: var(--fail); }
+    .status--fail .status-ico { background: var(--fail-chip); color: var(--fail); }
     .status--fail .ico-fail { display: block; }
-    .status--none { background: var(--none-bg); border-color: var(--none-line); }
-    .status--none .status-ico { background: rgba(148,163,184,.14); color: var(--none); }
+    .status--none { background: var(--surface); border-color: var(--line); }
+    .status--none .status-ico { background: #F2F4F7; color: var(--ink-3); }
     .status--none .ico-none { display: block; }
 
     /* ── Trois compteurs ── */
-    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px, 1.4vw, 18px); }
-    .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(16px, 2vh, 24px) clamp(14px, 1.8vw, 24px); text-align: center; }
-    .tile-num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: clamp(34px, 4.4vw, 56px); font-weight: 600; line-height: 1; }
-    .tile-lbl { font-size: clamp(11px, 1vw, 12.5px); color: var(--ink-2); margin-top: 10px; letter-spacing: .03em; }
-    .tile--ok   .tile-num { color: var(--ok); }
-    .tile--warn .tile-num { color: var(--warn); }
-    .tile--fail .tile-num { color: var(--fail); }
-    .tile.is-zero .tile-num { color: var(--ink-3); }
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px, 1.4vw, 16px); }
+    .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); padding: clamp(16px, 2vh, 22px) clamp(14px, 1.6vw, 20px); text-align: center; }
+    .tile-num { font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+    .tile-lbl { font-size: clamp(11px, 1vw, 12.5px); color: var(--ink-3); margin-top: 9px; font-weight: 500; }
+    .tile--ok   .tile-num { color: var(--ok-ink); }
+    .tile--warn .tile-num { color: var(--warn-ink); }
+    .tile--fail .tile-num { color: var(--fail-ink); }
+    .tile.is-zero .tile-num { color: var(--ink-4); }
 
     /* ── À vérifier ── */
-    .att { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-    .att-head { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); padding: 16px 22px 6px; }
-    .att-list { padding: 2px 12px 10px; }
+    .att { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); overflow: hidden; }
+    .att-head { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding: 16px 20px 4px; }
+    .att-list { padding: 2px 10px 8px; }
     .att-row { display: flex; align-items: center; gap: 14px; padding: 13px 10px; }
     .att-row + .att-row { border-top: 1px solid var(--line); }
-    .pill { flex: none; font-size: 11px; font-weight: 650; padding: 4px 10px; border-radius: 100px; min-width: 62px; text-align: center; }
-    .pill--fail { background: var(--fail-bg); color: var(--fail); }
-    .pill--warn { background: var(--warn-bg); color: var(--warn); }
-    .att-client { font-size: clamp(14px, 1.3vw, 16px); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .att-meta { margin-left: auto; flex: none; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
-    .att-more { padding: 12px 12px 6px; font-size: 12.5px; color: var(--ink-2); }
+    .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; min-width: 76px; font-size: 11.5px; font-weight: 600; padding: 3px 10px 3px 9px; border-radius: 100px; }
+    .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+    .pill--fail { background: var(--fail-bg); color: var(--fail-ink); }
+    .pill--warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .att-client { font-size: clamp(14px, 1.2vw, 15.5px); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .att-meta { margin-left: auto; flex: none; font-size: 12.5px; color: var(--ink-3); }
+    .att-more { padding: 11px 12px 6px; font-size: 12.5px; color: var(--ink-3); }
     .att-empty { display: flex; align-items: center; gap: 10px; padding: 16px 12px; color: var(--ink-2); font-size: 14px; }
-    .att-empty svg { width: 20px; height: 20px; color: var(--ok); flex: none; }
+    .att-empty svg { width: 18px; height: 18px; color: var(--ok); flex: none; }
     .att-empty--wait { color: var(--ink-3); }
 
     /* ── Pied ── */
-    .foot { text-align: center; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+    .foot { text-align: center; font-size: 12px; color: var(--ink-3); }
 
     @media (max-width: 560px) {
       .head { flex-direction: column; }
@@ -104,7 +105,7 @@
   <main class="wrap">
     <header class="head">
       <div class="brand">
-        <span class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="3568303 845391 5004345 5001402" aria-hidden="true"><circle cx="6070476" cy="3346092" r="2500701" fill="#009BD9"/><path d="M4555365 2197480 C4835561 2190368 5116393 2196845 5396843 2194305 C5424545 2193543 5452501 2194559 5480076 2198496 C5458855 2252725 5471689 2312415 5456567 2368041 C5417810 2708020 5368506 3047491 5332544 3387724 C5323268 3471036 5303571 3554729 5317041 3638803 C5325682 3673347 5347539 3709923 5384136 3719829 C5409804 3724528 5436109 3721607 5462032 3721353 C5526204 3694937 5557845 3626230 5568265 3561714 C5610326 3252977 5647812 2943605 5684537 2634487 C5699150 2488564 5728377 2343911 5736128 2197480 C6041485 2190495 6347350 2196464 6652834 2194432 C6643177 2342641 6619160 2489326 6602259 2636773 C6573540 2899282 6534910 3160648 6503777 3423030 C6490943 3489324 6491070 3557650 6495009 3624833 C6497042 3667632 6528684 3701541 6564010 3722115 C6616745 3727957 6671641 3717416 6709255 3677538 C6823493 3568699 6858057 3406139 6886395 3257168 C6923881 2987547 6905075 2712719 6857676 2445638 C6845350 2361310 6818537 2279522 6810278 2194559 C7115762 2195956 7421372 2191384 7726729 2196845 C7723044 2263139 7743376 2327528 7740962 2393695 C7740326 2423540 7748713 2452623 7751381 2482214 C7756719 2702432 7760150 2923031 7750238 3143122 C7739691 3186556 7742868 3231514 7735497 3275456 C7693309 3589019 7608679 3910584 7408284 4162551 C7295062 4302886 7147530 4418203 6976998 4479671 C6858820 4529581 6730476 4544695 6604165 4558918 C6462478 4562602 6315963 4561078 6182790 4506467 C6042629 4454397 5930931 4343399 5862185 4212590 C5859771 4196460 5835373 4196460 5830162 4210176 C5706393 4388484 5507651 4510150 5294041 4545329 C5083735 4580381 4853478 4561840 4671891 4441062 C4532618 4345940 4440490 4191634 4407197 4027804 C4371108 3900931 4389407 3767962 4390169 3638168 C4403766 3579240 4395506 3518661 4404402 3459352 C4447098 3125596 4487507 2791332 4527663 2457449 C4535668 2370708 4554475 2284856 4555365 2197480 Z" fill="#F8FAFC"/></svg></span>
+        <span class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="3568303 845391 5004345 5001402" aria-hidden="true"><circle cx="6070476" cy="3346092" r="2500701" fill="#009BD9"/><path d="M4555365 2197480 C4835561 2190368 5116393 2196845 5396843 2194305 C5424545 2193543 5452501 2194559 5480076 2198496 C5458855 2252725 5471689 2312415 5456567 2368041 C5417810 2708020 5368506 3047491 5332544 3387724 C5323268 3471036 5303571 3554729 5317041 3638803 C5325682 3673347 5347539 3709923 5384136 3719829 C5409804 3724528 5436109 3721607 5462032 3721353 C5526204 3694937 5557845 3626230 5568265 3561714 C5610326 3252977 5647812 2943605 5684537 2634487 C5699150 2488564 5728377 2343911 5736128 2197480 C6041485 2190495 6347350 2196464 6652834 2194432 C6643177 2342641 6619160 2489326 6602259 2636773 C6573540 2899282 6534910 3160648 6503777 3423030 C6490943 3489324 6491070 3557650 6495009 3624833 C6497042 3667632 6528684 3701541 6564010 3722115 C6616745 3727957 6671641 3717416 6709255 3677538 C6823493 3568699 6858057 3406139 6886395 3257168 C6923881 2987547 6905075 2712719 6857676 2445638 C6845350 2361310 6818537 2279522 6810278 2194559 C7115762 2195956 7421372 2191384 7726729 2196845 C7723044 2263139 7743376 2327528 7740962 2393695 C7740326 2423540 7748713 2452623 7751381 2482214 C7756719 2702432 7760150 2923031 7750238 3143122 C7739691 3186556 7742868 3231514 7735497 3275456 C7693309 3589019 7608679 3910584 7408284 4162551 C7295062 4302886 7147530 4418203 6976998 4479671 C6858820 4529581 6730476 4544695 6604165 4558918 C6462478 4562602 6315963 4561078 6182790 4506467 C6042629 4454397 5930931 4343399 5862185 4212590 C5859771 4196460 5835373 4196460 5830162 4210176 C5706393 4388484 5507651 4510150 5294041 4545329 C5083735 4580381 4853478 4561840 4671891 4441062 C4532618 4345940 4440490 4191634 4407197 4027804 C4371108 3900931 4389407 3767962 4390169 3638168 C4403766 3579240 4395506 3518661 4404402 3459352 C4447098 3125596 4487507 2791332 4527663 2457449 C4535668 2370708 4554475 2284856 4555365 2197480 Z" fill="#FFFFFF"/></svg></span>
         BackupWatch
       </div>
       <div class="head-meta">

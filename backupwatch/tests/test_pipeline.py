@@ -35,3 +35,5 @@ def test_demo_pipeline_generates_dashboard(tmp_path):
     assert "hawaii-syno" in html
     # Aucune dépendance externe : le board doit s'afficher hors-ligne.
     assert "jsdelivr" not in html and "googleapis" not in html
+    # Police Inter embarquée (woff2 base64), pas de police distante.
+    assert "data:font/woff2;base64," in html

@@ -114,6 +114,7 @@ async function autoStartRotation(config) {
     config.currentIndex = 0; config.active = true; config.remotePaused = false;
     config.lastAlarmTime = Date.now();
     config.currentAlarmSec = activeUrls[0].interval || config.interval;
+    config.tabsDirty = false;   // onglets fraîchement alignés sur la playlist
     await chrome.storage.local.set({ config });
     await setNextAlarm(config.currentAlarmSec);
     await sendStateToRemote();
@@ -128,20 +129,26 @@ async function autoStartRotation(config) {
   }
 }
 
-// Le popup peut éditer config.urls (ajout/suppression) sans toucher tabIds :
-// l'alignement tabIds[i] ↔ activeUrls[i] — sur lequel reposent la rotation, la
-// détection de session et le refresh Canva — se rompt alors. On reconstruit les
-// onglets sur la playlist courante, exactement comme le fait une édition mobile.
-// (Un simple réordonnancement garde les longueurs égales et n'est pas rattrapé
-// ici : le mobile, lui, synchronise tabIds lors d'un pl_move.)
+// Le popup peut éditer config.urls sans toucher tabIds : l'alignement
+// tabIds[i] ↔ activeUrls[i] — sur lequel reposent la rotation, la détection de
+// session et le refresh Canva — se rompt alors. Deux cas, tous deux rattrapés :
+//   - ajout/suppression                → les longueurs diffèrent ;
+//   - réordonnancement / URL changée en place (mêmes longueurs) → le popup pose
+//     config.tabsDirty quand il édite pendant une rotation active.
+// On reconstruit alors les onglets sur la playlist courante, comme le fait une
+// édition mobile (qui, elle, passe par le SW : tabIds maintenu, drapeau jamais levé).
+function needsResync(config, activeUrls) {
+  if (!config.active || !config.windowId || config.remoteTabId) return false;
+  if (!activeUrls.length) return false;
+  return config.tabIds.length !== activeUrls.length || !!config.tabsDirty;
+}
+
 async function resyncTabsIfNeeded() {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
-  if (!config.active || !config.windowId || config.remoteTabId) return;
   const activeUrls = config.urls.filter(u => u?.url?.trim());
-  if (!activeUrls.length || config.tabIds.length === activeUrls.length) return;
-  await log('resync — tabIds(' + config.tabIds.length + ') ≠ playlist('
-    + activeUrls.length + '), reconstruction des onglets');
+  if (!needsResync(config, activeUrls)) return;
+  await log('resync — playlist modifiée pendant la rotation, reconstruction des onglets');
   await autoStartRotation(config);
 }
 
@@ -278,4 +285,10 @@ async function refreshCanvaTabsIfNeeded() {
     }
   }
   if (changed) await chrome.storage.local.set({ canvaRefreshTimes: times });
+}
+
+// Export pour les tests Node (`module` est undefined dans le service worker
+// MV3 : ce bloc y est ignoré et n'affecte pas le runtime de l'extension).
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { needsResync };
 }

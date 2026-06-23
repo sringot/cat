@@ -178,6 +178,7 @@ function renderUrls() {
   config.urls.forEach((entry, i) => {
     const isActive    = config.active && i === config.currentIndex;
     const hasCustomInt = entry.interval != null;
+    const origUrl     = entry.url || '';   // URL au rendu — pour détecter une édition en place
     const row = document.createElement('div');
     row.className = 'url-row' + (isActive ? ' active-url' : '');
     row.draggable = true;
@@ -211,7 +212,13 @@ function renderUrls() {
     nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.focus(); });
 
     urlInp.addEventListener('input', () => { config.urls[i].url = urlInp.value; saveConfig(); updatePlCount(); });
-    urlInp.addEventListener('blur',  () => { config.urls[i].url = urlInp.value.trim(); urlInp.value = config.urls[i].url; saveConfig(); });
+    urlInp.addEventListener('blur',  () => {
+      const v = urlInp.value.trim();
+      // URL changée en place pendant une rotation active : tabIds pointe encore
+      // sur l'ancienne page → on demande au watchdog de réaligner les onglets.
+      if (config.active && v !== origUrl) config.tabsDirty = true;
+      config.urls[i].url = v; urlInp.value = v; saveConfig();
+    });
     urlInp.addEventListener('keydown', e => { if (e.key === 'Enter') urlInp.blur(); });
 
     durBtn.addEventListener('click', () => {
@@ -250,6 +257,9 @@ function renderUrls() {
       if (dragSrcIndex === null || dragSrcIndex === i) return;
       const moved = config.urls.splice(dragSrcIndex, 1)[0];
       config.urls.splice(i, 0, moved);
+      // Réordonnancement en pleine rotation : tabIds n'est pas touché ici (c'est
+      // le SW qui les gère) → on signale au watchdog de reconstruire l'alignement.
+      if (config.active) config.tabsDirty = true;
       dragSrcIndex = null; saveConfig(); renderUrls();
     });
     row.addEventListener('dragend', () => {

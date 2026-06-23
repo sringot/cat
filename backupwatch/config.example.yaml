@@ -1,0 +1,48 @@
+# Copiez ce fichier en « config.yaml » et adaptez-le.
+# Les secrets (identifiants Graph) vont dans .env, PAS ici.
+
+# Source des e-mails : "graph" (Microsoft 365) ou "demo" (mails d'exemple).
+mail_source: graph
+
+# Fenêtre analysée chaque matin, en heures (16 h couvre les sauvegardes de nuit).
+lookback_hours: 16
+
+# Boîte à lire (peut aussi être définie via la variable GRAPH_MAILBOX).
+mailbox: backups@mondomaine.fr
+# folder: Inbox
+
+# Mots-clés qui identifient un rapport de sauvegarde parmi tous les e-mails.
+keywords:
+  - backup
+  - sauvegarde
+  - veeam
+  - acronis
+  - hyper backup
+  - active backup
+  - nakivo
+  - datto
+  - replication
+
+# Expéditeurs de confiance : leurs e-mails sont toujours analysés,
+# même si aucun mot-clé n'est détecté (correspondance partielle sur l'adresse).
+trusted_senders:
+  - "veeam@"
+  - "@acronis.com"
+  - "alerts@datto.com"
+
+# Renommage des lignes : motif cherché dans le sujet -> nom affiché.
+client_aliases:
+  "nas-mfip": "NAS-MFIP"
+  "acronis": "ACRONIS"
+
+# Sortie du tableau de bord.
+output:
+  dir: output
+  name: dashboard.html
+
+# Mode serveur (affichage permanent en kiosque, via --serve).
+# L'URL à coller dans wee rotate sera http://<host>:<port>/
+serve:
+  host: 127.0.0.1   # 127.0.0.1 = local au PC kiosque ; 0.0.0.0 = visible sur le LAN
+  port: 8470
+  hour: 7           # heure du scraping quotidien (0-23)

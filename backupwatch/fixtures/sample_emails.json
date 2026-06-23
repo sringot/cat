@@ -1,0 +1,34 @@
+[
+  { "id": "d6-pge",    "subject": "PGE-NAS La tâche Network backup - Backup DATA to WEE BACKUP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@pge.fr", "day_offset": 6, "hour": 2, "body_text": "La tâche s'est terminée avec succès." },
+  { "id": "d6-haven",  "subject": "[NAS-HAVEN] La tâche Local backup - Save_HAVEN a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@haven.fr", "day_offset": 6, "hour": 3, "body_text": "Succès. Aucune erreur." },
+  { "id": "d6-acronis","subject": "RAPPORT QUOTIDIEN SUR les sauvegardes", "from_name": "Acronis Cyber Protect", "from_address": "noreply@acronis.com", "day_offset": 6, "hour": 1, "body_text": "Acronis Cyber Protect. Status: Succeeded. 0 errors." },
+
+  { "id": "d5-cidel",  "subject": "[NAS-CIDEL] La tâche Local backup - Sauvegarde CIDEL a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@cidel.fr", "day_offset": 5, "hour": 2, "body_text": "Succès." },
+  { "id": "d5-mfip",   "subject": "[nas-mfip.fr1.quickconnect.to] La tâche Network backup - Réplication_MFIP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@mfip.fr", "day_offset": 5, "hour": 3, "body_text": "Succès." },
+  { "id": "d5-hawaii", "subject": "[hawaii-syno.fr2.quickconnect.to] Network backup - La tâche Synology NAS 1 a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@hawaii.fr", "day_offset": 5, "hour": 4, "body_text": "Succès." },
+
+  { "id": "d4-pge",    "subject": "PGE-NAS La tâche Network backup - Backup DATA to WEE BACKUP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@pge.fr", "day_offset": 4, "hour": 2, "body_text": "Succès." },
+  { "id": "d4-leisure","subject": "[nas-leisure.fr4.quickconnect.to] La tâche Local backup - Backup SharePoint a été effectuée avec un avertissement", "from_name": "Synology NAS", "from_address": "nas@leisure.fr", "day_offset": 4, "hour": 3, "body_text": "Avertissement : certains fichiers ont été ignorés (verrouillés)." },
+  { "id": "d4-acronis","subject": "RAPPORT QUOTIDIEN SUR les sauvegardes", "from_name": "Acronis Cyber Protect", "from_address": "noreply@acronis.com", "day_offset": 4, "hour": 1, "body_text": "Acronis Cyber Protect. Status: Succeeded." },
+
+  { "id": "d3-hawaii", "subject": "[hawaii-syno.fr2.quickconnect.to] Network backup - La tâche Synology NAS 1 a échoué", "from_name": "Synology NAS", "from_address": "nas@hawaii.fr", "day_offset": 3, "hour": 3, "body_text": "La sauvegarde des données sur HAWAII-NAS a échoué." },
+  { "id": "d3-pge",    "subject": "PGE-NAS La tâche Network backup - Backup DATA to WEE BACKUP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@pge.fr", "day_offset": 3, "hour": 2, "body_text": "Succès." },
+  { "id": "d3-proxmox","subject": "vzdump backup status (sd-93267.dedibox.fr): backup successful", "from_name": "Proxmox VE", "from_address": "root@dedibox.fr", "day_offset": 3, "hour": 4, "body_text": "vzdump: backup successful." },
+
+  { "id": "d2-haven",  "subject": "[NAS-HAVEN] La tâche Local backup - Save_HAVEN a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@haven.fr", "day_offset": 2, "hour": 3, "body_text": "Succès." },
+  { "id": "d2-cidel",  "subject": "[NAS-CIDEL] La tâche Local backup - Sauvegarde CIDEL a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@cidel.fr", "day_offset": 2, "hour": 2, "body_text": "Succès." },
+  { "id": "d2-proxmox","subject": "vzdump backup status (sd-93267.dedibox.fr): backup successful", "from_name": "Proxmox VE", "from_address": "root@dedibox.fr", "day_offset": 2, "hour": 4, "body_text": "backup successful." },
+
+  { "id": "d1-pge",    "subject": "PGE-NAS La tâche Network backup - Backup DATA to WEE BACKUP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@pge.fr", "day_offset": 1, "hour": 2, "body_text": "Succès." },
+  { "id": "d1-acronis","subject": "RAPPORT QUOTIDIEN SUR les sauvegardes", "from_name": "Acronis Cyber Protect", "from_address": "noreply@acronis.com", "day_offset": 1, "hour": 1, "body_text": "Acronis Cyber Protect. Status: Succeeded." },
+  { "id": "d1-mfip",   "subject": "[nas-mfip.fr1.quickconnect.to] La tâche Network backup - Réplication_MFIP a été effectuée avec un avertissement", "from_name": "Synology NAS", "from_address": "nas@mfip.fr", "day_offset": 1, "hour": 3, "body_text": "Avertissement : espace disque faible sur la destination." },
+  { "id": "d1-hawaii", "subject": "[hawaii-syno.fr2.quickconnect.to] Network backup - La tâche Synology NAS 1 a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@hawaii.fr", "day_offset": 1, "hour": 4, "body_text": "Succès." },
+
+  { "id": "d0-pge",    "subject": "PGE-NAS La tâche Network backup - Backup DATA to WEE BACKUP a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@pge.fr", "day_offset": 0, "hour": 2, "body_text": "Succès." },
+  { "id": "d0-hawaii", "subject": "[hawaii-syno.fr2.quickconnect.to] Network backup - La tâche Synology NAS 1 a échoué", "from_name": "Synology NAS", "from_address": "nas@hawaii.fr", "day_offset": 0, "hour": 3, "body_text": "La sauvegarde des données sur HAWAII-NAS a échoué." },
+  { "id": "d0-acronis","subject": "RAPPORT QUOTIDIEN SUR les sauvegardes", "from_name": "Acronis Cyber Protect", "from_address": "noreply@acronis.com", "day_offset": 0, "hour": 1, "body_text": "Acronis Cyber Protect. Status: Succeeded." },
+  { "id": "d0-cidel",  "subject": "[NAS-CIDEL] La tâche Local backup - Sauvegarde CIDEL a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@cidel.fr", "day_offset": 0, "hour": 4, "body_text": "Succès." },
+  { "id": "d0-haven",  "subject": "[NAS-HAVEN] La tâche Local backup - Save_HAVEN a été effectuée avec succès", "from_name": "Synology NAS", "from_address": "nas@haven.fr", "day_offset": 0, "hour": 5, "body_text": "Succès." },
+
+  { "id": "noise", "subject": "Votre newsletter hebdomadaire IT", "from_name": "TechNews", "from_address": "news@technews.fr", "day_offset": 0, "hour": 7, "body_text": "Decouvrez les dernieres actualites de la semaine." }
+]

@@ -1,0 +1,9 @@
+# Dépendances d'exécution
+beautifulsoup4>=4.12   # conversion HTML -> texte des corps d'e-mails
+PyYAML>=6.0            # lecture de config.yaml
+python-dotenv>=1.0     # chargement du fichier .env (secrets)
+msal>=1.28             # authentification Microsoft Graph (Microsoft 365)
+requests>=2.31         # appels HTTP vers Microsoft Graph
+pypdf>=4.0             # lecture des rapports PDF en pièce jointe (ex. Acronis)
+
+# Développement (optionnel) : pip install pytest

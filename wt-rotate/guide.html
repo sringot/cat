@@ -37,6 +37,11 @@
   --accent-txt:#FFFFFF;
   --shadow:    0 1px 2px rgba(20,18,14,.03), 0 10px 32px rgba(20,18,14,.06);
   --ease:      cubic-bezier(.25,.8,.25,1);
+  --indigo:    #6366F1;
+  --orange:    #F97316;
+  --green:     #16A34A;
+  --violet:    #8B5CF6;
+  --hero-grad: linear-gradient(135deg, #EEF2FF 0%, #FCE7F3 50%, #FFF7ED 100%);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -49,6 +54,7 @@
     --accent:    #F4F3F1;
     --accent-txt:#131312;
     --shadow:    0 1px 2px rgba(0,0,0,.35), 0 10px 32px rgba(0,0,0,.3);
+    --hero-grad: linear-gradient(135deg, #1E1B4B 0%, #3B1D3A 50%, #3A2A14 100%);
   }
   .card { border: 1px solid rgba(255,255,255,.06); }
 }
@@ -69,11 +75,20 @@ body {
 @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ── Hero ──────────────────────────────────────────────────── */
-.hero { text-align: center; padding: 6px 0 26px; }
+.hero {
+  text-align: center; padding: 30px 22px 28px; margin-bottom: 16px;
+  border-radius: 26px; box-shadow: var(--shadow);
+  background: var(--hero-grad); background-size: 220% 220%;
+  animation: heroShift 10s ease infinite;
+}
+@keyframes heroShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
 .hero img {
   width: 86px; height: 86px; border-radius: 22px;
-  box-shadow: var(--shadow);
-  margin-bottom: 18px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.16);
+  margin-bottom: 16px;
 }
 h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
 .hero p {
@@ -107,12 +122,16 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; color: var(--txt);
 }
+/* Icônes colorées par étape (la 1re étape est le 2e enfant, après .card-hdr) */
+.step:nth-child(2) .step-ic { background: color-mix(in srgb, var(--indigo) 14%, transparent); color: var(--indigo); }
+.step:nth-child(3) .step-ic { background: color-mix(in srgb, var(--violet) 14%, transparent); color: var(--violet); }
+.step:nth-child(4) .step-ic { background: color-mix(in srgb, var(--green)  16%, transparent); color: var(--green); }
 .step-txt { font-size: 15px; font-weight: 550; line-height: 1.4; min-width: 0; }
 .step-txt b { font-weight: 700; }
 .step-txt small { display: block; font-size: 13px; font-weight: 500; color: var(--txt-2); margin-top: 2px; }
 .step-n {
   margin-left: auto; flex-shrink: 0;
-  font-size: 13px; font-weight: 700; color: var(--txt-3);
+  font-size: 13px; font-weight: 800; color: var(--orange);
   font-variant-numeric: tabular-nums;
 }
 
@@ -138,8 +157,8 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
   -webkit-appearance: none; appearance: none;
 }
 .platform-btn.active {
-  background: var(--accent);
-  color: var(--accent-txt);
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  color: #fff;
   border-color: transparent;
 }
 .platform-btn svg { flex-shrink: 0; }

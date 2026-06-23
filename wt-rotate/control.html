@@ -949,16 +949,6 @@ nav {
 .sheet-opt:active { box-shadow: var(--sh-in-sm); transform: scale(.99); }
 .sheet-opt.danger { color: var(--red); font-weight: 650; }
 
-/* bouton principal d'une feuille (action de confirmation) */
-.sheet-primary {
-  display: block; width: 100%; text-align: center;
-  margin-top: 6px; padding: 16px;
-  font-size: 16px; font-weight: 700;
-  border-radius: 100px;
-  background: var(--grad);
-  color: var(--accent-txt); box-shadow: var(--sh-accent);
-}
-.sheet-primary:active { box-shadow: var(--sh-in); }
 /* annulation — lien texte centré, discret */
 .sheet-cancel {
   display: block; width: 100%; text-align: center;
@@ -1023,34 +1013,6 @@ nav {
 .launch-face-sub {
   margin-top: 12px; font-size: 12.5px; color: var(--txt-3);
 }
-
-/* ── Minuteur type iOS — roues à défilement (durée d'annonce) ── */
-.wheel-picker {
-  position: relative; display: flex; justify-content: center;
-  gap: 2px; height: 190px; margin-bottom: 16px;
-  /* fondu haut/bas comme une vraie roue */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%);
-          mask-image: linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%);
-}
-/* bande de sélection centrale, derrière les chiffres */
-.wheel-sel {
-  position: absolute; left: 12px; right: 12px; top: 50%;
-  transform: translateY(-50%); height: 38px; border-radius: 12px;
-  background: var(--sink); box-shadow: var(--sh-in-sm); pointer-events: none;
-}
-.wheel-col { position: relative; display: flex; align-items: center; gap: 5px; height: 100%; }
-.wheel {
-  height: 100%; width: 50px; overflow-y: scroll;
-  scroll-snap-type: y mandatory; scrollbar-width: none; text-align: center;
-}
-.wheel::-webkit-scrollbar { display: none; }
-.wheel-pad { height: 76px; }   /* (190-38)/2 → centre le 1er et le dernier item */
-.wheel-item {
-  height: 38px; line-height: 38px; scroll-snap-align: center;
-  font-size: 23px; font-weight: 650; color: var(--txt);
-  font-variant-numeric: tabular-nums;
-}
-.wheel-unit { font-size: 13px; font-weight: 650; color: var(--txt-2); white-space: nowrap; }
 
 /* toast — pastille convexe */
 .toast {
@@ -1438,18 +1400,17 @@ nav {
   </div>
 </div>
 
-<!-- Feuille : minuteur H:M:S pour le message kiosque -->
+<!-- Feuille : durée d'affichage du message kiosque -->
 <div class="sheet" id="ann-sheet">
   <div class="sheet-bg" id="ann-sheet-bg"></div>
   <div class="sheet-card">
-    <div class="sheet-title">Durée d'affichage</div>
-    <div class="wheel-picker" id="ann-wheels">
-      <div class="wheel-sel"></div>
-      <div class="wheel-col"><div class="wheel" id="wheel-h"></div><span class="wheel-unit">h</span></div>
-      <div class="wheel-col"><div class="wheel" id="wheel-m"></div><span class="wheel-unit">min</span></div>
-      <div class="wheel-col"><div class="wheel" id="wheel-s"></div><span class="wheel-unit">s</span></div>
-    </div>
-    <button class="sheet-primary" id="ann-confirm">Afficher le message</button>
+    <div class="sheet-title">Afficher le message pendant…</div>
+    <button class="sheet-opt" data-anndur="30">30 secondes</button>
+    <button class="sheet-opt" data-anndur="60">1 minute</button>
+    <button class="sheet-opt" data-anndur="300">5 minutes</button>
+    <button class="sheet-opt" data-anndur="900">15 minutes</button>
+    <button class="sheet-opt" data-anndur="1800">30 minutes</button>
+    <button class="sheet-opt" data-anndur="3600">1 heure</button>
     <button class="sheet-cancel" id="ann-cancel">Annuler</button>
   </div>
 </div>
@@ -2433,7 +2394,7 @@ document.addEventListener('pointermove', e => {
 });
 
 // blockScroll est ajouté/retiré dynamiquement (uniquement quand drag.active est vrai)
-// pour ne pas geler le scroll natif des wheels iOS quand aucun glisser n'est actif.
+// pour ne pas geler le scroll natif de l'app quand aucun glisser n'est actif.
 
 function endDrag(e) {
   if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.pid)) return;
@@ -2544,51 +2505,17 @@ function closeSheet() {
   $('sheet').classList.remove('show');
 }
 
-// ── Roues du minuteur (style iOS) ────────────────────────────────────────────
-const WHEEL_ITEM = 38;   // doit matcher .wheel-item / .wheel-pad en CSS
-function buildWheel(el, count) {
-  if (el.dataset.built) return;
-  let html = '<div class="wheel-pad"></div>';
-  for (let i = 0; i < count; i++) html += `<div class="wheel-item">${i}</div>`;
-  html += '<div class="wheel-pad"></div>';
-  el.innerHTML = html;
-  // Petit tick haptique à chaque cran qui passe au centre, comme sur iOS
-  let last = -1;
-  el.addEventListener('scroll', () => {
-    const idx = Math.round(el.scrollTop / WHEEL_ITEM);
-    if (idx !== last) { last = idx; if (navigator.vibrate) navigator.vibrate(3); }
-  }, { passive: true });
-  el.dataset.built = '1';
-}
-function wheelValue(el, count) {
-  return Math.max(0, Math.min(count - 1, Math.round(el.scrollTop / WHEEL_ITEM)));
-}
-function setWheel(el, v) { el.scrollTop = v * WHEEL_ITEM; }
-
+// ── Message kiosque : durée d'affichage ──────────────────────────────────────
 function openAnnSheet() {
   const text = ($('ann-in').value || '').trim();
   if (!text) return;
   pendingAnn = text;
   $('ann-in').blur();
-  buildWheel($('wheel-h'), 24);
-  buildWheel($('wheel-m'), 60);
-  buildWheel($('wheel-s'), 60);
   $('ann-sheet').classList.add('show');
-  // Position initiale des roues une fois la feuille affichée (layout dispo) : 5 min
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    setWheel($('wheel-h'), 0);
-    setWheel($('wheel-m'), 5);
-    setWheel($('wheel-s'), 0);
-  }));
 }
 function closeAnnSheet() {
   pendingAnn = null;
   $('ann-sheet').classList.remove('show');
-}
-function annTotalSeconds() {
-  return wheelValue($('wheel-h'), 24) * 3600
-       + wheelValue($('wheel-m'), 60) * 60
-       + wheelValue($('wheel-s'), 60);
 }
 
 // Feuille de confirmation générique — remplace l'ancienne boîte confirm()
@@ -2700,7 +2627,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-add').addEventListener('click', addPage);
   $('add-url').addEventListener('keydown', e => { if (e.key === 'Enter') addPage(); });
 
-  document.querySelectorAll('.sheet-opt').forEach(b =>
+  document.querySelectorAll('.sheet-opt:not([data-anndur])').forEach(b =>
     b.addEventListener('click', () => {
       if (pendingUrl) {
         cmd('open_url', { url: pendingUrl, duration: parseInt(b.dataset.dur) || 0 });
@@ -2712,16 +2639,15 @@ document.addEventListener('DOMContentLoaded', () => {
   $('sheet-cancel').addEventListener('click', closeSheet);
   $('sheet-bg').addEventListener('click', closeSheet);
 
-  // Minuteur : le réglage se fait au défilement des roues (cf. buildWheel)
-  $('ann-confirm').addEventListener('click', () => {
-    const secs = annTotalSeconds();
-    if (secs < 5) { showToast('Durée trop courte (min. 5 secondes)'); return; }
-    if (pendingAnn) {
-      cmd('announce', { text: pendingAnn, duration: secs });
-      $('ann-in').value = '';
-    }
-    closeAnnSheet();
-  });
+  // Message kiosque : un appui sur une durée l'envoie tout de suite
+  document.querySelectorAll('[data-anndur]').forEach(b =>
+    b.addEventListener('click', () => {
+      if (pendingAnn) {
+        cmd('announce', { text: pendingAnn, duration: parseInt(b.dataset.anndur) || 60 });
+        $('ann-in').value = '';
+      }
+      closeAnnSheet();
+    }));
   $('ann-cancel').addEventListener('click', closeAnnSheet);
   $('ann-sheet-bg').addEventListener('click', closeAnnSheet);
 

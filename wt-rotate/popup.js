@@ -362,7 +362,7 @@ function setArt(name) {
   const a = $('art');
   if (!name) {
     a.textContent = '—';
-    a.style.background = 'linear-gradient(140deg,#C9C7C2,#8B8A86)';
+    a.style.background = 'linear-gradient(140deg,#A3A99F,#5F6A5F)';
     return;
   }
   let h = 0;

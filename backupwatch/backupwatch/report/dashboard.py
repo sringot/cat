@@ -17,9 +17,9 @@ from ..config import Config
 from ..models import BackupResult, BackupStatus
 
 TEMPLATE_PATH = Path(__file__).with_name("template.html")
-# Police Inter sous-ensemblée (latin) et embarquée en base64 : board 100 %
-# autonome, sans police distante ni dépendance CDN.
-_FONTS_CSS = Path(__file__).with_name("inter.css").read_text(encoding="utf-8")
+# Police Geist (Vercel, OFL) sous-ensemblée (latin) et embarquée en base64 :
+# board 100 % autonome, sans police distante ni dépendance CDN.
+_FONTS_CSS = Path(__file__).with_name("geist.css").read_text(encoding="utf-8")
 
 _WEEKDAYS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 _MONTHS_FR = [

@@ -8,34 +8,24 @@
   <style>
     $fonts
     :root {
-      /* Soft UI Evolution — fond clay froid, cartes blanches flottantes */
-      --bg:      #E5ECF6;
+      /* Fond whisper, surfaces blanches, hairlines — palette zinc */
+      --bg:      #FAFAFA;
       --surface: #FFFFFF;
 
-      /* Hiérarchie textuelle */
-      --ink-1:  #0F172A;
-      --ink-2:  #334155;
-      --ink-3:  #64748B;
-      --ink-4:  #94A3B8;
+      --ink-1:   #18181B;   /* titres, chiffres */
+      --ink-2:   #3F3F46;   /* texte courant */
+      --ink-3:   #71717A;   /* secondaire */
+      --ink-4:   #A1A1AA;   /* labels, méta */
 
-      /* Bordures quasi-invisibles */
-      --line:   rgba(148, 163, 184, .2);
-      --line-2: rgba(148, 163, 184, .35);
+      --line:    #ECECEC;   /* trait fin */
+      --line-2:  #F4F4F5;   /* trait très fin */
 
-      /* Sémantique statut */
-      --ok:      #059669;  --ok-bg:   #ECFDF5;
-      --warn:    #D97706;  --warn-bg: #FFFBEB;
-      --fail:    #DC2626;  --fail-bg: #FEF2F2;
+      --ok:      #16A34A;
+      --warn:    #D97706;
+      --fail:    #DC2626;
 
-      /* Ombres multi-couches (soft UI) */
-      --sh:      0 1px 2px rgba(0,0,0,.04),
-                 0 5px 16px rgba(100,116,139,.1),
-                 0 20px 44px rgba(100,116,139,.07);
-      --sh-hero: 0 2px 4px rgba(0,0,0,.05),
-                 0 10px 26px rgba(100,116,139,.13),
-                 0 32px 64px rgba(100,116,139,.09);
-
-      --r:  16px;
+      --sh:      0 1px 2px rgba(24,24,27,.04);
+      --r:       12px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,20 +33,22 @@
     body {
       background: var(--bg);
       color: var(--ink-1);
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      font-family: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-weight: 400;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
       font-variant-numeric: tabular-nums;
+      letter-spacing: -.011em;
       display: flex;
     }
 
     .wrap {
-      width: min(940px, 100%);
+      width: min(840px, 100%);
       margin: auto;
-      padding: clamp(28px, 5vh, 64px) clamp(20px, 4vw, 44px);
+      padding: clamp(28px, 5vh, 60px) clamp(20px, 4vw, 40px);
       display: flex;
       flex-direction: column;
-      gap: clamp(14px, 2vh, 22px);
+      gap: clamp(14px, 2vh, 20px);
     }
 
     /* ── En-tête ── */
@@ -65,126 +57,89 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
+      padding: 0 2px 4px;
     }
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 700;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 600;
       letter-spacing: -.02em;
       color: var(--ink-1);
     }
-    .logo { width: 26px; height: 26px; flex: none; display: block; }
+    .logo { width: 20px; height: 20px; flex: none; display: block; opacity: .95; }
     .logo svg { width: 100%; height: 100%; display: block; }
     .head-meta { text-align: right; }
     .head-date {
-      font-size: 13.5px;
-      font-weight: 600;
-      letter-spacing: -.01em;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--ink-2);
+      letter-spacing: -.01em;
     }
     .head-sub {
       font-size: 11.5px;
+      font-weight: 400;
       color: var(--ink-4);
-      margin-top: 3px;
-      letter-spacing: .01em;
+      margin-top: 2px;
     }
 
     /* ── Bandeau d'état ── */
     .status {
-      position: relative;
-      overflow: hidden;
       display: flex;
       align-items: center;
-      gap: clamp(18px, 2.2vw, 28px);
-      padding: clamp(22px, 3vh, 34px) clamp(24px, 3vw, 36px)
-               clamp(22px, 3vh, 34px) clamp(28px, 3.5vw, 44px);
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
-      box-shadow: var(--sh-hero);
-    }
-    /* Barre colorée à gauche — seule touche de couleur sur le fond blanc */
-    .status::before {
-      content: "";
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 4px;
-      border-radius: var(--r) 0 0 var(--r);
-    }
-    .status--ok::before   { background: var(--ok); }
-    .status--warn::before { background: var(--warn); }
-    .status--fail::before { background: var(--fail); }
-    .status--none::before { background: var(--ink-4); }
-
-    .status-ico {
-      flex: none;
-      width: clamp(44px, 4.2vw, 54px);
-      height: clamp(44px, 4.2vw, 54px);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      border: 1px solid var(--line-2);
-    }
-    .status--ok   .status-ico { background: var(--ok-bg);   color: var(--ok); }
-    .status--warn .status-ico { background: var(--warn-bg); color: var(--warn); }
-    .status--fail .status-ico { background: var(--fail-bg); color: var(--fail); }
-    .status--none .status-ico { background: #F1F5F9; color: var(--ink-4); border-color: var(--line); }
-
-    .status-ico svg { width: 50%; height: 50%; display: none; }
-    .status--ok   .ico-ok   { display: block; }
-    .status--warn .ico-warn { display: block; }
-    .status--fail .ico-fail { display: block; }
-    .status--none .ico-none { display: block; }
-
-    .status-title {
-      font-size: clamp(22px, 2.8vw, 34px);
-      font-weight: 700;
-      letter-spacing: -.035em;
-      line-height: 1.1;
-      color: var(--ink-1);
-    }
-    .status-sub {
-      font-size: clamp(13px, 1.1vw, 14.5px);
-      color: var(--ink-3);
-      margin-top: 5px;
-    }
-
-    /* ── Trois compteurs ── */
-    .tiles {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: clamp(12px, 1.5vw, 18px);
-    }
-    .tile {
+      gap: 16px;
+      padding: clamp(20px, 2.8vh, 28px) clamp(22px, 2.6vw, 30px);
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--r);
       box-shadow: var(--sh);
-      padding: clamp(20px, 2.8vh, 32px) clamp(16px, 2vw, 24px);
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-    /* Pastille colorée au-dessus du chiffre */
-    .tile::before {
-      content: "";
-      width: 8px;
-      height: 8px;
+    .status-dot {
+      flex: none;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: var(--ink-4);
-      margin-bottom: clamp(12px, 1.6vh, 18px);
     }
-    .tile--ok::before   { background: var(--ok); }
-    .tile--warn::before { background: var(--warn); }
-    .tile--fail::before { background: var(--fail); }
-    .tile.is-zero::before { background: var(--ink-4); }
+    .status--ok   .status-dot { background: var(--ok);   box-shadow: 0 0 0 4px rgba(22,163,74,.12); }
+    .status--warn .status-dot { background: var(--warn); box-shadow: 0 0 0 4px rgba(217,119,6,.12); }
+    .status--fail .status-dot { background: var(--fail); box-shadow: 0 0 0 4px rgba(220,38,38,.12); }
+    .status--none .status-dot { background: var(--ink-4); box-shadow: 0 0 0 4px rgba(161,161,170,.12); }
+
+    .status-title {
+      font-size: clamp(19px, 2.2vw, 25px);
+      font-weight: 500;
+      letter-spacing: -.025em;
+      line-height: 1.2;
+      color: var(--ink-1);
+    }
+    .status-sub {
+      font-size: clamp(12.5px, 1vw, 13.5px);
+      font-weight: 400;
+      color: var(--ink-3);
+      margin-top: 4px;
+      letter-spacing: -.005em;
+    }
+
+    /* ── Trois compteurs (un seul panneau, séparé par des hairlines) ── */
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      overflow: hidden;
+    }
+    .tile {
+      padding: clamp(18px, 2.4vh, 26px) clamp(18px, 2vw, 26px);
+    }
+    .tile + .tile { border-left: 1px solid var(--line); }
 
     .tile-num {
-      font-size: clamp(38px, 5.2vw, 64px);
-      font-weight: 700;
+      font-size: clamp(30px, 3.8vw, 42px);
+      font-weight: 500;
       letter-spacing: -.04em;
       line-height: 1;
       color: var(--ink-1);
@@ -192,13 +147,27 @@
     .tile.is-zero .tile-num { color: var(--ink-4); }
 
     .tile-lbl {
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--ink-4);
-      margin-top: clamp(10px, 1.4vh, 14px);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--ink-3);
+      margin-top: 12px;
+      letter-spacing: -.005em;
     }
+    .tile-lbl::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ink-4);
+      flex: none;
+    }
+    .tile--ok   .tile-lbl::before { background: var(--ok); }
+    .tile--warn .tile-lbl::before { background: var(--warn); }
+    .tile--fail .tile-lbl::before { background: var(--fail); }
+    .tile.is-zero .tile-lbl::before { background: var(--ink-4); }
 
     /* ── À vérifier ── */
     .att {
@@ -209,32 +178,32 @@
       overflow: hidden;
     }
     .att-head {
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: .09em;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .04em;
       text-transform: uppercase;
       color: var(--ink-4);
-      padding: 20px 22px 0;
+      padding: 16px 20px 0;
     }
-    .att-list { padding: 6px 12px 12px; }
+    .att-list { padding: 4px 8px 8px; }
     .att-row {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 12px 10px;
+      gap: 14px;
+      padding: 12px;
     }
-    .att-row + .att-row { border-top: 1px solid var(--line); }
+    .att-row + .att-row { border-top: 1px solid var(--line-2); }
 
     .pill {
       flex: none;
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      min-width: 62px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .03em;
+      min-width: 58px;
+      font-size: 11.5px;
+      font-weight: 400;
       color: var(--ink-3);
+      letter-spacing: -.005em;
     }
     .pill::before {
       content: "";
@@ -248,9 +217,9 @@
     .pill--warn::before { background: var(--warn); }
 
     .att-client {
-      font-size: clamp(13.5px, 1.2vw, 15px);
-      font-weight: 600;
-      letter-spacing: -.01em;
+      font-size: clamp(13.5px, 1.1vw, 14.5px);
+      font-weight: 500;
+      letter-spacing: -.012em;
       color: var(--ink-1);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -259,38 +228,39 @@
     .att-meta {
       margin-left: auto;
       flex: none;
-      font-size: 11.5px;
+      font-size: 12px;
+      font-weight: 400;
       color: var(--ink-4);
-      font-weight: 500;
-      letter-spacing: .01em;
+      font-variant-numeric: tabular-nums;
     }
     .att-more {
-      padding: 10px 22px 14px;
+      padding: 10px 12px 12px;
       font-size: 12px;
       color: var(--ink-4);
     }
     .att-empty {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 20px 22px;
+      gap: 9px;
+      padding: 16px 12px;
       font-size: 13.5px;
-      font-weight: 500;
+      font-weight: 400;
       color: var(--ink-3);
     }
-    .att-empty svg { width: 16px; height: 16px; color: var(--ok); flex: none; }
-    .att-empty--wait { color: var(--ink-4); font-weight: 400; }
+    .att-empty svg { width: 15px; height: 15px; color: var(--ok); flex: none; }
+    .att-empty--wait { color: var(--ink-4); }
 
     /* ── Pied ── */
     .foot {
       text-align: center;
       font-size: 11.5px;
+      font-weight: 400;
       color: var(--ink-4);
-      letter-spacing: .01em;
+      letter-spacing: -.005em;
     }
 
     @media (max-width: 560px) {
-      .head { flex-direction: column; }
+      .head { flex-direction: column; align-items: flex-start; }
       .head-meta { text-align: left; }
     }
   </style>
@@ -309,12 +279,7 @@
     </header>
 
     <section class="status status--$status_class" role="status" aria-label="$status_title">
-      <span class="status-ico" aria-hidden="true">
-        <svg class="ico ico-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
-        <svg class="ico ico-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        <svg class="ico ico-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
-        <svg class="ico ico-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v5l3 2"/></svg>
-      </span>
+      <span class="status-dot" aria-hidden="true"></span>
       <div class="status-text">
         <div class="status-title">$status_title</div>
         <div class="status-sub">$status_sub</div>

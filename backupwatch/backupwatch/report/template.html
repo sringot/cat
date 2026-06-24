@@ -8,92 +8,286 @@
   <style>
     $fonts
     :root {
-      --bg: #F9FAFB; --surface: #FFFFFF;
-      --ink: #101828; --ink-2: #475467; --ink-3: #667085; --ink-4: #98A2B3;
-      --line: #EAECF0;
-      --ok: #079455;   --ok-ink: #067647;   --ok-bg: #ECFDF3;   --ok-line: #ABEFC6;   --ok-chip: #D1FADF;
-      --warn: #DC6803; --warn-ink: #B54708; --warn-bg: #FFFAEB; --warn-line: #FEDF89; --warn-chip: #FEF0C7;
-      --fail: #D92D20; --fail-ink: #B42318; --fail-bg: #FEF3F2; --fail-line: #FECDCA; --fail-chip: #FEE4E2;
-      --r: 12px;
-      --shadow-xs: 0 1px 2px rgba(16,24,40,.05);
+      /* Soft UI Evolution — fond clay froid, cartes blanches flottantes */
+      --bg:      #E5ECF6;
+      --surface: #FFFFFF;
+
+      /* Hiérarchie textuelle */
+      --ink-1:  #0F172A;
+      --ink-2:  #334155;
+      --ink-3:  #64748B;
+      --ink-4:  #94A3B8;
+
+      /* Bordures quasi-invisibles */
+      --line:   rgba(148, 163, 184, .2);
+      --line-2: rgba(148, 163, 184, .35);
+
+      /* Sémantique statut */
+      --ok:      #059669;  --ok-bg:   #ECFDF5;
+      --warn:    #D97706;  --warn-bg: #FFFBEB;
+      --fail:    #DC2626;  --fail-bg: #FEF2F2;
+
+      /* Ombres multi-couches (soft UI) */
+      --sh:      0 1px 2px rgba(0,0,0,.04),
+                 0 5px 16px rgba(100,116,139,.1),
+                 0 20px 44px rgba(100,116,139,.07);
+      --sh-hero: 0 2px 4px rgba(0,0,0,.05),
+                 0 10px 26px rgba(100,116,139,.13),
+                 0 32px 64px rgba(100,116,139,.09);
+
+      --r:  16px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
+    html, body { min-height: 100dvh; }
     body {
-      background: var(--bg); color: var(--ink);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      background: var(--bg);
+      color: var(--ink-1);
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
       font-variant-numeric: tabular-nums;
-      display: flex; min-height: 100dvh;
+      display: flex;
     }
+
     .wrap {
-      width: min(940px, 100%); margin: auto;
-      padding: clamp(24px, 4vh, 52px) clamp(20px, 4vw, 36px);
-      display: flex; flex-direction: column; gap: clamp(16px, 2.2vh, 24px);
+      width: min(940px, 100%);
+      margin: auto;
+      padding: clamp(28px, 5vh, 64px) clamp(20px, 4vw, 44px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(14px, 2vh, 22px);
     }
 
     /* ── En-tête ── */
-    .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-size: clamp(15px, 1.3vw, 17px); font-weight: 600; letter-spacing: -.01em; }
-    .logo { width: 26px; height: 26px; display: block; flex: none; }
-    .logo svg { width: 100%; height: 100%; display: block; }
-    .head-meta { text-align: right; line-height: 1.5; }
-    .head-date { font-size: clamp(13px, 1.1vw, 14px); font-weight: 600; color: var(--ink-2); }
-    .head-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
-
-    /* ── Bandeau d'état (le coup d'œil) ── */
-    .status {
-      display: flex; align-items: center; gap: clamp(14px, 1.6vw, 20px);
-      padding: clamp(18px, 2.4vh, 26px) clamp(18px, 2.2vw, 26px);
-      border-radius: 16px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-xs);
+    .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
-    .status-ico { flex: none; width: clamp(40px, 3.4vw, 50px); height: clamp(40px, 3.4vw, 50px); display: grid; place-items: center; border-radius: 50%; }
-    .status-ico svg { width: 56%; height: 56%; }
-    .status-ico .ico { display: none; }
-    .status-title { font-size: clamp(20px, 2.4vw, 30px); font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
-    .status-sub { font-size: clamp(13px, 1.1vw, 15px); color: var(--ink-2); margin-top: 3px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--ink-1);
+    }
+    .logo { width: 26px; height: 26px; flex: none; display: block; }
+    .logo svg { width: 100%; height: 100%; display: block; }
+    .head-meta { text-align: right; }
+    .head-date {
+      font-size: 13.5px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      color: var(--ink-2);
+    }
+    .head-sub {
+      font-size: 11.5px;
+      color: var(--ink-4);
+      margin-top: 3px;
+      letter-spacing: .01em;
+    }
 
-    /* Bandeau neutre (blanc) ; seule l'icône porte une touche de couleur légère. */
+    /* ── Bandeau d'état ── */
+    .status {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 2.2vw, 28px);
+      padding: clamp(22px, 3vh, 34px) clamp(24px, 3vw, 36px)
+               clamp(22px, 3vh, 34px) clamp(28px, 3.5vw, 44px);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh-hero);
+    }
+    /* Barre colorée à gauche — seule touche de couleur sur le fond blanc */
+    .status::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: var(--r) 0 0 var(--r);
+    }
+    .status--ok::before   { background: var(--ok); }
+    .status--warn::before { background: var(--warn); }
+    .status--fail::before { background: var(--fail); }
+    .status--none::before { background: var(--ink-4); }
+
+    .status-ico {
+      flex: none;
+      width: clamp(44px, 4.2vw, 54px);
+      height: clamp(44px, 4.2vw, 54px);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-2);
+    }
     .status--ok   .status-ico { background: var(--ok-bg);   color: var(--ok); }
-    .status--ok   .ico-ok { display: block; }
     .status--warn .status-ico { background: var(--warn-bg); color: var(--warn); }
-    .status--warn .ico-warn { display: block; }
     .status--fail .status-ico { background: var(--fail-bg); color: var(--fail); }
+    .status--none .status-ico { background: #F1F5F9; color: var(--ink-4); border-color: var(--line); }
+
+    .status-ico svg { width: 50%; height: 50%; display: none; }
+    .status--ok   .ico-ok   { display: block; }
+    .status--warn .ico-warn { display: block; }
     .status--fail .ico-fail { display: block; }
-    .status--none .status-ico { background: #F2F4F7; color: var(--ink-3); }
     .status--none .ico-none { display: block; }
 
+    .status-title {
+      font-size: clamp(22px, 2.8vw, 34px);
+      font-weight: 700;
+      letter-spacing: -.035em;
+      line-height: 1.1;
+      color: var(--ink-1);
+    }
+    .status-sub {
+      font-size: clamp(13px, 1.1vw, 14.5px);
+      color: var(--ink-3);
+      margin-top: 5px;
+    }
+
     /* ── Trois compteurs ── */
-    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px, 1.4vw, 16px); }
-    .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); padding: clamp(16px, 2vh, 22px) clamp(14px, 1.6vw, 20px); text-align: center; }
-    .tile-num { font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(12px, 1.5vw, 18px);
+    }
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      padding: clamp(20px, 2.8vh, 32px) clamp(16px, 2vw, 24px);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* Pastille colorée au-dessus du chiffre */
+    .tile::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ink-4);
+      margin-bottom: clamp(12px, 1.6vh, 18px);
+    }
+    .tile--ok::before   { background: var(--ok); }
+    .tile--warn::before { background: var(--warn); }
+    .tile--fail::before { background: var(--fail); }
+    .tile.is-zero::before { background: var(--ink-4); }
+
+    .tile-num {
+      font-size: clamp(38px, 5.2vw, 64px);
+      font-weight: 700;
+      letter-spacing: -.04em;
+      line-height: 1;
+      color: var(--ink-1);
+    }
     .tile.is-zero .tile-num { color: var(--ink-4); }
-    .tile-lbl { font-size: clamp(11px, 1vw, 12.5px); color: var(--ink-3); margin-top: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 7px; }
-    .tile-lbl::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
-    .tile--ok   .tile-lbl::before { background: var(--ok); }
-    .tile--warn .tile-lbl::before { background: var(--warn); }
-    .tile--fail .tile-lbl::before { background: var(--fail); }
-    .tile.is-zero .tile-lbl::before { background: var(--ink-4); }
+
+    .tile-lbl {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      margin-top: clamp(10px, 1.4vh, 14px);
+    }
 
     /* ── À vérifier ── */
-    .att { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-xs); overflow: hidden; }
-    .att-head { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding: 16px 20px 4px; }
-    .att-list { padding: 2px 10px 8px; }
-    .att-row { display: flex; align-items: center; gap: 14px; padding: 13px 10px; }
+    .att {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      overflow: hidden;
+    }
+    .att-head {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      padding: 20px 22px 0;
+    }
+    .att-list { padding: 6px 12px 12px; }
+    .att-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 10px;
+    }
     .att-row + .att-row { border-top: 1px solid var(--line); }
-    .pill { flex: none; display: inline-flex; align-items: center; gap: 8px; min-width: 66px; font-size: 12px; font-weight: 500; color: var(--ink-2); }
-    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
+
+    .pill {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 62px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      color: var(--ink-3);
+    }
+    .pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ink-4);
+      flex: none;
+    }
     .pill--fail::before { background: var(--fail); }
     .pill--warn::before { background: var(--warn); }
-    .att-client { font-size: clamp(14px, 1.2vw, 15.5px); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .att-meta { margin-left: auto; flex: none; font-size: 12.5px; color: var(--ink-3); }
-    .att-more { padding: 11px 12px 6px; font-size: 12.5px; color: var(--ink-3); }
-    .att-empty { display: flex; align-items: center; gap: 10px; padding: 16px 12px; color: var(--ink-2); font-size: 14px; }
-    .att-empty svg { width: 18px; height: 18px; color: var(--ok); flex: none; }
-    .att-empty--wait { color: var(--ink-3); }
+
+    .att-client {
+      font-size: clamp(13.5px, 1.2vw, 15px);
+      font-weight: 600;
+      letter-spacing: -.01em;
+      color: var(--ink-1);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .att-meta {
+      margin-left: auto;
+      flex: none;
+      font-size: 11.5px;
+      color: var(--ink-4);
+      font-weight: 500;
+      letter-spacing: .01em;
+    }
+    .att-more {
+      padding: 10px 22px 14px;
+      font-size: 12px;
+      color: var(--ink-4);
+    }
+    .att-empty {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 22px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-3);
+    }
+    .att-empty svg { width: 16px; height: 16px; color: var(--ok); flex: none; }
+    .att-empty--wait { color: var(--ink-4); font-weight: 400; }
 
     /* ── Pied ── */
-    .foot { text-align: center; font-size: 12px; color: var(--ink-3); }
+    .foot {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--ink-4);
+      letter-spacing: .01em;
+    }
 
     @media (max-width: 560px) {
       .head { flex-direction: column; }

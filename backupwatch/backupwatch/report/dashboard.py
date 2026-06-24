@@ -20,6 +20,8 @@ TEMPLATE_PATH = Path(__file__).with_name("template.html")
 # Police Geist (Vercel, OFL) sous-ensemblée (latin) et embarquée en base64 :
 # board 100 % autonome, sans police distante ni dépendance CDN.
 _FONTS_CSS = Path(__file__).with_name("geist.css").read_text(encoding="utf-8")
+# Gabarit compilé une seule fois à l'import (et non relu du disque à chaque rendu).
+_TEMPLATE = Template(TEMPLATE_PATH.read_text(encoding="utf-8"))
 
 _WEEKDAYS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 _MONTHS_FR = [
@@ -119,9 +121,9 @@ def _attention_html(today_results: List[BackupResult], n_total: int) -> str:
 def build_dashboard(
     results: List[BackupResult],
     config: Config,
-    since: datetime,
     now: Optional[datetime] = None,
-) -> Path:
+) -> bytes:
+    """Génère le tableau de bord, l'écrit sur disque et renvoie son HTML (bytes)."""
     now = now or datetime.now(timezone.utc)
     today = now.astimezone().date()
 
@@ -150,14 +152,18 @@ def build_dashboard(
     else:
         source_label = _esc(config.mail_source)
 
-    tiles_html = (
-        _tile(n_success, "Succès", "ok")
-        + _tile(n_warning, "Avertissements", "warn")
-        + _tile(n_failed, "Échecs", "fail")
-    )
+    tiles = [
+        _tile(n_success, "Succès", "ok"),
+        _tile(n_warning, "Avertissements", "warn"),
+        _tile(n_failed, "Échecs", "fail"),
+    ]
+    # Les Inconnus comptent dans le total : on les affiche aussi en tuile, sinon
+    # les 3 tuiles ne s'additionnent pas au total annoncé en pied de page.
+    if n_unknown:
+        tiles.append(_tile(n_unknown, "Inconnus", "unknown"))
+    tiles_html = "".join(tiles)
 
-    template = Template(TEMPLATE_PATH.read_text(encoding="utf-8"))
-    page = template.safe_substitute(
+    page = _TEMPLATE.safe_substitute(
         fonts=_FONTS_CSS,
         today_date_long=_date_long(today),
         generated_time=now.astimezone().strftime("%H:%M"),
@@ -172,6 +178,5 @@ def build_dashboard(
     )
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = config.dashboard_path
-    output_path.write_text(page, encoding="utf-8")
-    return output_path
+    config.dashboard_path.write_text(page, encoding="utf-8")
+    return page.encode("utf-8")

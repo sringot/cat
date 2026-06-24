@@ -14,8 +14,12 @@ from ..models import BackupResult, BackupStatus, RawEmail
 from ..textutils import html_to_text
 from .base import BackupParser
 
-# Mots de négation qui annulent un terme d'état (« aucune erreur », « 0 warning »).
-NEG_WORDS = {"0", "no", "zero", "zéro", "aucun", "aucune", "sans", "without", "non"}
+# Mots de négation qui annulent un terme d'état (« aucune erreur », « 0 warning »,
+# « keine Fehler », « nicht erfolgreich »).
+NEG_WORDS = {
+    "0", "no", "zero", "zéro", "aucun", "aucune", "sans", "without", "non",
+    "kein", "keine", "nicht",  # allemand
+}
 
 # Termes d'état, du plus grave au moins grave (l'ordre compte pour le tri).
 STATUS_TERMS = [
@@ -27,11 +31,16 @@ STATUS_TERMS = [
             # Formes verbales françaises (Synology, QNAP… : « la tâche a échoué »)
             "échoué", "échouée", "échoués", "échouées",
             "echoue", "echouee", "echoues", "echouees",
+            # Allemand (Synology/Veeam DE : « Sicherung fehlgeschlagen »)
+            "fehlgeschlagen", "fehler", "abgebrochen",
         ],
     ),
     (
         BackupStatus.WARNING,
-        ["warning", "warnings", "avertissement", "attention", "skipped", "partially"],
+        [
+            "warning", "warnings", "avertissement", "attention", "skipped",
+            "partially", "warnung", "warnungen",  # allemand
+        ],
     ),
     (
         BackupStatus.SUCCESS,
@@ -39,6 +48,7 @@ STATUS_TERMS = [
             "success", "successful", "succeeded", "completed", "complete",
             "successfully", "succès", "succes", "réussi", "reussi", "terminé",
             "termine", "ok",
+            "erfolgreich", "erfolg", "abgeschlossen",  # allemand
         ],
     ),
 ]
@@ -79,26 +89,47 @@ DURATION_RE = re.compile(
 )
 
 
-def _term_present(text: str, term: str) -> bool:
-    """True si `term` apparaît dans `text` sans négation ni « : 0 »."""
-    pattern = re.compile(r"(?<!\w)" + re.escape(term) + r"(?!\w)", re.IGNORECASE)
-    for match in pattern.finditer(text):
+# Motifs compilés mis en cache : les termes sont des constantes, inutile de
+# recompiler la regex à chaque appel (des dizaines par e-mail).
+_PATTERN_CACHE = {}
+
+
+def _term_pattern(term: str):
+    pattern = _PATTERN_CACHE.get(term)
+    if pattern is None:
+        pattern = re.compile(r"(?<!\w)" + re.escape(term) + r"(?!\w)", re.IGNORECASE)
+        _PATTERN_CACHE[term] = pattern
+    return pattern
+
+
+def _term_present(text: str, term: str, negate_zero: bool = True) -> bool:
+    """True si `term` apparaît dans `text` sans négation ni « : 0 ».
+
+    `negate_zero` n'annule que les termes de problème (« Errors: 0 ») ; on ne
+    l'applique pas aux mots de succès, sinon « completed 0 files » deviendrait
+    Inconnu au lieu de Succès.
+    """
+    for match in _term_pattern(term).finditer(text):
         before = text[max(0, match.start() - 16):match.start()].lower()
         after = text[match.end():match.end() + 8].lower()
         tokens = re.findall(r"[\wà-ÿ']+", before)
         if tokens and tokens[-1] in NEG_WORDS:
             continue
-        if re.match(r"^[\s:=]*0(?!\d)", after):  # « Errors: 0 », « warnings 0 »
+        if negate_zero and re.match(r"^[\s:=]*0(?!\d)", after):  # « Errors: 0 »
             continue
         return True
     return False
 
 
 def _detect_status(subject: str, body: str) -> BackupStatus:
-    for scope in (subject, body):
-        for status, terms in STATUS_TERMS:
-            if any(_term_present(scope, term) for term in terms):
-                return status
+    # On analyse sujet ET corps ensemble puis on retient l'état le PLUS GRAVE
+    # trouvé n'importe où. Un échec dans le corps doit primer sur un « terminé »
+    # neutre du sujet (sinon une sauvegarde en échec s'afficherait en vert).
+    text = f"{subject}\n{body}"
+    for status, terms in STATUS_TERMS:
+        negate_zero = status is not BackupStatus.SUCCESS
+        if any(_term_present(text, term, negate_zero) for term in terms):
+            return status
     return BackupStatus.UNKNOWN
 
 
@@ -149,6 +180,15 @@ def _extract_duration(body: str) -> Optional[str]:
 REASON_WORDS = ["reason", "raison", "cause", "motif", "detail", "détail"]
 
 
+def _is_boilerplate(line: str) -> bool:
+    """Ligne de pied de page à éviter comme « cause » (contact, lien, mentions)."""
+    low = line.lower()
+    return (
+        "@" in line or "http" in low or "support" in low
+        or "unsubscribe" in low or "désabonn" in low or "copyright" in low
+    )
+
+
 def _extract_detail(body: str, status: BackupStatus) -> str:
     if status not in (BackupStatus.FAILED, BackupStatus.WARNING):
         return ""
@@ -161,9 +201,10 @@ def _extract_detail(body: str, status: BackupStatus) -> str:
     ]
     if not candidates:
         return ""
-    # On privilégie la ligne la plus longue : c'est en général celle qui décrit
-    # la cause (« Error: ... », « Reason: ... ») plutôt qu'un simple « Failed ».
-    return max(candidates, key=len)[:200]
+    # On écarte d'abord les lignes de pied de page (« …contactez support@… »)
+    # puis on garde la plus descriptive (« Error: ... », « Reason: ... »).
+    useful = [c for c in candidates if not _is_boilerplate(c)] or candidates
+    return max(useful, key=len)[:200]
 
 
 class GenericParser(BackupParser):

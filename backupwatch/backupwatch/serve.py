@@ -36,6 +36,11 @@ _PLACEHOLDER = (
     '<p>Premier rapport en cours de génération…</p></div></body></html>'
 ).encode("utf-8")
 
+# Au-delà de ce délai sans régénération réussie, /healthz répond 503 : une
+# supervision externe peut ainsi repérer un scraping bloqué (le scraping est
+# quotidien, donc >26 h = au moins un cycle manqué).
+_STALE_AFTER = timedelta(hours=26)
+
 
 def next_run(now: datetime, hour: int) -> datetime:
     """Prochaine occurrence de ``hour:00`` : aujourd'hui si pas encore passée, sinon demain."""
@@ -74,8 +79,12 @@ def make_handler(dash: Dashboard):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802 - signature imposée par BaseHTTPRequestHandler
             if self.path.startswith("/healthz"):
-                ts = dash.generated_at.isoformat() if dash.generated_at else "null"
-                self._send(200, f'{{"ok":true,"generated_at":"{ts}"}}'.encode(),
+                gen = dash.generated_at
+                fresh = gen is not None and datetime.now() - gen <= _STALE_AFTER
+                ts = gen.isoformat() if gen else "null"
+                ok = "true" if fresh else "false"
+                self._send(200 if fresh else 503,
+                           f'{{"ok":{ok},"generated_at":"{ts}"}}'.encode(),
                            "application/json")
                 return
             if self.path == "/favicon.ico":
@@ -108,7 +117,7 @@ def scrape_once(config: Config, dash: Dashboard) -> bool:
     """
     try:
         result = run(config)
-        dash.set_html(Path(result.dashboard_path).read_bytes())
+        dash.set_html(result.dashboard_html)
         logger.info("Tableau de bord rafraîchi (%d rapport(s))", len(result.results))
         return True
     except Exception:  # noqa: BLE001 - le serveur ne doit jamais tomber sur une erreur de scraping
@@ -121,12 +130,18 @@ def _scheduler(config: Config, dash: Dashboard, hour: int, stop: threading.Event
     scrape_once(config, dash)
     while not stop.is_set():
         target = next_run(datetime.now(), hour)
-        wait = (target - datetime.now()).total_seconds()
-        logger.info("Prochain scraping : %s (dans %.0f min)",
-                    target.strftime("%d/%m %H:%M"), wait / 60)
-        if stop.wait(wait):  # réveillé avant l'heure = demande d'arrêt
-            break
-        scrape_once(config, dash)
+        logger.info("Prochain scraping : %s", target.strftime("%d/%m %H:%M"))
+        # Attente par tranches d'1 h : on remesure le délai depuis l'heure
+        # courante à chaque tour, ce qui absorbe un changement d'heure (DST)
+        # sans dériver, et reste réactif à une demande d'arrêt.
+        while not stop.is_set():
+            remaining = (target - datetime.now()).total_seconds()
+            if remaining <= 0:
+                break
+            if stop.wait(min(remaining, 3600.0)):
+                return
+        if not stop.is_set():
+            scrape_once(config, dash)
 
 
 def serve(config: Config, host: str = "127.0.0.1", port: int = 8470, hour: int = 7) -> int:
@@ -137,7 +152,10 @@ def serve(config: Config, host: str = "127.0.0.1", port: int = 8470, hour: int =
     # le temps que le premier scraping du démarrage se termine.
     existing = Path(config.dashboard_path)
     if existing.exists():
-        dash.set_html(existing.read_bytes())
+        try:
+            dash.set_html(existing.read_bytes())
+        except OSError as exc:  # verrouillé/illisible : le scrape de démarrage régénère
+            logger.warning("Dashboard existant illisible au démarrage : %s", exc)
 
     stop = threading.Event()
     scheduler = threading.Thread(

@@ -51,6 +51,14 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "oui", "on"}
 
 
+def _to_int(value, name: str) -> int:
+    """Convertit en entier en remontant un message clair (pas un traceback brut)."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name} doit être un entier (valeur reçue : {value!r})")
+
+
 @dataclass
 class Config:
     """Configuration complète de l'application."""
@@ -58,8 +66,9 @@ class Config:
     # Source des e-mails : "graph" (Microsoft 365) ou "demo" (mails d'exemple).
     mail_source: str = "demo"
 
-    # Fenêtre de temps : on regarde les mails reçus dans les N dernières heures.
-    # 16 h le matin couvre confortablement les sauvegardes de la nuit.
+    # Fenêtre de temps minimale (heures). Le board affiche toujours la semaine
+    # écoulée (taux de réussite 7 j), donc la fenêtre réelle est d'au moins
+    # 7 jours ; lookback_hours ne l'élargit que s'il dépasse cette durée.
     lookback_hours: int = 16
 
     # --- Microsoft Graph (Microsoft 365 / Outlook) ---
@@ -102,7 +111,9 @@ class Config:
         if cfg_path.exists() and yaml is not None:
             data = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
             cfg.mail_source = data.get("mail_source", cfg.mail_source)
-            cfg.lookback_hours = int(data.get("lookback_hours", cfg.lookback_hours))
+            cfg.lookback_hours = _to_int(
+                data.get("lookback_hours", cfg.lookback_hours), "lookback_hours"
+            )
             cfg.graph_mailbox = data.get("mailbox", cfg.graph_mailbox)
             cfg.graph_folder = data.get("folder", cfg.graph_folder)
             if data.get("keywords"):
@@ -120,13 +131,16 @@ class Config:
             if serve.get("host"):
                 cfg.serve_host = str(serve["host"])
             if serve.get("port"):
-                cfg.serve_port = int(serve["port"])
+                cfg.serve_port = _to_int(serve["port"], "serve.port")
             if serve.get("hour") is not None:
-                cfg.serve_hour = int(serve["hour"])
+                cfg.serve_hour = _to_int(serve["hour"], "serve.hour")
 
         # 2) Variables d'environnement (priorité aux secrets et aux overrides).
         cfg.mail_source = os.getenv("BACKUPWATCH_SOURCE", cfg.mail_source)
-        cfg.lookback_hours = int(os.getenv("BACKUPWATCH_LOOKBACK_HOURS", cfg.lookback_hours))
+        cfg.lookback_hours = _to_int(
+            os.getenv("BACKUPWATCH_LOOKBACK_HOURS", cfg.lookback_hours),
+            "BACKUPWATCH_LOOKBACK_HOURS",
+        )
         cfg.graph_tenant_id = os.getenv("GRAPH_TENANT_ID", cfg.graph_tenant_id)
         cfg.graph_client_id = os.getenv("GRAPH_CLIENT_ID", cfg.graph_client_id)
         cfg.graph_client_secret = os.getenv("GRAPH_CLIENT_SECRET", cfg.graph_client_secret)
@@ -135,8 +149,8 @@ class Config:
         if os.getenv("BACKUPWATCH_OUTPUT_DIR"):
             cfg.output_dir = Path(os.environ["BACKUPWATCH_OUTPUT_DIR"])
         cfg.serve_host = os.getenv("BACKUPWATCH_HOST", cfg.serve_host)
-        cfg.serve_port = int(os.getenv("BACKUPWATCH_PORT", cfg.serve_port))
-        cfg.serve_hour = int(os.getenv("BACKUPWATCH_HOUR", cfg.serve_hour))
+        cfg.serve_port = _to_int(os.getenv("BACKUPWATCH_PORT", cfg.serve_port), "BACKUPWATCH_PORT")
+        cfg.serve_hour = _to_int(os.getenv("BACKUPWATCH_HOUR", cfg.serve_hour), "BACKUPWATCH_HOUR")
 
         return cfg
 

@@ -150,7 +150,8 @@
     /* ── Trois compteurs ── */
     .tiles {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--r);
@@ -188,10 +189,11 @@
       background: var(--ink-4);
       flex: none;
     }
-    .tile--ok   .tile-lbl::before { background: var(--ok); }
-    .tile--warn .tile-lbl::before { background: var(--warn); }
-    .tile--fail .tile-lbl::before { background: var(--fail); }
-    .tile.is-zero .tile-lbl::before { background: var(--ink-4); }
+    .tile--ok      .tile-lbl::before { background: var(--ok); }
+    .tile--warn    .tile-lbl::before { background: var(--warn); }
+    .tile--fail    .tile-lbl::before { background: var(--fail); }
+    .tile--unknown .tile-lbl::before { background: var(--ink-3); }
+    .tile.is-zero  .tile-lbl::before { background: var(--ink-4); }
 
     /* ── À vérifier ── */
     .att {

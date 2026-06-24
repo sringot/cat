@@ -21,6 +21,7 @@ logger = logging.getLogger("backupwatch")
 @dataclass
 class RunResult:
     dashboard_path: Path
+    dashboard_html: bytes
     results: List[BackupResult]
     emails_scanned: int
     emails_matched: int
@@ -62,11 +63,13 @@ def run(config: Config) -> RunResult:
     # Renomme les clients selon la table d'alias (PGE-NAS, NAS-HAVEN…).
     apply_client_aliases(results, config.client_aliases)
 
-    dashboard_path = build_dashboard(results, config, since)
+    dashboard_html = build_dashboard(results, config)
+    dashboard_path = config.dashboard_path
     logger.info("Tableau de bord généré : %s", dashboard_path)
 
     return RunResult(
         dashboard_path=dashboard_path,
+        dashboard_html=dashboard_html,
         results=results,
         emails_scanned=len(emails),
         emails_matched=len(matched),

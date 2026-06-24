@@ -69,10 +69,14 @@ def main(argv=None) -> int:
         format="%(levelname)s %(message)s",
     )
 
-    config = Config.load(args.config)
+    try:
+        config = Config.load(args.config)
+    except ValueError as exc:  # config.yaml / .env invalide : message clair, pas de traceback
+        print(f"Erreur : {exc}", file=sys.stderr)
+        return 1
     if args.source:
         config.mail_source = args.source
-    if args.lookback:
+    if args.lookback is not None:
         config.lookback_hours = args.lookback
 
     # Mode serveur : affichage permanent en kiosque (boucle infinie, ne retourne
@@ -80,8 +84,8 @@ def main(argv=None) -> int:
     if args.serve:
         from .serve import serve
 
-        host = args.host or config.serve_host
-        port = args.port or config.serve_port
+        host = args.host if args.host is not None else config.serve_host
+        port = args.port if args.port is not None else config.serve_port
         hour = args.hour if args.hour is not None else config.serve_hour
         if not 0 <= hour <= 23:
             print(f"Erreur : --hour doit être entre 0 et 23 (reçu {hour}).", file=sys.stderr)

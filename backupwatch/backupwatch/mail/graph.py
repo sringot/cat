@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import base64
 import logging
+import re
+import time
 from datetime import datetime, timezone
 from typing import List
 from urllib.parse import quote
@@ -30,6 +32,26 @@ logger = logging.getLogger("backupwatch")
 
 GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
 SCOPE = ["https://graph.microsoft.com/.default"]
+
+# Codes HTTP transitoires (throttling / indisponibilité) à réessayer.
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
+def _parse_graph_dt(value) -> datetime:
+    """Parse un `receivedDateTime` Graph en datetime *aware* UTC, tolérant.
+
+    Gère le « Z » final et les fractions de seconde à 7 chiffres que
+    `datetime.fromisoformat` refuse avant Python 3.11.
+    """
+    if not value:
+        raise ValueError("receivedDateTime manquant")
+    text = value.replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        text = re.sub(r"\.(\d{6})\d+", r".\1", text)  # tronque la fraction à 6 chiffres
+        dt = datetime.fromisoformat(text)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 class GraphMailSource(MailSource):
@@ -58,10 +80,36 @@ class GraphMailSource(MailSource):
         self._token = result["access_token"]
         return self._token
 
-    # -- Récupération des messages -----------------------------------------
-    def fetch_since(self, since: datetime) -> List[RawEmail]:
+    def _request_json(self, url: str, headers: dict, params=None) -> dict:
+        """GET JSON avec nouvelles tentatives sur throttling (429) et erreurs 5xx.
+
+        Sur un serveur qui tourne tous les jours, un coup de throttling ou un
+        5xx transitoire ne doit pas faire perdre le rafraîchissement du matin.
+        """
         import requests  # import différé
 
+        for attempt in range(4):
+            try:
+                resp = requests.get(url, headers=headers, params=params, timeout=30)
+            except requests.RequestException as exc:
+                if attempt == 3:
+                    raise
+                logger.warning("Graph injoignable (%s) — nouvelle tentative…", exc)
+                time.sleep(min(2 ** attempt, 8))
+                continue
+            if resp.status_code in _RETRY_STATUS and attempt < 3:
+                retry_after = resp.headers.get("Retry-After", "")
+                delay = int(retry_after) if retry_after.isdigit() else min(2 ** attempt, 8)
+                logger.warning("Graph a renvoyé %s — nouvelle tentative dans %ds…",
+                               resp.status_code, delay)
+                time.sleep(delay)
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        raise RuntimeError("Échec de la requête Graph après plusieurs tentatives")
+
+    # -- Récupération des messages -----------------------------------------
+    def fetch_since(self, since: datetime) -> List[RawEmail]:
         token = self._get_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -88,24 +136,26 @@ class GraphMailSource(MailSource):
         emails: List[RawEmail] = []
         url = base
         while url:
-            resp = requests.get(url, headers=headers, params=params if url == base else None, timeout=30)
-            resp.raise_for_status()
-            payload = resp.json()
+            payload = self._request_json(url, headers, params if url == base else None)
             for msg in payload.get("value", []):
-                email = self._to_raw_email(msg)
-                # Acronis & co. mettent le résultat dans une PJ (ZIP → PDF) :
-                # on en extrait le texte et on l'ajoute au corps pour le parser.
-                if msg.get("hasAttachments"):
-                    extra = self._attachments_text(base, msg.get("id"), headers)
-                    if extra:
-                        email.body_text = f"{email.body_text}\n{extra}".strip()
-                emails.append(email)
+                try:
+                    email = self._to_raw_email(msg)
+                    # Acronis & co. mettent le résultat dans une PJ (ZIP → PDF) :
+                    # on en extrait le texte et on l'ajoute au corps pour le parser.
+                    if msg.get("hasAttachments"):
+                        extra = self._attachments_text(base, msg.get("id"), headers)
+                        if extra:
+                            email.body_text = f"{email.body_text}\n{extra}".strip()
+                    emails.append(email)
+                except Exception as exc:  # noqa: BLE001 - un mail malformé ne doit pas tout casser
+                    logger.warning("E-mail ignoré (id %s) : %s",
+                                   (msg.get("id") or "?")[:12], exc)
             url = payload.get("@odata.nextLink")
         return emails
 
-    def _attachments_text(self, base: str, message_id: str, headers: dict) -> str:
-        import requests  # import différé
-
+    def _attachments_text(self, base: str, message_id, headers: dict) -> str:
+        if not message_id:
+            return ""
         # Pas de $select : `contentBytes` n'existe que sur le type dérivé
         # fileAttachment, et le sélectionner sur la collection renvoie une 400.
         # On récupère donc les pièces jointes complètes.
@@ -113,9 +163,7 @@ class GraphMailSource(MailSource):
         texts: List[str] = []
         try:
             while url:
-                resp = requests.get(url, headers=headers, timeout=30)
-                resp.raise_for_status()
-                payload = resp.json()
+                payload = self._request_json(url, headers)
                 for att in payload.get("value", []):
                     content_b64 = att.get("contentBytes")
                     if not content_b64:  # pièce jointe non-fichier (item/référence)
@@ -129,12 +177,12 @@ class GraphMailSource(MailSource):
                         texts.append(text)
                 url = payload.get("@odata.nextLink")
         except Exception as exc:  # noqa: BLE001 - une PJ illisible ne doit pas tout casser
-            logger.warning("Pièces jointes illisibles (msg %s…) : %s", message_id[:12], exc)
+            logger.warning("Pièces jointes illisibles (msg %s…) : %s", str(message_id)[:12], exc)
         return "\n".join(texts)
 
     @staticmethod
     def _to_raw_email(msg: dict) -> RawEmail:
-        sender = (msg.get("from") or {}).get("emailAddress", {})
+        sender = (msg.get("from") or {}).get("emailAddress") or {}
         body = msg.get("body") or {}
         content = body.get("content", "")
         content_type = (body.get("contentType") or "").lower()
@@ -147,15 +195,12 @@ class GraphMailSource(MailSource):
         else:
             body_text = content or msg.get("bodyPreview", "")
 
-        received = datetime.fromisoformat(
-            msg["receivedDateTime"].replace("Z", "+00:00")
-        )
         return RawEmail(
             id=msg.get("id", ""),
             subject=msg.get("subject", "") or "",
             sender_name=sender.get("name", "") or "",
             sender_address=sender.get("address", "") or "",
-            received=received,
+            received=_parse_graph_dt(msg.get("receivedDateTime")),
             body_text=body_text,
             body_html=body_html,
         )

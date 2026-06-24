@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -58,3 +58,9 @@ class BackupResult:
     detail: str = ""
     subject: str = ""
     email_id: str = ""
+
+    def __post_init__(self) -> None:
+        # Garantit une date « aware » (UTC) : le dashboard trie et convertit
+        # `received` (.astimezone()), ce qui plante en mélangeant naïf et aware.
+        if self.received.tzinfo is None:
+            self.received = self.received.replace(tzinfo=timezone.utc)

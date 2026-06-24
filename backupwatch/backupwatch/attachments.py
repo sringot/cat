@@ -18,6 +18,10 @@ try:  # pypdf est requis pour lire les PDF ; absence gérée proprement.
 except ImportError:  # pragma: no cover
     PdfReader = None
 
+# Garde-fous mémoire pour le petit NUC (gros PDF, ZIP-bomb).
+_MAX_PDF_PAGES = 60
+_MAX_ENTRY_BYTES = 25 * 1024 * 1024  # 25 Mo par entrée de ZIP décompressée
+
 
 def _pdf_to_text(data: bytes) -> str:
     if PdfReader is None:  # pragma: no cover
@@ -25,7 +29,13 @@ def _pdf_to_text(data: bytes) -> str:
         return ""
     try:
         reader = PdfReader(io.BytesIO(data))
-        return "\n".join((page.extract_text() or "") for page in reader.pages)
+        parts = []
+        for i, page in enumerate(reader.pages):
+            if i >= _MAX_PDF_PAGES:
+                logger.info("PDF tronqué à %d pages.", _MAX_PDF_PAGES)
+                break
+            parts.append(page.extract_text() or "")
+        return "\n".join(parts)
     except Exception as exc:  # noqa: BLE001 - un PDF illisible ne doit pas tout casser
         logger.warning("Lecture PDF échouée : %s", exc)
         return ""
@@ -38,7 +48,16 @@ def _zip_to_text(data: bytes, depth: int) -> str:
             for info in archive.infolist():
                 if info.is_dir():
                     continue
-                parts.append(extract_attachment_text(info.filename, archive.read(info), depth + 1))
+                if info.file_size > _MAX_ENTRY_BYTES:  # anti ZIP-bomb / pièce énorme
+                    logger.warning("Entrée ZIP %s ignorée (%d octets).",
+                                   info.filename, info.file_size)
+                    continue
+                try:
+                    raw = archive.read(info)
+                except Exception as exc:  # noqa: BLE001 - une entrée corrompue n'empêche pas les autres
+                    logger.warning("Entrée ZIP %s illisible : %s", info.filename, exc)
+                    continue
+                parts.append(extract_attachment_text(info.filename, raw, depth + 1))
     except Exception as exc:  # noqa: BLE001
         logger.warning("Lecture ZIP échouée : %s", exc)
     return "\n".join(p for p in parts if p)

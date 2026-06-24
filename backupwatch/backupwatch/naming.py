@@ -7,9 +7,19 @@ qui correspond gagne — on place donc les plus spécifiques en premier.
 
 from __future__ import annotations
 
+import re
 from typing import Dict, List
 
 from .models import BackupResult
+
+
+def _matches(pattern: str, haystack: str) -> bool:
+    """Vrai si `pattern` apparaît comme un terme entier (frontières de mot).
+
+    Évite qu'un alias court morde dans un mot plus long : « sql » ne doit pas
+    matcher dans « postgresql », ni « hp » dans « sharepoint ».
+    """
+    return re.search(r"(?<!\w)" + re.escape(pattern) + r"(?!\w)", haystack) is not None
 
 
 def apply_client_aliases(results: List[BackupResult], aliases: Dict[str, str]) -> None:
@@ -20,6 +30,6 @@ def apply_client_aliases(results: List[BackupResult], aliases: Dict[str, str]) -
     for result in results:
         haystack = f"{result.subject} {result.client} {result.source_tool or ''}".lower()
         for pattern, name in items:
-            if pattern and pattern in haystack:
+            if pattern and _matches(pattern, haystack):
                 result.client = name
                 break

@@ -40,6 +40,13 @@ def test_no_alias_leaves_client_untouched():
     assert results[0].client == "Original"
 
 
+def test_alias_does_not_match_inside_word():
+    # « sql » ne doit pas mordre dans « postgresql » (frontières de mot).
+    results = [_result(subject="PostgreSQL nightly dump", client="db1")]
+    apply_client_aliases(results, {"sql": "SQL-Box"})
+    assert results[0].client == "db1"
+
+
 def test_empty_aliases_is_noop():
     results = [_result(subject="PGE-NAS", client="x")]
     apply_client_aliases(results, {})

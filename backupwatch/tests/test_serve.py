@@ -1,6 +1,7 @@
 """Tests du mode serveur : planification, cache thread-safe et service HTTP."""
 
 import threading
+import urllib.error
 import urllib.request
 from datetime import datetime
 from http.server import ThreadingHTTPServer
@@ -101,14 +102,32 @@ def test_http_reflects_cache_update_live():
         httpd.server_close()
 
 
-def test_http_healthz_and_favicon():
+def test_http_healthz_fresh_returns_200():
     dash = Dashboard()
+    dash.set_html(b"<html>frais</html>")  # generated_at = maintenant → frais
     httpd, port = _serve_in_thread(dash)
     try:
         status, body, _ = _get(port, "/healthz")
         assert status == 200
         assert b'"ok":true' in body
         assert _get(port, "/favicon.ico")[0] == 204
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_http_healthz_stale_returns_503():
+    # Dashboard jamais généré → /healthz signale l'anomalie (503, ok:false),
+    # ce qui permet à une supervision externe de détecter un scraping bloqué.
+    dash = Dashboard()
+    httpd, port = _serve_in_thread(dash)
+    try:
+        try:
+            _get(port, "/healthz")
+            assert False, "503 attendu"
+        except urllib.error.HTTPError as exc:
+            assert exc.code == 503
+            assert b'"ok":false' in exc.read()
     finally:
         httpd.shutdown()
         httpd.server_close()

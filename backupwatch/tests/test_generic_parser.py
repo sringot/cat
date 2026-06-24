@@ -37,6 +37,30 @@ def test_warning_beats_success():
     assert res.status is BackupStatus.WARNING
 
 
+def test_failure_in_body_beats_success_in_subject():
+    # Cas dangereux : sujet « terminé » neutre, échec réel dans le corps.
+    # L'échec doit primer — sinon une sauvegarde en échec s'afficherait en vert.
+    res = parse_email(
+        _email(subject="Sauvegarde terminée",
+               body_text="La tâche a échoué : 3 erreurs détectées.")
+    )[0]
+    assert res.status is BackupStatus.FAILED
+
+
+def test_german_failure():
+    res = parse_email(
+        _email(subject="Sicherung", body_text="Die Sicherung ist fehlgeschlagen.")
+    )[0]
+    assert res.status is BackupStatus.FAILED
+
+
+def test_success_completed_zero_files():
+    # « completed 0 files » reste un succès : la négation « 0 » ne vaut que
+    # pour les termes de problème (« Errors: 0 »), pas pour les mots de succès.
+    res = parse_email(_email(subject="Backup completed 0 files copied"))[0]
+    assert res.status is BackupStatus.SUCCESS
+
+
 def test_zero_errors_is_not_a_failure():
     # « Errors: 0 » et « 0 warnings » ne doivent pas déclencher d'échec.
     res = parse_email(

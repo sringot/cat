@@ -1203,7 +1203,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
       <div class="divider"></div>
 
       <div class="trouble-card" style="border-left: 3px solid var(--red)">
-        <h3>La télécommande affiche « Serveur introuvable »</h3>
+        <h3>La télécommande affiche « Serveur injoignable »</h3>
         <p>Le téléphone ne parvient pas à joindre le serveur Python sur le PC kiosque.</p>
         <ul>
           <li>Vérifiez que <code>python remote_server.py</code> est bien lancé sur le PC kiosque.</li>
@@ -1248,10 +1248,11 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         <h3>Les pages de login SSO s'affichent sur le kiosque</h3>
         <p>Une session expirée redirige vers une page d'authentification (Microsoft 365, Google, Salesforce…).</p>
         <ul>
-          <li>L'extension tente une reconnexion automatique — attendez quelques secondes.</li>
+          <li>wee rotate simule en continu une activité discrète (souris, défilement, touche neutre) pour empêcher la fermeture de session sur inactivité — actif automatiquement sur les pages affichées.</li>
+          <li>L'extension tente aussi une reconnexion automatique — attendez quelques secondes.</li>
           <li>Si le rechargement ne suffit pas, connectez-vous manuellement sur le PC kiosque une fois pour renouveler les cookies.</li>
-          <li>Réduisez l'intervalle de rafraîchissement automatique des pages (Réglages → Rafraîchissement auto) pour que l'extension recharge plus souvent et maintienne la session.</li>
-          <li>Certains SSO nécessitent une interaction humaine — envisagez un compte de service dédié avec session persistante.</li>
+          <li>Réduisez l'intervalle de rafraîchissement automatique des pages (Modifier → Rafraîchissement auto) pour que l'extension recharge plus souvent.</li>
+          <li>Certains SSO nécessitent une interaction humaine — envisagez un compte de service dédié, idéalement <strong>en lecture seule</strong>, avec session persistante.</li>
         </ul>
       </div>
 
@@ -1260,7 +1261,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         <p>Canva ne rafraîchit pas automatiquement les présentations modifiées dans un onglet déjà ouvert.</p>
         <ul>
           <li>Le rafraîchissement Canva automatique est activé par défaut (5 min). Vérifiez qu'il n'a pas été désactivé dans les Réglages.</li>
-          <li>Pour forcer une mise à jour immédiate : Réglages → « Recharger les pages ».</li>
+          <li>Pour forcer une mise à jour immédiate : Modifier → « Recharger les pages ».</li>
         </ul>
       </div>
 

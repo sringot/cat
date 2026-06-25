@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "wee rotate",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "description": "Rotation automatique d'URLs pour affichage kiosk — by Wee Technology",
   "permissions": [
     "tabs",
@@ -22,6 +22,12 @@
       "matches": ["*://*.canva.com/*"],
       "js": ["canva_fix.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["keepalive.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "action": {

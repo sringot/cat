@@ -142,14 +142,9 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
 .step:nth-child(2) .step-ic { background: color-mix(in srgb, var(--indigo) 14%, var(--raise)); color: var(--indigo); }
 .step:nth-child(3) .step-ic { background: color-mix(in srgb, var(--violet) 14%, var(--raise)); color: var(--violet); }
 .step:nth-child(4) .step-ic { background: color-mix(in srgb, var(--good)   16%, var(--raise)); color: var(--good); }
-.step-txt { font-size: 15px; font-weight: 550; line-height: 1.4; min-width: 0; }
+.step-txt { font-size: 15px; font-weight: 550; line-height: 1.4; min-width: 0; flex: 1; }
 .step-txt b { font-weight: 700; }
 .step-txt small { display: block; font-size: 13px; font-weight: 500; color: var(--txt-2); margin-top: 2px; }
-.step-n {
-  margin-left: auto; flex-shrink: 0;
-  font-size: 13px; font-weight: 800; color: var(--orange);
-  font-variant-numeric: tabular-nums;
-}
 
 /* ── Sélecteur de plateforme — piste concave + pilule convexe ── */
 .platform-selector {
@@ -205,7 +200,7 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
 <div class="wrap">
 
   <div class="hero">
-    <img src="/icons/icon180.png" alt="">
+    <img src="icons/icon180.png" alt="">
     <h1>Télécommande Remote</h1>
     <p>Contrôlez l'affichage depuis votre téléphone, comme une vraie app.</p>
   </div>
@@ -237,9 +232,7 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
             <path d="M6 11.5H5.5A1.5 1.5 0 0 0 4 13v6.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V13a1.5 1.5 0 0 0-1.5-1.5H18"/>
           </svg>
         </div>
-        <div class="step-txt">Touchez <b>Partager</b><small>dans la barre de Safari, en bas de l'écran</small></div>
-        <div class="step-n">1</div>
-      </div>
+        <div class="step-txt">Touchez <b>Partager</b><small>dans la barre de Safari, en bas de l'écran</small></div>      </div>
       <div class="step">
         <div class="step-ic">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
@@ -247,18 +240,14 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
             <path d="M12 8.8v6.4M8.8 12h6.4"/>
           </svg>
         </div>
-        <div class="step-txt">Choisissez <b>« Sur l'écran d'accueil »</b><small>faites défiler la liste si besoin</small></div>
-        <div class="step-n">2</div>
-      </div>
+        <div class="step-txt">Choisissez <b>« Sur l'écran d'accueil »</b><small>faites défiler la liste si besoin</small></div>      </div>
       <div class="step">
         <div class="step-ic">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
             <path d="M4.5 12.5l5 5 10-11"/>
           </svg>
         </div>
-        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>
-        <div class="step-n">3</div>
-      </div>
+        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>      </div>
     </div>
   </div>
 
@@ -272,9 +261,7 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
             <circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>
           </svg>
         </div>
-        <div class="step-txt">Touchez le menu <b>⋮</b><small>en haut à droite de Chrome</small></div>
-        <div class="step-n">1</div>
-      </div>
+        <div class="step-txt">Touchez le menu <b>⋮</b><small>en haut à droite de Chrome</small></div>      </div>
       <div class="step">
         <div class="step-ic">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
@@ -282,18 +269,14 @@ h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.15
             <path d="M12 8.8v6.4M8.8 12h6.4"/>
           </svg>
         </div>
-        <div class="step-txt">Touchez <b>« Ajouter à l'écran d'accueil »</b><small>ou « Installer l'appli » selon votre version</small></div>
-        <div class="step-n">2</div>
-      </div>
+        <div class="step-txt">Touchez <b>« Ajouter à l'écran d'accueil »</b><small>ou « Installer l'appli » selon votre version</small></div>      </div>
       <div class="step">
         <div class="step-ic">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
             <path d="M4.5 12.5l5 5 10-11"/>
           </svg>
         </div>
-        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>
-        <div class="step-n">3</div>
-      </div>
+        <div class="step-txt">Touchez <b>Ajouter</b><small>l'app « Remote » apparaît sur votre écran d'accueil</small></div>      </div>
     </div>
   </div>
 

@@ -3,15 +3,12 @@
 Point sécurité majeur : /qr.svg encode l'URL + le token et ne doit donc PAS
 porter d'en-tête CORS « * » (sinon une page web tierce pourrait fetch le SVG
 et en extraire le token)."""
-import shutil
-import tempfile
 import unittest
-from pathlib import Path
 
 from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase
 
-from server import state, auth, push
+from server import state
 from server.http_handler import handle_http
 
 
@@ -23,15 +20,9 @@ class HTTPTests(AioHTTPTestCase):
 
     async def asyncSetUp(self):
         await super().asyncSetUp()
-        self.tmp = Path(tempfile.mkdtemp())
-        push._SUBS_FILE = self.tmp / 'subs.json'
         state.qr_cache = b'<svg xmlns="http://www.w3.org/2000/svg"></svg>'
         state.guide_cache = b'<html>guide</html>'
         state.html_cache = b'<html>app</html>'
-
-    async def asyncTearDown(self):
-        shutil.rmtree(self.tmp, ignore_errors=True)
-        await super().asyncTearDown()
 
     async def test_qr_has_no_cors(self):
         resp = await self.client.get('/qr.svg')
@@ -52,24 +43,6 @@ class HTTPTests(AioHTTPTestCase):
         body = await resp.json()
         self.assertIn('ip', body)
         self.assertIn('http_port', body)
-
-    async def test_push_subscribe_requires_token(self):
-        resp = await self.client.post('/push-subscribe', json={'endpoint': 'https://e/1'})
-        self.assertEqual(resp.status, 401)
-
-    async def test_push_subscribe_with_token_ok(self):
-        resp = await self.client.post(
-            '/push-subscribe?token=' + auth.TOKEN,
-            json={'endpoint': 'https://e/1', 'keys': {}},
-        )
-        self.assertEqual(resp.status, 200)
-        self.assertEqual(len(push._load_subs()), 1)
-
-    async def test_push_subscribe_preflight(self):
-        resp = await self.client.options('/push-subscribe')
-        self.assertEqual(resp.status, 200)
-        self.assertEqual(resp.headers.get('Access-Control-Allow-Origin'), '*')
-        self.assertIn('POST', resp.headers.get('Access-Control-Allow-Methods', ''))
 
     async def test_sw_js_served(self):
         resp = await self.client.get('/sw.js')

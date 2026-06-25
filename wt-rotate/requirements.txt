@@ -6,8 +6,6 @@
 
 aiohttp>=3.9          # serveur HTTP + WebSocket (obligatoire)
 qrcode>=7.0           # QR code de la télécommande (sinon : QR « manquant »)
-cryptography>=3.4     # génération des clés VAPID (notifications push)
-pywebpush>=1.14       # envoi des notifications Web Push
 
 # Volume système Windows — optionnel, et uniquement sur Windows (le marqueur
 # évite une tentative d'install vouée à l'échec sous Linux/macOS).

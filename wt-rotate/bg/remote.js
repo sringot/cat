@@ -209,6 +209,26 @@ async function handleRemoteCommand(cmd) {
       break;
     }
 
+    case 'stop': {
+      // Arrêt complet de la rotation (distinct de « pause ») : on cesse de
+      // défiler et l'état repasse à « arrêté ». Les onglets restent chargés
+      // pour une reprise instantanée via « Lancer la rotation ».
+      config.active = false;
+      config.remotePaused = false;
+      config.remoteUntil = null;
+      chrome.alarms.clear('wt-rotate');
+      chrome.alarms.clear('wt-spotlight');
+      if (config.remoteTabId) {
+        const t = config.remoteTabId; config.remoteTabId = null;
+        await chrome.storage.local.set({ config });
+        try { await chrome.tabs.remove(t); } catch {}
+      } else {
+        await chrome.storage.local.set({ config });
+      }
+      await log('remote — arrêt');
+      break;
+    }
+
     case 'open_url': {
       if (!cmd.url) { ok = false; reason = 'invalid_url'; break; }
       let safeUrl;

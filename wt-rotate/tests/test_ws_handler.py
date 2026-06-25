@@ -51,19 +51,6 @@ class WSHandshakeTests(AioHTTPTestCase):
         state.ext_ws = None
         state.mob_clients = set()
         state.ext_takeovers = []
-        # Neutralise la notif push de déconnexion (réseau + génération de clés)
-        import server.push as push_mod
-        self._orig_notify = push_mod.notify
-
-        async def _noop(*a, **k):
-            return None
-
-        push_mod.notify = _noop
-
-    async def asyncTearDown(self):
-        import server.push as push_mod
-        push_mod.notify = self._orig_notify
-        await super().asyncTearDown()
 
     async def test_extension_web_origin_rejected(self):
         ws = await self.client.ws_connect('/', headers={'Origin': 'https://evil.example'})

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from aiohttp import web
-from server import state, auth
+from server import state
 
 
 async def handle_http(request):
@@ -40,49 +40,6 @@ async def handle_http(request):
                                 headers={'Content-Type': 'text/html; charset=utf-8',
                                          'Cache-Control': 'no-store'})
         return web.Response(status=404, text='docs.html introuvable')
-
-    if path == '/push-pubkey':
-        from server import push as _push
-        if _push.VAPID_AVAILABLE:
-            return web.Response(body=json.dumps({'publicKey': _push.VAPID_PUBLIC}).encode(),
-                                content_type='application/json',
-                                headers={'Access-Control-Allow-Origin': '*'})
-        return web.Response(status=503, text='pywebpush not installed')
-
-    if path == '/push-subscribe':
-        cors = {'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, DELETE',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'}
-        if request.method == 'OPTIONS':
-            return web.Response(headers=cors)
-        token = (request.headers.get('Authorization', '') or
-                 request.rel_url.query.get('token', ''))
-        if not auth.validate(token):
-            return web.Response(status=401, text='Unauthorized',
-                                headers={'Access-Control-Allow-Origin': '*'})
-        if request.method == 'POST':
-            try:
-                sub = await request.json()
-                from server import push as _push
-                await _push.save_subscription(sub)
-                return web.Response(body=b'{"ok":true}', content_type='application/json',
-                                    headers={'Access-Control-Allow-Origin': '*'})
-            except Exception:
-                return web.Response(status=400, text='Invalid request',
-                                    headers={'Access-Control-Allow-Origin': '*'})
-        if request.method == 'DELETE':
-            try:
-                body = await request.json()
-                endpoint = body.get('endpoint', '')
-                from server import push as _push
-                await _push.remove_subscription(endpoint)
-                return web.Response(body=b'{"ok":true}', content_type='application/json',
-                                    headers={'Access-Control-Allow-Origin': '*'})
-            except Exception:
-                return web.Response(status=400, text='Invalid request',
-                                    headers={'Access-Control-Allow-Origin': '*'})
-        return web.Response(status=405, text='Method Not Allowed',
-                            headers={'Access-Control-Allow-Origin': '*'})
 
     if path == '/info':
         body = json.dumps({'ip': state.local_ip,

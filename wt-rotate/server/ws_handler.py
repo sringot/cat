@@ -159,14 +159,6 @@ async def _handle_extension(ws) -> None:
             # Only broadcast offline if no new extension took over during reconnect
             state.ext_ws = None
             await _broadcast_mobiles(json.dumps({'type': 'ext_status', 'connected': False}))
-            try:
-                from server import push as _push
-                await _push.notify('Remote — Kiosque déconnecté',
-                                   'Le PC kiosque s\'est déconnecté du serveur.')
-            except ImportError:
-                pass  # pywebpush non installé — notifications push désactivées
-            except Exception:
-                log.warning('Notification push de déconnexion échouée')
 
 
 async def _handle_mobile(ws) -> None:

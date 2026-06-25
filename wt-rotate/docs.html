@@ -215,34 +215,53 @@ a:hover { text-decoration: underline; }
 .step-content strong { display: block; font-size: 14.5px; font-weight: 650; margin-bottom: 2px; }
 .step-content span { font-size: 13.5px; color: var(--txt-2); line-height: 1.5; }
 
-/* ── Blocs de code — carte « terminal » claire, néomorphe ── */
-pre {
+/* ── Commandes — ligne épurée + bouton « copier » (sans encadré) ── */
+.cmd {
   position: relative;
-  background: var(--raise);
-  border-radius: 14px;
-  padding: 42px 20px 18px;        /* place pour la barre de titre */
-  overflow-x: auto;
-  font-size: 13px; line-height: 1.7;
-  margin-bottom: 16px;
-  box-shadow: var(--sh-card);
-  color: var(--txt);
+  background: var(--sink);
+  border-radius: 10px;
+  padding: 11px 46px 11px 15px;   /* à droite : place pour le bouton copier */
+  margin: 4px 0 14px;
+  overflow: hidden;
 }
-/* barre de fenêtre façon terminal : trois pastilles + filet */
-pre::before {
-  content: '';
-  position: absolute; top: 16px; left: 18px;
-  width: 9px; height: 9px; border-radius: 50%;
-  background: #E0675B;
-  box-shadow: 16px 0 0 #E3B23E, 32px 0 0 #54B265;
-}
-pre::after {
-  content: '';
-  position: absolute; top: 41px; left: 0; right: 0;
-  height: 1px; background: var(--line);
-}
-pre code {
+.cmd code {
+  display: block;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
-  color: inherit; background: none; border: 0; padding: 0; border-radius: 0; font-size: inherit;
+  font-size: 13px; line-height: 1.65;
+  color: var(--txt);
+  background: none; box-shadow: none; border: 0; padding: 0; border-radius: 0;
+  white-space: pre; overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.cmd-copy {
+  position: absolute; top: 7px; right: 7px;
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 8px; background: transparent;
+  color: var(--txt-3); cursor: pointer;
+  transition: color .15s var(--ease), background .15s var(--ease), transform .12s var(--ease);
+}
+.cmd-copy:hover  { color: var(--txt); background: var(--raise); }
+.cmd-copy:active { transform: scale(.88); }
+.cmd-copy.ok     { color: var(--green); }
+.cmd-copy svg         { width: 15px; height: 15px; display: block; }
+.cmd-copy .ic-ok      { display: none; }
+.cmd-copy.ok .ic-copy { display: none; }
+.cmd-copy.ok .ic-ok   { display: block; }
+
+/* ── Sortie terminal (lecture seule, pas de copie) ── */
+.term-out {
+  background: var(--sink);
+  border-radius: 12px;
+  padding: 15px 18px;
+  margin: 4px 0 16px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.term-out code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
+  font-size: 12px; line-height: 1.5;
+  color: var(--txt-2);
+  background: none; box-shadow: none; border: 0; padding: 0; border-radius: 0;
+  white-space: pre;
 }
 code {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
@@ -250,7 +269,7 @@ code {
   background: var(--sink); box-shadow: var(--sh-in-sm);
   padding: 2px 7px; border-radius: 6px; color: var(--txt);
 }
-.prompt { color: var(--green); font-weight: 700; user-select: none; }
+.prompt { color: var(--txt-3); user-select: none; }
 .cmd-comment { color: var(--txt-3); font-style: italic; }
 
 /* ── Architecture ── */
@@ -740,7 +759,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         Google Chrome ou Microsoft Edge (Chromium) doit être disponible.</p>
 
       <h3 class="sub">1. Dépendances Python</h3>
-      <pre><code><span class="prompt">$ </span>pip install aiohttp qrcode pycaw</code></pre>
+      <pre class="cmd"><code><span class="prompt">$ </span>pip install aiohttp qrcode pycaw</code></pre>
       <p class="body">
         <code>aiohttp</code> est le serveur WebSocket.
         <code>qrcode</code> génère le QR code dans la popup.
@@ -787,8 +806,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         Pour que le serveur démarre automatiquement à chaque connexion Windows,
         exécutez ce script <strong>en tant qu'Administrateur</strong> :
       </p>
-      <pre><code><span class="cmd-comment"># Clic droit → Exécuter en tant qu'administrateur</span>
-<span class="prompt">$ </span>python setup_autostart.py</code></pre>
+      <pre class="cmd"><code><span class="prompt">$ </span>python setup_autostart.py</code></pre>
       <p class="body">
         Le script crée une tâche planifiée Windows qui lance le serveur
         30 secondes après chaque session (le temps que le réseau soit disponible),
@@ -829,7 +847,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
             </div>
           </li>
         </ul>
-        <pre style="margin:0 20px 16px"><code><span class="prompt">$ </span>python remote_server.py</code></pre>
+        <pre class="cmd" style="margin:0 20px 16px"><code><span class="prompt">$ </span>python remote_server.py</code></pre>
         <ul class="step-list">
           <li class="step-item">
             <div class="step-num">2</div>
@@ -851,7 +869,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
       <p class="body">
         Le serveur affiche dans son terminal l'IP locale, l'URL et le token en cours :
       </p>
-      <pre><code>╔══════════════════════════════════════════╗
+      <pre class="term-out"><code>╔══════════════════════════════════════════╗
 ║    wt-rotate Remote Control Server       ║
 ╠══════════════════════════════════════════╣
 ║  IP locale  : 192.168.1.42              ║
@@ -1168,7 +1186,7 @@ p.body { font-size: 14.5px; color: var(--txt-2); line-height: 1.65; margin-botto
         une règle de pare-feu entrant peut être nécessaire si Windows Defender
         bloque les connexions entrantes. Commande PowerShell (en admin) :
       </p>
-      <pre><code>New-NetFirewallRule -DisplayName "wt-rotate" `
+      <pre class="cmd"><code>New-NetFirewallRule -DisplayName "wt-rotate" `
   -Direction Inbound -Protocol TCP `
   -LocalPort 8765 -Action Allow</code></pre>
     </section>
@@ -1300,6 +1318,47 @@ function closeSidebar() {
 
   window.addEventListener('scroll', update, { passive: true });
   update();
+})();
+
+/* ── Copier les commandes ──────────────────────────────────────────── */
+(function () {
+  const ICONS =
+    '<svg class="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/></svg>'
+  + '<svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 6.5"/></svg>';
+  document.querySelectorAll('pre.cmd').forEach(pre => {
+    const code = pre.querySelector('code');
+    if (!code) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cmd-copy';
+    btn.setAttribute('aria-label', 'Copier la commande');
+    btn.innerHTML = ICONS;
+    pre.appendChild(btn);
+    btn.addEventListener('click', async () => {
+      const clone = code.cloneNode(true);
+      clone.querySelectorAll('.prompt, .cmd-comment').forEach(n => n.remove());
+      const text = clone.textContent.replace(/^\s+|\s+$/g, '');
+      let ok = true;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        } catch (e2) { ok = false; }
+      }
+      if (ok) {
+        btn.classList.add('ok');
+        setTimeout(() => btn.classList.remove('ok'), 1600);
+      }
+    });
+  });
 })();
 </script>
 </body>

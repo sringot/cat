@@ -633,25 +633,6 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 }
 .pl-item.shift { transition: transform .2s var(--ease); }
 
-/* ── Tremblement façon iOS — utilisé par la sélection « solo » ── */
-@keyframes jiggle  { 0% { transform: rotate(-.7deg); } 50% { transform: rotate(.7deg); } 100% { transform: rotate(-.7deg); } }
-@keyframes jiggle2 { 0% { transform: rotate(.7deg); }  50% { transform: rotate(-.7deg); } 100% { transform: rotate(.7deg); } }
-@keyframes delBadgeIn { from { transform: scale(0); } to { transform: scale(1); } }
-
-/* ── Sélection « solo » sur la playlist : appui long → une seule page tremble + croix ── */
-.pl-item.solo { animation: jiggle .26s ease-in-out infinite; transform-origin: 50% 50%; z-index: 2; }
-.pl-item.solo:nth-child(even) { animation-name: jiggle2; animation-duration: .3s; }
-.pl-item.solo:active { box-shadow: none; transform: none; }
-@media (prefers-reduced-motion: reduce) { .pl-item.solo { animation: none; } }
-.pl-solo-del {
-  position: absolute; top: 3px; left: 3px;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--red); color: #fff;
-  display: none; align-items: center; justify-content: center;
-  box-shadow: var(--sh-sm); z-index: 4;
-}
-.pl-item.solo .pl-solo-del { display: flex; animation: delBadgeIn .22s var(--ease); }
-
 /* ── Page « Modifier la rotation » (overlay plein écran, push iOS) ── */
 .edit-screen {
   position: fixed; inset: 0; z-index: 60;
@@ -2444,28 +2425,22 @@ function updateSpotlightSub() {
 setInterval(updateSpotlightSub, 1000);
 
 
-// ── Playlist (vue) : tap = afficher la page ; appui long = sélection « solo »
-//    (la page tremble seule) → croix pour la supprimer. Réordonner/durées se
-//    font sur la page « Modifier ». ────────────────────────────────────────────
+// ── Playlist (vue) : tap = afficher la page. Réordonner, durées, renommer et
+//    supprimer se font sur la page « Modifier ». ───────────────────────────────
 function renderPlaylist(urls, currentIndex, mode, warns = []) {
   const pl = $('pl');
   $('pl-count').textContent = urls.length ? urls.length + (urls.length > 1 ? ' pages' : ' page') : '';
-  clearSolo();
   if (!urls.length) {
     pl.innerHTML = '<div class="pl-empty">Aucune page configurée. Ajoutez votre première page ci-dessous.</div>';
     return;
   }
   pl.innerHTML = '';
-  const itemEls = [];
   urls.forEach((u, i) => {
     const isCur = i === currentIndex && mode !== 'external';
     const b = document.createElement('div');
     b.className = 'pl-item' + (isCur ? ' cur' : '') + (warns.includes(i) ? ' warn' : '');
     const name = u.name || shortUrl(u.url);
     b.innerHTML = `
-      <button class="pl-solo-del" aria-label="Supprimer cette page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" width="13" height="13"><path d="M5 5l14 14M19 5L5 19"/></svg>
-      </button>
       <div class="pl-art"></div>
       <div class="pl-txt">
         <div class="pl-name"></div>
@@ -2476,18 +2451,9 @@ function renderPlaylist(urls, currentIndex, mode, warns = []) {
     renderArt(art, name, u.url);
     b.querySelector('.pl-name').textContent = name;
     b.querySelector('.pl-url').textContent  = (u.interval ? fmtInterval(u.interval) + ' · ' : '') + u.url;
-
-    b.querySelector('.pl-solo-del').addEventListener('click', e => {
-      e.stopPropagation();
-      openConfirm('« ' + name + ' » sera retirée de la playlist.',
-                  () => { cmd('pl_remove', { index: i }); clearSolo(); },
-                  { title: 'Supprimer la page', yes: 'Supprimer' });
-    });
-    b.addEventListener('click', () => { if (!suppressClick) { cmd('goto', { index: i }); previewSoon(); } });
+    b.addEventListener('click', () => { cmd('goto', { index: i }); previewSoon(); });
     pl.appendChild(b);
-    itemEls.push(b);
   });
-  itemEls.forEach((el, i) => watchSoloPress(el, i));
 }
 
 // ── Liste éditable (page « Modifier ») : ordre par appui long, durée, renommer,
@@ -2544,66 +2510,6 @@ function renderEditList(urls, mode) {
 let drag = null;           // état du glisser en cours
 let suppressClick = false; // évite le tap fantôme (goto/rename) après un drop
 function blockScroll(e) { e.preventDefault(); }
-
-// ── Sélection « solo » (playlist) : appui long ~500 ms → la page tremble seule
-//    et affiche une croix ; un tap ailleurs referme. ───────────────────────────
-let soloHoldTimer = null;
-let soloEl = null;
-
-function watchSoloPress(el, index) {
-  el.addEventListener('pointerdown', e => {
-    if (e.target.closest('.pl-solo-del')) return;   // la croix gère la suppression
-    if (el.classList.contains('solo')) return;       // déjà sélectionnée
-    const sx = e.clientX, sy = e.clientY;
-    let cancel;
-    const cleanup = () => {
-      el.removeEventListener('pointermove', cancel);
-      el.removeEventListener('pointerup', cancel);
-      el.removeEventListener('pointercancel', cancel);
-    };
-    cancel = ev => {
-      if (ev.type === 'pointermove' &&
-          Math.abs(ev.clientX - sx) < 10 && Math.abs(ev.clientY - sy) < 10) return;
-      clearTimeout(soloHoldTimer); soloHoldTimer = null; cleanup();
-    };
-    clearTimeout(soloHoldTimer);
-    soloHoldTimer = setTimeout(() => {
-      soloHoldTimer = null; cleanup();
-      if (!el.isConnected) return;
-      selectSolo(el);
-    }, 500);
-    el.addEventListener('pointermove', cancel);
-    el.addEventListener('pointerup', cancel);
-    el.addEventListener('pointercancel', cancel);
-  });
-}
-
-function selectSolo(el) {
-  clearSolo();
-  soloEl = el;
-  el.classList.add('solo');
-  suppressClick = true;                              // avale le clic de relâchement
-  setTimeout(() => { suppressClick = false; }, 500);
-  if (navigator.vibrate) navigator.vibrate(16);
-  // tout tap suivant (hors croix) referme la sélection
-  setTimeout(() => document.addEventListener('pointerdown', onSoloOutside, true), 0);
-}
-
-function onSoloOutside(e) {
-  if (e.target.closest('.pl-solo-del')) return;      // la croix → suppression
-  const onItem = e.target.closest('.pl-item');
-  clearSolo();
-  if (onItem) {                                      // évite un « goto » fantôme
-    suppressClick = true;
-    setTimeout(() => { suppressClick = false; }, 350);
-  }
-}
-
-function clearSolo() {
-  document.removeEventListener('pointerdown', onSoloOutside, true);
-  if (soloEl) soloEl.classList.remove('solo');
-  soloEl = null;
-}
 
 // ── Réorganisation par appui long + glisser (page « Modifier ») ───────────────
 // Appui ~350 ms sans bouger → l'item se « soulève » et suit le doigt ; les
@@ -2820,7 +2726,6 @@ function addPage() {
 function openEdit() {
   if (editOpen) return;
   editOpen = true;
-  clearSolo();
   if (drag) { clearTimeout(drag.timer); drag = null; }
   const sc = $('edit-screen');
   sc.classList.add('show');

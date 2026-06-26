@@ -1426,7 +1426,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.18.3</div>
+          <div class="row-v">wee rotate 1.18.4</div>
         </div>
       </div>
     </div>
@@ -1695,6 +1695,7 @@ let ws = null, ip = null, port = 8765, wsToken = '', authFailed = false;
 let lastState = null;
 let reconnectTimer = null;
 let downSince = null;        // depuis quand la connexion est tombée (→ page d'erreur après ~6 s)
+let everConnected = false;   // au moins une session établie depuis l'ouverture (cf. délai de grâce)
 let lastMsgAt = 0;
 let extOnline = false;
 let editOpen = false;          // page « Modifier la rotation » ouverte
@@ -2013,7 +2014,7 @@ function connect() {
       showErr('Accès refusé', 'Rescannez le QR code affiché sur l\'écran du remote.', false, '');
       return;
     }
-    if (m.type === 'auth_ok')    { chip('on'); downSince = null; clearErr(); return; }
+    if (m.type === 'auth_ok')    { chip('on'); everConnected = true; downSince = null; clearErr(); return; }
     if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
     if (m.type === 'warn_dual_ext') { $('dual-banner').classList.add('show'); return; }
     if (m.type === 'screenshot') {
@@ -2044,9 +2045,13 @@ function connect() {
     chip('off');
     if (!authFailed) {
       if (downSince == null) downSince = Date.now();
-      // coupure soutenue (~6 s) → vraie page d'erreur plutôt que l'app figée
-      // derrière un simple « Reconnexion… »
-      if (Date.now() - downSince >= 6000) {
+      // Délai de grâce avant la page d'erreur, plutôt que de figer l'app derrière
+      // un « Reconnexion… ». Si une session a déjà existé, on tolère ~6 s pour
+      // encaisser une micro-coupure réseau sans flasher l'erreur. Au démarrage à
+      // froid sans connexion (serveur éteint, app servie depuis le cache du SW),
+      // inutile d'attendre autant devant une app vide : ~3 s suffisent.
+      const grace = everConnected ? 6000 : 2500;
+      if (Date.now() - downSince >= grace) {
         showErr('Serveur injoignable',
                 'Le PC remote ne répond pas. Vérifiez qu\'il est allumé, sur le même réseau, et que le serveur est lancé.',
                 true, 'Erreur 105 · connexion impossible');

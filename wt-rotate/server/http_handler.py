@@ -41,6 +41,17 @@ async def handle_http(request):
                                          'Cache-Control': 'no-store'})
         return web.Response(status=404, text='docs.html introuvable')
 
+    # Centre d'aide (FAQ). Servi tel quel ; le service worker en garde une copie
+    # hors-ligne pour qu'il reste consultable même serveur coupé (page erreur 105).
+    if path in ('/support', '/aide'):
+        base = Path(__file__).parent.parent
+        support = base / 'support.html'
+        if support.exists():
+            return web.Response(body=support.read_bytes(),
+                                headers={'Content-Type': 'text/html; charset=utf-8',
+                                         'Cache-Control': 'no-store'})
+        return web.Response(status=404, text='support.html introuvable')
+
     if path == '/info':
         body = json.dumps({'ip': state.local_ip,
                            'ws_port': state.PORT,

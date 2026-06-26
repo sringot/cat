@@ -680,47 +680,6 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
   .edit-screen.show .edit-body > * { animation: none; }
 }
 
-/* ── Page « Support & aide » (overlay plein écran, même push que Modifier) ── */
-.help-screen {
-  position: fixed; inset: 0; z-index: 80;
-  background: var(--page);
-  display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform .42s var(--ease);
-  visibility: hidden;
-}
-.help-screen.show { transform: none; visibility: visible; }
-.help-body { max-width: 560px; margin: 0 auto; padding: 6px 20px calc(40px + env(safe-area-inset-bottom)); width: 100%; }
-.help-intro { font-size: 13.5px; color: var(--txt-2); line-height: 1.55; padding: 2px 4px 16px; }
-.faq-item {
-  background: var(--raise); box-shadow: var(--sh-sm);
-  border-radius: 16px; margin-bottom: 10px; overflow: hidden;
-}
-.faq-q {
-  width: 100%; text-align: left;
-  display: flex; align-items: center; gap: 12px;
-  padding: 15px 16px; font-size: 14.5px; font-weight: 600; color: var(--txt);
-}
-.faq-chevron { margin-left: auto; flex-shrink: 0; color: var(--txt-3); transition: transform .32s var(--ease); }
-.faq-item.open .faq-chevron { transform: rotate(90deg); }
-.faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .34s var(--ease); }
-.faq-item.open .faq-a { grid-template-rows: 1fr; }
-.faq-a > div { overflow: hidden; }
-.faq-a p { padding: 0 16px 15px; font-size: 13.5px; color: var(--txt-2); line-height: 1.6; }
-.faq-a b { color: var(--txt); font-weight: 650; }
-.help-foot { padding: 18px 6px 0; font-size: 12px; color: var(--txt-3); text-align: center; line-height: 1.5; }
-.help-screen.show .help-body > * { animation: editIn .5s var(--ease) backwards; }
-.help-screen.show .help-body > *:nth-child(2) { animation-delay: .04s; }
-.help-screen.show .help-body > *:nth-child(3) { animation-delay: .08s; }
-.help-screen.show .help-body > *:nth-child(4) { animation-delay: .12s; }
-.help-screen.show .help-body > *:nth-child(5) { animation-delay: .16s; }
-.help-screen.show .help-body > *:nth-child(n+6) { animation-delay: .2s; }
-@media (prefers-reduced-motion: reduce) {
-  .help-screen { transition: none; }
-  .help-screen.show .help-body > * { animation: none; }
-  .faq-a, .faq-chevron { transition: none; }
-}
-
 /* ── Page d'erreur : badge code + lien support ── */
 #s-err { z-index: 70; }   /* au-dessus de Modifier (60), sous la FAQ (80) */
 .err-code {
@@ -1441,7 +1400,7 @@ nav {
       <!-- Aide -->
       <div class="sec-lbl">Aide</div>
       <div class="card">
-        <div class="row">Support &amp; aide
+        <div class="row">Centre d'aide
           <button class="row-btn" id="b-help">Ouvrir</button>
         </div>
       </div>
@@ -1467,7 +1426,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.18.1</div>
+          <div class="row-v">wee rotate 1.18.2</div>
         </div>
       </div>
     </div>
@@ -1572,84 +1531,6 @@ nav {
 
       <div class="edit-foot">Astuce : maintenez une page pour la déplacer · touchez son nom pour la renommer · les horaires limitent l'affichage</div>
 
-    </div>
-  </div>
-</div>
-
-<!-- Page « Support & aide » (FAQ accordéon, push iOS) -->
-<div class="help-screen" id="help-screen" aria-hidden="true">
-  <div class="edit-head">
-    <button class="edit-back" id="help-back" aria-label="Retour">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M15 18l-6-6 6-6"/></svg>
-      Retour
-    </button>
-    <div class="edit-title">Support &amp; aide</div>
-  </div>
-  <div class="edit-scroll" id="help-scroll">
-    <div class="help-body">
-      <div class="help-intro">Les réponses aux questions les plus fréquentes. Touchez une question pour la déplier.</div>
-
-      <div class="faq-item">
-        <button class="faq-q">La télécommande affiche « Serveur injoignable »<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Le PC qui pilote l'écran doit être <b>allumé</b>, sur le <b>même réseau</b> que votre téléphone, et le serveur lancé (<b>python remote_server.py</b>). Une fois ces points vérifiés, touchez <b>Réessayer</b>.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Téléphone et écran doivent-ils être sur le même réseau ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Oui. Tout passe par le <b>réseau local</b> — aucune donnée ne sort sur Internet. Si vous changez de Wi-Fi, reconnectez-vous à celui du PC.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Dois-je rescanner le QR code à chaque fois ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Non. Le jeton d'accès est mémorisé dans le lien. Ajoutez la page à l'écran d'accueil (<b>Partager → Sur l'écran d'accueil</b>) et rouvrez-la directement.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Rien ne tourne, la rotation ne démarre pas<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Vérifiez qu'au moins une page est dans la playlist, touchez <b>Lecture</b>, et si les horaires sont activés, assurez-vous d'être <b>dans la plage</b> (hors plage = affichage en pause).</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Comment limiter l'affichage à certaines heures ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Playlist → <b>Modifier</b> → <b>Horaires d'affichage</b> : activez, réglez début/fin et les jours actifs. En dehors, la rotation se met en veille.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">L'écran s'est déconnecté tout seul après un moment<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Certains portails ferment la session sur inactivité. wee rotate <b>simule une activité discrète en continu</b> pour l'éviter. Si cela persiste, augmentez la fréquence de rafraîchissement (Modifier) ou utilisez un compte dédié à l'écran.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Comment changer la durée d'une page précise ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Modifier → icône <b>horloge</b> sur la page → choisissez la durée. Sans réglage, l'intervalle par défaut s'applique.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Comment réordonner les pages ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Modifier → <b>appui long</b> sur une page → glissez-la à la position voulue, puis relâchez.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Message « deux extensions connectées »<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Une seule extension doit piloter l'écran. Ouvrez <b>chrome://extensions</b> (et Edge si installé), supprimez le doublon, puis redémarrez le serveur.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Une page Canva ne se met pas à jour<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Les pages Canva sont rechargées périodiquement : réglez l'intervalle dans Modifier → <b>Rafraîchissement auto → Canva</b> (en minutes).</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Comment sauvegarder ou restaurer ma playlist ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>Réglages → <b>Sauvegarde automatique</b> : la playlist est conservée sur le PC. Touchez <b>Restaurer</b> pour la récupérer.</p></div></div>
-      </div>
-
-      <div class="faq-item">
-        <button class="faq-q">Faut-il un compte dédié pour l'écran ?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
-        <div class="faq-a"><div><p>C'est recommandé : un compte <b>en lecture seule</b> dédié à l'affichage limite les risques si l'écran reste connecté en continu (bonne pratique de sécurité).</p></div></div>
-      </div>
-
-      <div class="help-foot">Une question sans réponse ? Contactez votre administrateur — Wee Technology.</div>
     </div>
   </div>
 </div>
@@ -2904,17 +2785,11 @@ function closeEdit() {
   $('edit-scroll') && ($('edit-scroll').scrollTop = 0);
 }
 
-// ── Page « Support & aide » (overlay plein écran) ─────────────────────────────
+// ── Centre d'aide ─────────────────────────────────────────────────────────────
+// Page autonome /support (servie par le serveur, mise en cache hors-ligne par le
+// service worker → reste consultable depuis la page d'erreur, serveur coupé).
 function openHelp() {
-  const sc = $('help-screen');
-  sc.classList.add('show');
-  sc.setAttribute('aria-hidden', 'false');
-}
-function closeHelp() {
-  const sc = $('help-screen');
-  sc.classList.remove('show');
-  sc.setAttribute('aria-hidden', 'true');
-  $('help-scroll') && ($('help-scroll').scrollTop = 0);
+  window.open('/support', '_blank', 'noopener');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2992,14 +2867,6 @@ document.addEventListener('DOMContentLoaded', () => {
   $('edit-back').addEventListener('click', closeEdit);
   $('b-help').addEventListener('click', openHelp);
   $('err-help').addEventListener('click', openHelp);
-  $('help-back').addEventListener('click', closeHelp);
-  document.querySelectorAll('#help-screen .faq-q').forEach(q =>
-    q.addEventListener('click', () => {
-      const item = q.closest('.faq-item');
-      const wasOpen = item.classList.contains('open');
-      document.querySelectorAll('#help-screen .faq-item.open').forEach(o => o.classList.remove('open'));
-      if (!wasOpen) item.classList.add('open');
-    }));
   $('b-add').addEventListener('click', addPage);
   $('add-url').addEventListener('keydown', e => { if (e.key === 'Enter') addPage(); });
 

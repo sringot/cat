@@ -61,6 +61,18 @@ class HTTPTests(AioHTTPTestCase):
         self.assertEqual(resp.status, 200)
         self.assertIn('text/html', resp.headers['Content-Type'])
 
+    async def test_support_served(self):
+        # Centre d'aide autonome — sert le fichier support.html du dépôt.
+        resp = await self.client.get('/support')
+        self.assertEqual(resp.status, 200)
+        self.assertIn('text/html', resp.headers['Content-Type'])
+        self.assertIn("Centre d'aide", await resp.text())
+
+    async def test_aide_is_support_alias(self):
+        resp = await self.client.get('/aide')
+        self.assertEqual(resp.status, 200)
+        self.assertIn('text/html', resp.headers['Content-Type'])
+
 
 if __name__ == '__main__':
     unittest.main()

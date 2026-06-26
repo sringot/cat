@@ -132,8 +132,16 @@ async function injectYouTubeMaximize(tabId) {
         let t = 0;
         const run = () => { if (!maximize() && ++t < 15) setTimeout(run, 400); };
         run();
-        const reapply = setInterval(maximize, 3000);
-        setTimeout(() => clearInterval(reapply), 120000);
+        // Une seule boucle de ré-application à la fois : YouTube refire l'event
+        // « complete » à chaque navigation SPA ; sans ce garde, les intervalles
+        // s'empilaient (plusieurs maximize() toutes les 3 s au lieu d'un seul).
+        if (window.__wtYtReapply) clearInterval(window.__wtYtReapply);
+        if (window.__wtYtStop)    clearTimeout(window.__wtYtStop);
+        window.__wtYtReapply = setInterval(maximize, 3000);
+        window.__wtYtStop = setTimeout(() => {
+          clearInterval(window.__wtYtReapply);
+          window.__wtYtReapply = null;
+        }, 120000);
       }
     });
   } catch {}

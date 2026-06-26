@@ -37,7 +37,7 @@ async function rotateToNext() {
     await setNextAlarm(interval);
     await log('OK → ' + (entry.name || entry.url.slice(0, 50)));
     await sendStateToRemote();
-    // Refresh preview 1.5 s after the switch (let the page load first)
+    // Refresh preview 3 s after the switch (let the page load first)
     setTimeout(autoScreenshot, 3000);
   } catch (err) {
     await log('tabs.update ERR: ' + err.message);
@@ -154,6 +154,20 @@ async function resyncTabsIfNeeded() {
 
 // ── Auto-refresh des onglets kiosque (sessions expirantes type WithSecure) ─────
 
+// Retire des maps d'horodatages les onglets qui n'existent plus. Les ids
+// d'onglets changent à chaque reconstruction (autoStartRotation) : sans ce
+// nettoyage, tabRefreshTimes / canvaRefreshTimes enflent sans limite sur un
+// kiosque qui tourne des semaines. (Les clés JSON sont des strings, les tabIds
+// des nombres → comparaison après Number(), comme la purge de sessionWarn.)
+function pruneTimes(times, validTabIds) {
+  const valid = new Set(validTabIds);
+  const out = {};
+  for (const k of Object.keys(times || {})) {
+    if (valid.has(Number(k))) out[k] = times[k];
+  }
+  return out;
+}
+
 async function refreshStaleTabsIfNeeded() {
   const data = await chrome.storage.local.get(['config', 'tabRefreshTimes']);
   const config = migrateConfig(data.config);
@@ -161,9 +175,10 @@ async function refreshStaleTabsIfNeeded() {
   const hours = config.tabRefreshHours ?? 4;
   if (hours <= 0) return;
   const intervalMs = hours * 3600 * 1000;
-  const times = data.tabRefreshTimes || {};
+  const rawTimes = data.tabRefreshTimes || {};
+  const times = pruneTimes(rawTimes, config.tabIds);
   const now = Date.now();
-  let changed = false;
+  let changed = Object.keys(times).length !== Object.keys(rawTimes).length;
   for (let i = 0; i < config.tabIds.length; i++) {
     const tabId = config.tabIds[i];
     if (!(tabId in times)) {
@@ -260,10 +275,11 @@ async function refreshCanvaTabsIfNeeded() {
   const config = migrateConfig(data.config);
   if (!config.active || !config.tabIds.length) return;
   const activeUrls = config.urls.filter(u => u?.url?.trim());
-  const times  = data.canvaRefreshTimes || {};
+  const rawTimes = data.canvaRefreshTimes || {};
+  const times  = pruneTimes(rawTimes, config.tabIds);
   const minMs  = (config.canvaRefreshMin || 5) * 60 * 1000;
   const now    = Date.now();
-  let changed  = false;
+  let changed  = Object.keys(times).length !== Object.keys(rawTimes).length;
   for (let i = 0; i < config.tabIds.length; i++) {
     if (!activeUrls[i]?.url?.includes('canva.com')) continue;
     const tabId = config.tabIds[i];
@@ -290,5 +306,5 @@ async function refreshCanvaTabsIfNeeded() {
 // Export pour les tests Node (`module` est undefined dans le service worker
 // MV3 : ce bloc y est ignoré et n'affecte pas le runtime de l'extension).
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { needsResync };
+  module.exports = { needsResync, pruneTimes };
 }

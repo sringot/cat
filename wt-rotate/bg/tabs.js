@@ -1,8 +1,13 @@
 function setNextAlarm(interval) {
   return new Promise(resolve => {
-    const mins = Math.max(interval / 60, 0.1667);
+    // Plancher de 30 s (ROTATE_FLOOR_SEC, défini dans config.js) : en deçà,
+    // chrome.alarms ramène de toute façon à 30 s sur une extension installée.
+    // On borne explicitement plutôt que de laisser Chrome « mentir » en
+    // silence ; les durées sont déjà bornées en amont (migrateConfig + UI),
+    // ce garde-fou couvre les appels directs (set_interval, reprise…).
+    const secs = Math.max(Math.round(Number(interval) || 0), ROTATE_FLOOR_SEC);
     chrome.alarms.clear('wt-rotate', () => {
-      chrome.alarms.create('wt-rotate', { delayInMinutes: mins });
+      chrome.alarms.create('wt-rotate', { delayInMinutes: secs / 60 });
       resolve();
     });
   });

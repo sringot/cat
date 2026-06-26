@@ -59,7 +59,9 @@ function connectRemote() {
         await sendStateToRemote();
         await injectOverlayAll();
       } else if (msg.type === 'command') {
-        await handleRemoteCommand(msg);
+        // Sérialisé avec les alarmes/popup : une commande téléphone ne doit pas
+        // s'entrelacer avec rotateToNext / resync (lost update → rotation cassée)
+        await runExclusive(() => handleRemoteCommand(msg));
       }
     } catch {}
   };
@@ -530,7 +532,7 @@ async function handleRemoteCommand(cmd) {
       if (i < 0 || i >= act.length) { ok = false; reason = 'bad_index'; break; }
       const secs = Number(cmd.seconds) || 0;
       config.urls[act[i]].interval = secs > 0
-        ? Math.round(Math.min(3600, Math.max(5, secs)))
+        ? Math.round(Math.min(3600, Math.max(ROTATE_FLOOR_SEC, secs)))
         : null;
       await chrome.storage.local.set({ config });
       await log('remote — durée page ' + i + ' → ' + (config.urls[act[i]].interval || 'défaut'));
@@ -551,7 +553,7 @@ async function handleRemoteCommand(cmd) {
         clean.push({
           url,
           name: (u.name || '').trim(),
-          interval: secs > 0 ? Math.round(Math.min(3600, Math.max(5, secs))) : null
+          interval: secs > 0 ? Math.round(Math.min(3600, Math.max(ROTATE_FLOOR_SEC, secs))) : null
         });
       }
       if (!clean.length) { ok = false; reason = 'no_backup'; break; }
@@ -633,7 +635,7 @@ async function handleRemoteCommand(cmd) {
     }
 
     case 'set_interval': {
-      const secs = Math.round(Math.min(3600, Math.max(5, Number(cmd.seconds) || 30)));
+      const secs = Math.round(Math.min(3600, Math.max(ROTATE_FLOOR_SEC, Number(cmd.seconds) || 30)));
       config.interval = secs;
       await chrome.storage.local.set({ config });
       if (config.active) await setNextAlarm(secs);

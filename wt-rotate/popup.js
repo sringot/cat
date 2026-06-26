@@ -69,7 +69,7 @@ function wireButtons() {
     saveConfig(); renderUrls();
   });
   $('interval').addEventListener('change', () => {
-    config.interval = Math.max(5, Math.min(86400, parseInt($('interval').value) || 30));
+    config.interval = Math.max(30, Math.min(86400, parseInt($('interval').value) || 30));
     $('interval').value = config.interval;
     $('slider').value   = Math.min(config.interval, 300);
     saveConfig(); renderUrls();
@@ -125,9 +125,14 @@ function migrateConfig(raw) {
   // Copie profonde des tableaux : un push sur config.urls ne doit jamais
   // polluer DEFAULT_CONFIG (sinon « Réinit. » restaure une config sale)
   const c = { ...DEFAULT_CONFIG, ...(raw || {}) };
-  c.urls = (c.urls || []).map(u =>
-    typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u }
-  );
+  c.urls = (c.urls || []).map(u => {
+    const o = typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u };
+    // Aligne d'anciennes durées < 30 s sur le plancher chrome.alarms (cf. bg/config.js)
+    const n = Math.round(Number(o.interval) || 0);
+    o.interval = n > 0 ? Math.max(30, n) : null;
+    return o;
+  });
+  c.interval = Math.max(Math.round(Number(c.interval) || 30), 30);
   if (c.tabId !== undefined) {
     if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
     delete c.tabId;
@@ -197,7 +202,7 @@ function renderUrls() {
           <button class="url-dur-btn${hasCustomInt ? ' on' : ''}" title="Durée personnalisée">⏱</button>
           <input class="url-int" type="number"
                  value="${parseInt(entry.interval) || parseInt(config.interval) || 30}"
-                 min="5" max="86400" style="display:${hasCustomInt ? '' : 'none'}">
+                 min="30" max="86400" style="display:${hasCustomInt ? '' : 'none'}">
           <span class="url-int-s" style="display:${hasCustomInt ? '' : 'none'}">s</span>
         </div>
       </div>`;
@@ -237,8 +242,10 @@ function renderUrls() {
     });
 
     intInp.addEventListener('change', () => {
-      const val = parseInt(intInp.value);
-      config.urls[i].interval = val >= 5 ? val : null;
+      const val = parseInt(intInp.value) || 0;
+      // < 30 s remonté au plancher (chrome.alarms n'honore pas plus court) ;
+      // 0/vide → null = « durée par défaut »
+      config.urls[i].interval = val > 0 ? Math.max(30, val) : null;
       intInp.value = config.urls[i].interval || config.interval;
       saveConfig();
     });

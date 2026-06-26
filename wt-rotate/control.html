@@ -1426,7 +1426,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.18.2</div>
+          <div class="row-v">wee rotate 1.18.3</div>
         </div>
       </div>
     </div>
@@ -1569,7 +1569,6 @@ nav {
   <div class="sheet-card">
     <div class="sheet-title" id="dur-sheet-title">Durée d'affichage</div>
     <button class="sheet-opt" data-pdur="0">Par défaut</button>
-    <button class="sheet-opt" data-pdur="15">15 secondes</button>
     <button class="sheet-opt" data-pdur="30">30 secondes</button>
     <button class="sheet-opt" data-pdur="60">1 minute</button>
     <button class="sheet-opt" data-pdur="120">2 minutes</button>
@@ -2147,7 +2146,7 @@ function initialOf(name) {
   return (name || '—').trim().charAt(0).toUpperCase() || '—';
 }
 
-const INTERVAL_STEPS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 900, 1800, 3600];
+const INTERVAL_STEPS = [30, 45, 60, 90, 120, 180, 300, 600, 900, 1800, 3600];
 const REF_STEPS   = [0, 1, 2, 3, 4, 6, 8, 12, 24];  // heures (0 = désactivé)
 const CANVA_STEPS = [1, 2, 3, 5, 10, 15, 30, 60];   // minutes
 

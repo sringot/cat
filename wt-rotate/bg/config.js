@@ -1,3 +1,18 @@
+// Plancher RÉEL d'une rotation. chrome.alarms ramène silencieusement toute
+// alarme à 30 s minimum sur une extension installée (publiée/empaquetée) :
+// demander 5 ou 10 s, Chrome sert quand même 30 s. On borne donc partout à
+// cette valeur pour que l'UI ne promette jamais un défilement que le navigateur
+// ne tient pas (le compte à rebours du remote afficherait 10 s, l'écran
+// changerait à 30 s). Tout passe par migrateConfig : une seule source de vérité.
+const ROTATE_FLOOR_SEC = 30;
+
+// Normalise une durée par page : >0 → bornée au plancher ; 0/invalide → null
+// (= « utilise l'intervalle par défaut »).
+function clampInterval(v) {
+  const n = Math.round(Number(v) || 0);
+  return n > 0 ? Math.max(n, ROTATE_FLOOR_SEC) : null;
+}
+
 const DEFAULT_CONFIG = {
   urls: [], interval: 30, currentIndex: 0, active: false, tabIds: [], windowId: null,
   scheduleEnabled: false, scheduleStart: '08:00', scheduleEnd: '18:00',
@@ -11,9 +26,12 @@ function migrateConfig(raw) {
   // Copie profonde des tableaux : une mutation sur config.urls / tabIds ne
   // doit jamais polluer DEFAULT_CONFIG (partagé par référence sinon)
   const c = { ...DEFAULT_CONFIG, ...(raw || {}) };
-  c.urls = (c.urls || []).map(u =>
-    typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u }
-  );
+  c.urls = (c.urls || []).map(u => {
+    const o = typeof u === 'string' ? { url: u, name: '', interval: null } : { ...u };
+    o.interval = clampInterval(o.interval);   // remonte d'anciennes durées < 30 s
+    return o;
+  });
+  c.interval = Math.max(Math.round(Number(c.interval) || 30), ROTATE_FLOOR_SEC);
   if (c.tabId !== undefined) {
     if (!c.tabIds?.length && c.tabId) c.tabIds = [c.tabId];
     delete c.tabId;
@@ -46,5 +64,6 @@ function isValidIndex(idx, len) { return Number.isInteger(idx) && idx >= 0 && id
 // MV3 : ce bloc y est donc ignoré et n'affecte pas le runtime de l'extension).
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_CONFIG, migrateConfig, isInSchedule,
-                     nextIndex, prevIndex, isValidIndex };
+                     nextIndex, prevIndex, isValidIndex,
+                     ROTATE_FLOOR_SEC, clampInterval };
 }

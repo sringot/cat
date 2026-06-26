@@ -1,5 +1,6 @@
 importScripts(
   'bg/logger.js',
+  'bg/lock.js',
   'bg/config.js',
   'bg/tabs.js',
   'bg/overlay.js',
@@ -16,7 +17,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   connectRemote();
 });
 
-chrome.runtime.onStartup.addListener(async () => {
+chrome.runtime.onStartup.addListener(() => runExclusive(async () => {
   await log('onStartup');
   chrome.alarms.create('wt-watchdog', { periodInMinutes: 1 });
   const data = await chrome.storage.local.get('config');
@@ -49,9 +50,9 @@ chrome.runtime.onStartup.addListener(async () => {
     }
   }
   connectRemote();
-});
+}));
 
-chrome.alarms.onAlarm.addListener(async alarm => {
+chrome.alarms.onAlarm.addListener(alarm => runExclusive(async () => {
   if (alarm.name === 'wt-rotate')    await rotateToNext();
   if (alarm.name === 'wt-spotlight') await endSpotlight();
   if (alarm.name === 'wt-watchdog') {
@@ -63,9 +64,9 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     await refreshCanvaTabsIfNeeded();
     await refreshStaleTabsIfNeeded();
   }
-});
+}));
 
-chrome.tabs.onRemoved.addListener(async tabId => {
+chrome.tabs.onRemoved.addListener(tabId => runExclusive(async () => {
   const data = await chrome.storage.local.get('config');
   const config = migrateConfig(data.config);
   // Les fermetures faites par l'extension elle-même (release, open_url,
@@ -103,7 +104,7 @@ chrome.tabs.onRemoved.addListener(async tabId => {
   }
   // onglet quelconque : ne rien réécrire, une config relue ici peut être
   // périmée et écraserait une mutation en cours (resume, autoStart…)
-});
+}));
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (changeInfo.status !== 'complete') return;
@@ -127,7 +128,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (sender.id !== chrome.runtime.id) return false;
   // ── Popup actions (run in SW so popup closing doesn't interrupt them) ─────
   if (msg.action === 'startRotation') {
-    (async () => {
+    runExclusive(async () => {
       try {
         const data = await chrome.storage.local.get('config');
         const config = migrateConfig(data.config);
@@ -140,11 +141,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await log('startRotation ERR: ' + e.message);
         reply({ ok: false, error: e.message });
       }
-    })();
+    });
     return true;
   }
   if (msg.action === 'stopRotation') {
-    (async () => {
+    runExclusive(async () => {
       const data = await chrome.storage.local.get('config');
       const config = migrateConfig(data.config);
       config.active = false; config.remotePaused = false;
@@ -161,11 +162,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       await log('popup — arrêt');
       await sendStateToRemote();
       reply({ ok: true });
-    })();
+    });
     return true;
   }
   if (msg.action === 'nextUrl') {
-    (async () => {
+    runExclusive(async () => {
       const data = await chrome.storage.local.get('config');
       const config = migrateConfig(data.config);
       const urls = config.urls.filter(u => u?.url?.trim());
@@ -181,11 +182,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await sendStateToRemote();
         reply({ ok: true });
       } catch (e) { reply({ ok: false, error: e.message }); }
-    })();
+    });
     return true;
   }
   if (msg.action === 'prevUrl') {
-    (async () => {
+    runExclusive(async () => {
       const data = await chrome.storage.local.get('config');
       const config = migrateConfig(data.config);
       const urls = config.urls.filter(u => u?.url?.trim());
@@ -201,7 +202,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         await sendStateToRemote();
         reply({ ok: true });
       } catch (e) { reply({ ok: false, error: e.message }); }
-    })();
+    });
     return true;
   }
   // ── Legacy timer messages ─────────────────────────────────────────────────

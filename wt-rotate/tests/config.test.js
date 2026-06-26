@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const {
   DEFAULT_CONFIG, migrateConfig, isInSchedule,
   nextIndex, prevIndex, isValidIndex,
+  ROTATE_FLOOR_SEC, clampInterval,
 } = require('../bg/config.js');
 
 test('migrateConfig(null) renvoie une config par défaut saine', () => {
@@ -74,6 +75,43 @@ test('isInSchedule: mauvais jour → faux', () => {
     scheduleEnabled: true, scheduleDays: [wrongDay],
     scheduleStart: '00:00', scheduleEnd: '24:00',
   }), false);
+});
+
+// ── Plancher d'intervalle (chrome.alarms : 30 s mini sur extension installée) ─
+
+test('ROTATE_FLOOR_SEC vaut 30 s', () => {
+  assert.strictEqual(ROTATE_FLOOR_SEC, 30);
+});
+
+test('clampInterval: borne basse à 30, 0/invalide → null', () => {
+  assert.strictEqual(clampInterval(5), 30);
+  assert.strictEqual(clampInterval(30), 30);
+  assert.strictEqual(clampInterval(90), 90);
+  assert.strictEqual(clampInterval('45'), 45);
+  assert.strictEqual(clampInterval(0), null);
+  assert.strictEqual(clampInterval(null), null);
+  assert.strictEqual(clampInterval('abc'), null);
+});
+
+test('migrateConfig: durée par page < 30 s remontée au plancher', () => {
+  const c = migrateConfig({ urls: [{ url: 'a', name: '', interval: 10 }] });
+  assert.strictEqual(c.urls[0].interval, 30);
+});
+
+test('migrateConfig: durée par page nulle/absente reste null', () => {
+  const c = migrateConfig({ urls: [{ url: 'a', interval: null }, { url: 'b' }] });
+  assert.strictEqual(c.urls[0].interval, null);
+  assert.strictEqual(c.urls[1].interval, null);
+});
+
+test('migrateConfig: durée par page >= 30 s inchangée', () => {
+  assert.strictEqual(migrateConfig({ urls: [{ url: 'a', interval: 45 }] }).urls[0].interval, 45);
+});
+
+test('migrateConfig: intervalle global < 30 s remonté, défaut = 30', () => {
+  assert.strictEqual(migrateConfig({ interval: 5 }).interval, 30);
+  assert.strictEqual(migrateConfig({ interval: 120 }).interval, 120);
+  assert.strictEqual(migrateConfig(null).interval, 30);
 });
 
 // ── Arithmétique d'index (next / prev / goto) ────────────────────────────────

@@ -1274,7 +1274,7 @@ nav {
           <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="100" aria-label="Volume">
         </div>
         <button class="stop-btn" id="b-stop" aria-label="Arrêter la rotation">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           Arrêter la rotation
         </button>
       </div>
@@ -2786,10 +2786,251 @@ function closeEdit() {
 }
 
 // ── Centre d'aide ─────────────────────────────────────────────────────────────
-// Page autonome /support (servie par le serveur, mise en cache hors-ligne par le
-// service worker → reste consultable depuis la page d'erreur, serveur coupé).
+// Génère la page en Blob URL (entièrement en mémoire) pour rester consultable
+// même quand le serveur est mort — cas typique de la page d'erreur 105.
 function openHelp() {
-  window.open('/support', '_blank', 'noopener');
+  const t = (function(){ try{ return localStorage.getItem('wt_theme')||'auto'; }catch(e){ return 'auto'; } })();
+  const html = buildHelpHTML(t);
+  const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank', 'noopener');
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
+}
+
+function buildHelpHTML(theme) {
+  const dk = `
+    --page:#1F241B;--raise:#43443D;--sink:#15170F;
+    --txt:#ECDFCC;--txt-2:#95A092;--txt-3:#717B6E;--line:rgba(0,0,0,.3);
+    --accent:#ECDFCC;--accent-txt:#181C14;
+    --neu-d:rgba(0,0,0,.6);--neu-l:rgba(86,88,79,.7);
+    --sh-card:7px 7px 18px var(--neu-d),-5px -5px 14px var(--neu-l);
+    --sh-sm:3px 3px 7px var(--neu-d),-2px -2px 5px var(--neu-l);
+    --sh-in:inset 4px 4px 8px rgba(0,0,0,.55),inset -3px -3px 7px rgba(86,88,79,.6);
+    --sh-in-sm:inset 2px 2px 5px rgba(0,0,0,.5),inset -2px -2px 5px rgba(86,88,79,.45);
+    --ease:cubic-bezier(.16,1,.3,1);
+    --c1:#8E88FF;--c2:#4ADE80;--c3:#FBBF24;--c4:#2DD4BF;--c5:#C4A5FF;`;
+  const lk = `
+    --page:#C6D3C6;--raise:#E5E8D2;--sink:#B3C4B3;
+    --txt:#222723;--txt-2:#4B524C;--txt-3:#5C675C;--line:rgba(0,0,0,.09);
+    --accent:#222723;--accent-txt:#E5E8D2;
+    --neu-d:rgba(78,85,79,.3);--neu-l:rgba(255,255,255,.85);
+    --sh-card:7px 7px 18px var(--neu-d),-5px -5px 14px var(--neu-l);
+    --sh-sm:3px 3px 7px var(--neu-d),-2px -2px 5px var(--neu-l);
+    --sh-in:inset 4px 4px 8px rgba(78,85,79,.32),inset -3px -3px 7px rgba(255,255,255,.8);
+    --sh-in-sm:inset 2px 2px 5px rgba(78,85,79,.28),inset -2px -2px 5px rgba(255,255,255,.75);
+    --ease:cubic-bezier(.16,1,.3,1);
+    --c1:#5750D8;--c2:#15803D;--c3:#C2410C;--c4:#0C9A90;--c5:#7B45DC;`;
+  const rootVars = theme === 'dark' ? dk : theme === 'light' ? lk : dk;
+  const mediaVars = theme === 'auto' ? `@media(prefers-color-scheme:light){:root{${lk}}}` : '';
+  const cat = (color, icon, title, items) => {
+    const qs = items.map(([q,a]) => `
+      <div class="fi">
+        <button class="fq">${q}<svg class="fc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="fa"><div><p>${a}</p></div></div>
+      </div>`).join('');
+    return `<section class="cat" style="--cat:${color}">
+      <div class="ch"><span class="ci">${icon}</span><h2>${title}</h2><span class="cc">${items.length}</span></div>
+      ${qs}</section>`;
+  };
+  const B = (s) => `<b>${s}</b>`;
+  const T = (s) => `<span class="tag">${s}</span>`;
+  const categories = [
+    cat('var(--c1)',
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M1.5 9a16 16 0 0 1 21 0"/><path d="M8.5 16.1a6 6 0 0 1 7 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>`,
+      'Connexion &amp; accès',
+      [
+        ['La télécommande affiche « Serveur injoignable » (Erreur 105)',
+         `Le PC ne répond plus. Vérifiez dans l'ordre : ${B('allumé et déverrouillé')}, sur le ${B('même réseau Wi-Fi')}, et le serveur tourne (${T('python remote_server.py')}). Touchez ${B('Réessayer')} — la reconnexion est automatique.`],
+        ['Téléphone et écran doivent-ils être sur le même réseau ?',
+         `Oui. Tout passe par le ${B('réseau local')}, aucune donnée ne sort sur Internet. Si vous changez de Wi-Fi (ou passez en 4G), reconnectez le téléphone au réseau du PC puis rouvrez la télécommande.`],
+        ['Dois-je rescanner le QR code à chaque ouverture ?',
+         `Non. Ajoutez la page à l'écran d'accueil (${B('Partager → Sur l\'écran d\'accueil')}) et rouvrez-la d'un seul tap comme une vraie application.`],
+        ['L\'écran indique « extension non connectée »',
+         `Ouvrez ${B('le navigateur de l\'écran')}, vérifiez que l'extension wee rotate est activée dans ${T('chrome://extensions')}, puis rechargez. La connexion se rétablit en quelques secondes.`],
+        ['Message « deux extensions connectées »',
+         `Supprimez le doublon : ouvrez ${T('chrome://extensions')} dans Chrome ${B('et')} Edge si présent, supprimez le doublon, puis redémarrez le serveur.`],
+      ]
+    ),
+    cat('var(--c2)',
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 6h11M3 12h8M3 18h8"/><path d="M16 14l5 3-5 3z" fill="currentColor"/></svg>`,
+      'Lecture &amp; playlist',
+      [
+        ['La rotation ne démarre pas',
+         `Trois points : au moins ${B('une page')} dans la playlist, vous avez touché ${B('Lecture')}, et — si les horaires sont activés — vous êtes ${B('dans la plage')}. Hors plage = pause automatique.`],
+        ['Comment ajouter une page à la playlist ?',
+         `${B('Playlist → Modifier')} : collez l'URL dans le champ d'ajout et validez. La page rejoint la file immédiatement.`],
+        ['Comment changer la durée d\'une page précise ?',
+         `${B('Modifier')} → icône horloge sur la page → choisissez la durée. Sans réglage, l'intervalle par défaut s'applique à toutes les pages.`],
+        ['Comment réordonner les pages ?',
+         `${B('Modifier')} → ${B('appui long')} sur une page → glissez-la à la position voulue, relâchez.`],
+        ['Comment retirer une page ?',
+         `Depuis ${B('Modifier')} uniquement : touchez la ${B('croix')} à droite. La liste de lecture reste en lecture seule pour éviter les fausses manipulations.`],
+      ]
+    ),
+    cat('var(--c3)',
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.5 2"/></svg>`,
+      'Horaires d\'affichage',
+      [
+        ['Limiter l\'affichage à certaines heures',
+         `${B('Playlist → Modifier → Horaires d\'affichage')} : activez, réglez début/fin. En dehors, la rotation se met en veille et reprend seule.`],
+        ['L\'écran est en pause hors des heures — est-ce normal ?',
+         `Oui, c'est voulu. Hors plage, l'affichage se met en veille pour économiser l'écran. Il redémarre automatiquement à l'heure de début. Pour un affichage permanent, désactivez les horaires.`],
+        ['Choisir les jours d\'affichage',
+         `Dans le même bloc ${B('Horaires d\'affichage')}, sélectionnez les jours actifs (ex. lun–ven). Les jours non cochés, l'écran reste en veille toute la journée.`],
+      ]
+    ),
+    cat('var(--c4)',
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 3l7 3v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9.2 12l2 2 3.6-4"/></svg>`,
+      'Écran allumé en continu',
+      [
+        ['L\'écran s\'est déconnecté tout seul',
+         `Certains portails (intranet, SSO, WithSecure…) ferment la session sur inactivité. wee rotate ${B('simule une activité discrète en continu')} (micro-mouvements, scroll imperceptible) toutes les ~25 s pour que le portail vous considère comme actif.`],
+        ['Comment fonctionne l\'anti-déconnexion ?',
+         `L'extension génère de minuscules signaux d'activité sur la page affichée — invisibles à l'œil. Le compteur d'inactivité du site est remis à zéro en permanence. ${B('Aucun réglage')}, c'est actif automatiquement sur toutes les pages.`],
+        ['À quelle fréquence la page se rafraîchit-elle ?',
+         `${B('Modifier → Rafraîchissement auto')} : choisissez l'intervalle de rechargement. Les pages Canva ont leur propre réglage (en minutes) dans le même bloc.`],
+        ['Faut-il un compte dédié pour l\'écran ?',
+         `Recommandé : un compte ${B('en lecture seule')} dédié à l'affichage limite les risques si l'écran reste connecté en permanence (bonne pratique de sécurité).`],
+      ]
+    ),
+    cat('var(--c5)',
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>`,
+      'Sauvegarde &amp; divers',
+      [
+        ['Sauvegarder ou restaurer ma playlist',
+         `${B('Réglages → Sauvegarde automatique')} : la playlist est conservée sur le PC même après redémarrage. Touchez ${B('Restaurer')} pour récupérer la dernière version.`],
+        ['Une page Canva ne se met pas à jour',
+         `Les présentations Canva sont rechargées périodiquement. Réglez l'intervalle dans ${B('Modifier → Rafraîchissement auto → Canva')} (en minutes).`],
+        ['Changer le thème (sombre / clair)',
+         `${B('Réglages → Apparence')} : Auto (suit le téléphone), Sombre ou Clair.`],
+        ['Mes réglages sont-ils conservés si je ferme la télécommande ?',
+         `Oui. Playlist, durées, horaires et rafraîchissement sont enregistrés ${B('sur le PC')}. L'affichage continue et tout est retrouvé à la reconnexion.`],
+      ]
+    ),
+  ].join('');
+  return `<!DOCTYPE html><html lang="fr"${theme !== 'auto' ? ` data-theme="${theme}"` : ''}>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Centre d'aide — wee rotate</title>
+<style>
+:root{${rootVars}}
+${mediaVars}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,sans-serif;background:var(--page);color:var(--txt);-webkit-font-smoothing:antialiased;line-height:1.6;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation;transition:transform .18s var(--ease),color .18s var(--ease)}
+button:active{transform:scale(.97)}
+::selection{background:var(--accent);color:var(--accent-txt)}
+.hdr{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
+  background:color-mix(in srgb,var(--page) 86%,transparent);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.back{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  border-radius:13px;background:var(--raise);box-shadow:var(--sh-sm);color:var(--txt)}
+.back:active{box-shadow:var(--sh-in-sm)}
+.brand-txt b{font-size:15px;font-weight:750;letter-spacing:-.2px;display:block;line-height:1.2}
+.brand-txt span{font-size:11.5px;color:var(--txt-3)}
+main{max-width:640px;margin:0 auto;padding:0 18px calc(40px + env(safe-area-inset-bottom))}
+.hero{padding:30px 4px 18px}
+.hero h1{font-size:26px;font-weight:780;letter-spacing:-.6px;line-height:1.2}
+.hero p{margin-top:8px;font-size:14.5px;color:var(--txt-2)}
+.srch{position:relative;margin-top:20px;display:flex;align-items:center;gap:10px;
+  background:var(--sink);box-shadow:var(--sh-in);border-radius:16px;padding:0 14px}
+.srch svg{flex-shrink:0;color:var(--txt-3)}
+.srch input{flex:1;border:0;outline:none;background:none;color:var(--txt);font-size:15px;padding:15px 0;min-width:0}
+.srch input::placeholder{color:var(--txt-3)}
+.scl{width:26px;height:26px;flex-shrink:0;display:none;align-items:center;justify-content:center;
+  border-radius:50%;background:var(--raise);box-shadow:var(--sh-sm);color:var(--txt-2)}
+.srch.v .scl{display:flex}
+.cat{margin-top:28px}
+.ch{display:flex;align-items:center;gap:12px;padding:0 4px 13px}
+.ci{width:38px;height:38px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:var(--raise);box-shadow:var(--sh-sm);color:var(--cat)}
+.ch h2{font-size:16px;font-weight:730;letter-spacing:-.3px}
+.cc{margin-left:auto;font-size:11.5px;font-weight:650;color:var(--txt-3);background:var(--sink);box-shadow:var(--sh-in-sm);padding:3px 10px;border-radius:100px}
+.fi{background:var(--raise);box-shadow:var(--sh-sm);border-radius:16px;margin-bottom:11px;overflow:hidden;
+  border-left:3px solid transparent;transition:border-color .2s var(--ease)}
+.fi.open{border-left-color:var(--cat)}
+.fq{width:100%;text-align:left;display:flex;align-items:center;gap:13px;
+  padding:16px 17px;font-size:14.5px;font-weight:620;color:var(--txt);line-height:1.4}
+.fc{margin-left:auto;flex-shrink:0;color:var(--txt-3);transition:transform .32s var(--ease)}
+.fi.open .fc{transform:rotate(90deg);color:var(--cat)}
+.fa{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.fi.open .fa{grid-template-rows:1fr}
+.fa>div{overflow:hidden}
+.fa p{padding:0 17px 16px;font-size:13.5px;color:var(--txt-2);line-height:1.62}
+.fa b{color:var(--txt);font-weight:650}
+.tag{font-family:'SF Mono','Consolas','Menlo',monospace;font-size:12px;background:var(--sink);
+  box-shadow:var(--sh-in-sm);color:var(--txt);padding:1.5px 7px;border-radius:7px;white-space:nowrap}
+.nr{display:none;text-align:center;padding:46px 20px;color:var(--txt-3)}
+.nr.show{display:block}
+.foot{margin-top:34px;padding:24px 22px;background:var(--raise);box-shadow:var(--sh-card);border-radius:20px;text-align:center}
+.fic{width:46px;height:46px;margin:0 auto 12px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  background:var(--sink);box-shadow:var(--sh-in-sm);color:var(--accent)}
+.foot h3{font-size:16px;font-weight:720;letter-spacing:-.2px}
+.foot p{margin-top:7px;font-size:13.5px;color:var(--txt-2)}
+.fsig{margin-top:16px;font-size:11.5px;color:var(--txt-3)}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.fa,.fc{transition:none}}
+@media(min-width:560px){.hero h1{font-size:30px}}
+</style></head><body>
+<header class="hdr">
+  <button class="back" onclick="window.close()" aria-label="Retour">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <div class="brand-txt"><b>wee rotate</b><span>Centre d'aide</span></div>
+</header>
+<main>
+  <section class="hero">
+    <h1>Comment pouvons-nous vous&nbsp;aider&nbsp;?</h1>
+    <p>Rangé par thème — touchez une question pour la déplier.</p>
+    <div class="srch" id="srch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="19" height="19"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher une réponse…" aria-label="Rechercher">
+      <button class="scl" id="cl" aria-label="Effacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    </div>
+  </section>
+  <div id="cats">${categories}</div>
+  <div class="nr" id="nr">Aucune réponse pour «&nbsp;<b id="nrq"></b>&nbsp;».<br>Essayez un autre mot-clé.</div>
+  <footer class="foot">
+    <div class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.9A8.5 8.5 0 1 1 21 11.5z"/></svg></div>
+    <h3>Toujours bloqué&nbsp;?</h3>
+    <p>Rapprochez-vous de la personne qui a installé l'écran ou de votre administrateur.</p>
+    <div class="fsig">wee rotate · Centre d'aide — Wee Technology</div>
+  </footer>
+</main>
+<script>
+(function(){
+  document.querySelectorAll('.fq').forEach(function(q){
+    q.addEventListener('click',function(){ q.closest('.fi').classList.toggle('open'); });
+  });
+  var inp=document.getElementById('q'),box=document.getElementById('srch'),
+      cl=document.getElementById('cl'),nr=document.getElementById('nr'),nrq=document.getElementById('nrq');
+  var items=[].slice.call(document.querySelectorAll('.fi'));
+  var cats=[].slice.call(document.querySelectorAll('.cat'));
+  function nm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  items.forEach(function(it){ it.dataset.h=nm(it.textContent); });
+  function apply(){
+    var raw=inp.value.trim(),q=nm(raw);
+    box.classList.toggle('v',raw.length>0);
+    var total=0;
+    items.forEach(function(it){
+      var ok=!q||it.dataset.h.indexOf(q)!==-1;
+      it.style.display=ok?'':'none';
+      if(q) it.classList.toggle('open',ok); else it.classList.remove('open');
+      if(ok) total++;
+    });
+    cats.forEach(function(cat){
+      var vis=0;
+      cat.querySelectorAll('.fi').forEach(function(it){ if(it.style.display!=='none') vis++; });
+      cat.style.display=vis?'':'none';
+    });
+    var empty=q&&total===0;
+    nr.classList.toggle('show',empty);
+    if(empty) nrq.textContent=raw;
+  }
+  inp.addEventListener('input',apply);
+  cl.addEventListener('click',function(){ inp.value=''; apply(); inp.focus(); });
+})();
+\u003C/script></body></html>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3028,6 +3269,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   window.addEventListener('pageshow', ensureAlive);
   window.addEventListener('focus', ensureAlive);
+
+  // ── Blocage zoom iOS — Safari ≥ 10 ignore user-scalable=no ──────────────────
+  // Empêche le pinch-zoom (2 doigts) et le double-tap zoom sur toute la page.
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  (function() {
+    var lastTap = 0;
+    document.addEventListener('touchend', function(e) {
+      var now = Date.now();
+      if (now - lastTap < 290) e.preventDefault();
+      lastTap = now;
+    }, { passive: false });
+  })();
 
   // ── Service worker — présence minimale pour l'installabilité PWA (Android) ──
   if ('serviceWorker' in navigator) {

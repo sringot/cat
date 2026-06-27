@@ -72,9 +72,9 @@ async function fireLifecycle(fn) {
 }
 
 // Déclenche un fetch ; renvoie la réponse, ou {passthrough:true} si non intercepté.
-async function doFetch(listeners, url, method = 'GET') {
+async function doFetch(listeners, url, method = 'GET', mode = 'cors') {
   let responded = null;
-  listeners.fetch({ request: { url, method }, respondWith(p) { responded = p; } });
+  listeners.fetch({ request: { url, method, mode }, respondWith(p) { responded = p; } });
   return responded ? await responded : { passthrough: true };
 }
 
@@ -147,6 +147,21 @@ test('fetch /support et /aide hors-ligne : repli Centre d\'aide', async () => {
 test('fetch d\'un autre chemin : laissé au réseau (pas intercepté)', async () => {
   const { listeners } = loadSW();
   const r = await doFetch(listeners, 'http://kiosk.local/info');
+  assert.deepStrictEqual(r, { passthrough: true });
+});
+
+test('navigation PWA hors-ligne : retombe sur la coquille (anti écran noir)', async () => {
+  const { listeners, store, net, makeResp } = loadSW();
+  store.set('/app', makeResp('coquille-en-cache'));
+  net.offline = true;
+  // Navigation vers un chemin autre que /app (ex. URL de lancement iOS variable).
+  const r = await doFetch(listeners, 'http://kiosk.local/dashboard', 'GET', 'navigate');
+  assert.strictEqual(r._body, 'coquille-en-cache');
+});
+
+test('navigation vers le guide « / » : non détournée vers la coquille', async () => {
+  const { listeners } = loadSW();
+  const r = await doFetch(listeners, 'http://kiosk.local/', 'GET', 'navigate');
   assert.deepStrictEqual(r, { passthrough: true });
 });
 

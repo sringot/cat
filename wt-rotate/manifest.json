@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "wee rotate",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "description": "Rotation automatique d'URLs pour affichage kiosk — by Wee Technology",
   "permissions": [
     "tabs",

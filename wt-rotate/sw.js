@@ -45,9 +45,14 @@ self.addEventListener('fetch', e => {
   if (url.origin !== self.location.origin) return;
 
   // On normalise sur le chemin : la clé de cache ignore le ?token=… éventuel
-  // (le PWA lance /app et lit le token dans localStorage).
-  const key = (url.pathname === '/support' || url.pathname === '/aide') ? HELP
-            : (url.pathname === '/app')                                 ? SHELL
+  // (le PWA lance /app et lit le token dans localStorage). Toute navigation du
+  // PWA (hors guide « / ») retombe aussi sur la coquille : plus robuste que de
+  // matcher /app au pixel près — sur iOS l'URL de lancement peut varier, et une
+  // navigation non interceptée donne un écran noir au lieu de la consultation.
+  const p = url.pathname;
+  const isNav = e.request.mode === 'navigate' && p !== '/';
+  const key = (p === '/support' || p === '/aide') ? HELP
+            : (p === '/app' || isNav)             ? SHELL
             : null;
   if (!key) return;
 

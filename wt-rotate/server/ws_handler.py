@@ -192,6 +192,17 @@ async def _handle_mobile(ws) -> None:
                             library.save_playlist(name, urls)
                             await _broadcast_mobiles(json.dumps(library.info_msg()))
                         continue
+                    if action == 'lib_create':
+                        # Playlist construite côté téléphone (brouillon hors-ligne
+                        # synchronisé à la reconnexion) : les URLs viennent du mobile,
+                        # pas de l'état du kiosque. On ne garde que des entrées valides.
+                        name = (d.get('name') or 'Playlist').strip()[:40] or 'Playlist'
+                        urls = [u for u in (d.get('urls') or [])
+                                if isinstance(u, dict) and u.get('url')]
+                        if urls:
+                            library.save_playlist(name, urls)
+                            await _broadcast_mobiles(json.dumps(library.info_msg()))
+                        continue
                     if action == 'lib_load':
                         pl = library.get_playlist(d.get('id') or '')
                         if pl and pl.get('urls'):

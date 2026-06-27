@@ -332,6 +332,49 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 #install-banner.show { display: block; }
 #install-banner b { color: var(--txt); font-weight: 600; }
 
+/* ── Mode hors ligne (consultation lecture seule) ──────────── */
+#offline-bar {
+  position: fixed; left: 50%; z-index: 90;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  transform: translateX(-50%);
+  display: none; align-items: center; gap: 7px;
+  max-width: calc(100vw - 28px);
+  padding: 7px 14px; border-radius: 999px;
+  background: linear-gradient(135deg, #ffd66b, #f2b13c);
+  color: #4a3500; font-weight: 700; font-size: 12.5px;
+  letter-spacing: -.1px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 6px 20px rgba(0,0,0,.24);
+}
+#offline-bar svg { flex-shrink: 0; }
+body.offline #offline-bar { display: inline-flex; }
+/* Les commandes d'action sont grisées et neutralisées en consultation.
+   Le vrai garde-fou est le gating de cmd() ; ceci n'est que le signal visuel. */
+body.offline #transport,
+body.offline #volrow,
+body.offline #seekrow,
+body.offline #b-stop,
+body.offline #card-release,
+body.offline #launch-face {
+  opacity: .45; pointer-events: none; filter: grayscale(.35);
+}
+/* Brouillon de playlist (créé hors ligne, en attente de synchro) */
+.lib-card.draft .lib-cover { outline: 2px dashed rgba(242,177,60,.95); outline-offset: -2px; }
+.lib-draft-tag {
+  position: absolute; top: 8px; left: 8px;
+  background: #f2b13c; color: #4a3500;
+  font-size: 10px; font-weight: 800; letter-spacing: .2px;
+  padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+}
+#draft-urls {
+  width: 100%; box-sizing: border-box; resize: none;
+  margin: 4px 0 2px; padding: 12px 14px;
+  border-radius: 14px; border: none;
+  background: rgba(127, 127, 127, .12); color: var(--txt);
+  font: inherit; font-size: 15px; line-height: 1.5;
+}
+.draft-hint { font-size: 12px; color: var(--txt-2); margin: 6px 2px 12px; line-height: 1.4; }
+
 /* ── Lecteur (Accueil) ────────────────────────────────────── */
 .now-row { padding: 22px 24px 16px; }
 .now-name {
@@ -1183,6 +1226,12 @@ nav {
 <!-- Main -->
 <div class="screen show" id="s-main">
   <div class="top-fade" aria-hidden="true"></div>
+  <div id="offline-bar" role="status" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+      <path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 3.4-2.2M12 5c2.8 0 5.4 1 7.3 2.8M12 20h.01"/>
+    </svg>
+    <span id="offline-bar-txt">Hors ligne · lecture seule</span>
+  </div>
   <div id="pages-rail">
 
     <!-- ════ Accueil ════ -->
@@ -1426,7 +1475,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.18.4</div>
+          <div class="row-v">wee rotate 1.19.0</div>
         </div>
       </div>
     </div>
@@ -1600,6 +1649,10 @@ nav {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       Sauvegarder la playlist actuelle
     </button>
+    <button class="sheet-opt" id="b-draft-new" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0"><path d="M12 5v14M5 12h14"/></svg>
+      Nouvelle playlist (brouillon)
+    </button>
     <div id="lib-list"></div>
     <button class="sheet-cancel" id="lib-sheet-cancel">Fermer</button>
   </div>
@@ -1627,6 +1680,36 @@ nav {
     <div class="confirm-msg" id="confirm-msg"></div>
     <button class="sheet-opt" id="confirm-yes">Confirmer</button>
     <button class="sheet-cancel" id="confirm-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Feuille : nouveau brouillon de playlist (créé hors ligne) -->
+<div class="sheet" id="draft-sheet">
+  <div class="sheet-bg" id="draft-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Nouvelle playlist</div>
+    <div class="sheet-input-row">
+      <input id="draft-name" type="text" placeholder="Nom — ex : Accueil, Salle 2…" maxlength="40"
+             autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <textarea id="draft-urls" rows="5" placeholder="Une adresse par ligne&#10;exemple.com&#10;https://autre.fr/page"
+              autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+    <div class="draft-hint">Une adresse par ligne. Le « https:// » est ajouté tout seul. Ce brouillon sera ajouté à la bibliothèque dès la reconnexion au serveur.</div>
+    <button class="sheet-opt" id="draft-create">Enregistrer le brouillon</button>
+    <button class="sheet-cancel" id="draft-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Feuille : explication du mode hors ligne (à l'arrivée sans serveur) -->
+<div class="sheet" id="offline-sheet">
+  <div class="sheet-bg" id="offline-sheet-bg"></div>
+  <div class="sheet-card">
+    <div class="sheet-title">Mode hors ligne</div>
+    <div class="confirm-msg" id="offline-msg">
+      Le serveur du kiosque n'est pas joignable. Vous consultez la <b>dernière configuration connue</b> en lecture seule — les commandes d'action sont désactivées.<br><br>
+      Vous pouvez quand même <b>préparer des playlists</b> : elles seront ajoutées automatiquement à la bibliothèque dès le retour de la connexion.
+    </div>
+    <button class="sheet-opt" id="offline-ok">J'ai compris</button>
   </div>
 </div>
 
@@ -1696,6 +1779,9 @@ let lastState = null;
 let reconnectTimer = null;
 let downSince = null;        // depuis quand la connexion est tombée (→ page d'erreur après ~6 s)
 let everConnected = false;   // au moins une session établie depuis l'ouverture (cf. délai de grâce)
+let offlineMode = false;     // consultation hors-ligne (serveur injoignable, lecture seule)
+let offlinePopupShown = false;
+let offlineTs = 0;           // horodatage de la dernière sync affichée dans le bandeau
 let lastMsgAt = 0;
 let extOnline = false;
 let editOpen = false;          // page « Modifier la rotation » ouverte
@@ -1992,6 +2078,122 @@ function clearErr() {
   if (!authFailed && $('s-err').classList.contains('show')) show('s-main');
 }
 
+// ── Mode hors ligne : snapshot, consultation lecture seule, brouillons ────────
+function persistSnapshot(s) {
+  try { localStorage.setItem('wt_snapshot', JSON.stringify({ s, ts: Date.now() })); } catch {}
+}
+function loadSnapshot() {
+  try {
+    const o = JSON.parse(localStorage.getItem('wt_snapshot') || 'null');
+    if (o && o.s && typeof o.ts === 'number') return o;
+  } catch {}
+  return null;
+}
+function timeAgo(ts) {
+  const sec = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  if (sec < 45) return 'à l\'instant';
+  const min = Math.round(sec / 60);
+  if (min < 60) return 'il y a ' + min + ' min';
+  const h = Math.round(min / 60);
+  if (h < 24) return 'il y a ' + h + ' h';
+  const d = new Date(ts);
+  return 'le ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function updateOfflineBar() {
+  $('offline-bar-txt').textContent =
+    'Hors ligne · lecture seule' + (offlineTs ? ' — synchro ' + timeAgo(offlineTs) : '');
+}
+function restoreShot() {
+  try {
+    const shot = localStorage.getItem('wt_snapshot_shot');
+    if (!shot) return;
+    const img = $('preview-img');
+    if (!img) return;
+    img.src = shot;
+    const card = $('card-preview');
+    card.style.display = '';
+    card.classList.remove('skeleton', 'empty', 'loading');
+  } catch {}
+}
+function maybeOfflinePopup() {
+  if (offlinePopupShown) return;
+  offlinePopupShown = true;
+  $('offline-sheet').classList.add('show');
+}
+// Entrée en consultation : on rejoue la dernière config connue, en lecture seule.
+function enterOffline() {
+  const snap = loadSnapshot();
+  if (!snap) {
+    // Rien en cache (jamais synchronisé sur ce téléphone) : page d'erreur simple.
+    showErr('Serveur injoignable',
+            'Le PC remote ne répond pas. Vérifiez qu\'il est allumé, sur le même réseau, et que le serveur est lancé.',
+            true, 'Erreur 105 · connexion impossible');
+    return;
+  }
+  if (!offlineMode) {
+    offlineMode = true;
+    offlineTs = snap.ts;
+    document.body.classList.add('offline');
+    lastState = snap.s;
+    sync(snap.s);
+    restoreShot();
+    show('s-main');
+    showPage(currentPage || 'home', false);
+    maybeOfflinePopup();
+  }
+  updateOfflineBar();
+}
+// Retour en ligne : on quitte la consultation et on pousse les brouillons.
+function exitOffline() {
+  if (!offlineMode) return;
+  offlineMode = false;
+  offlinePopupShown = false;     // ré-expliquera à la prochaine coupure
+  document.body.classList.remove('offline');
+  $('offline-sheet').classList.remove('show');
+  syncDrafts();
+}
+
+// ── Brouillons de playlists (stockés en local, synchronisés à la reconnexion) ─
+function loadDrafts() {
+  try { const a = JSON.parse(localStorage.getItem('wt_drafts') || '[]'); return Array.isArray(a) ? a : []; }
+  catch { return []; }
+}
+function saveDrafts(a) { try { localStorage.setItem('wt_drafts', JSON.stringify(a)); } catch {} }
+function addDraft(name, urls) {
+  const a = loadDrafts();
+  a.push({ id: 'd' + Date.now().toString(36), name: (name || 'Playlist').slice(0, 40), urls, ts: Date.now() });
+  saveDrafts(a);
+}
+function removeDraft(id) { saveDrafts(loadDrafts().filter(d => d.id !== id)); }
+// À la reconnexion : chaque brouillon part vers la bibliothèque du serveur.
+function syncDrafts() {
+  const a = loadDrafts();
+  if (!a.length) return;
+  let sent = 0;
+  a.forEach(d => { if (cmd('lib_create', { name: d.name, urls: d.urls })) sent++; });
+  if (sent === a.length) {
+    saveDrafts([]);
+    showToast(sent + ' brouillon' + (sent > 1 ? 's' : '') + ' synchronisé' + (sent > 1 ? 's' : ''));
+  }
+}
+function openDraftSheet() {
+  $('draft-name').value = '';
+  $('draft-urls').value = '';
+  closeLibSheet();
+  $('draft-sheet').classList.add('show');
+}
+function closeDraftSheet() { $('draft-sheet').classList.remove('show'); }
+function createDraft() {
+  const name  = ($('draft-name').value || '').trim();
+  const lines = ($('draft-urls').value || '').split('\n').map(x => x.trim()).filter(Boolean);
+  if (!lines.length) { showToast('Ajoutez au moins une adresse'); return; }
+  const urls = lines.map(u => ({ url: /^https?:\/\//i.test(u) ? u : 'https://' + u, name: '', interval: null }));
+  addDraft(name, urls);
+  closeDraftSheet();
+  showToast('Brouillon enregistré — synchro à la reconnexion');
+  openLibSheet();   // ré-affiche la bibliothèque avec le nouveau brouillon
+}
+
 function connect() {
   clearTimeout(reconnectTimer);
   // On détache et ferme toute socket précédente : après un retour
@@ -2014,7 +2216,7 @@ function connect() {
       showErr('Accès refusé', 'Rescannez le QR code affiché sur l\'écran du remote.', false, '');
       return;
     }
-    if (m.type === 'auth_ok')    { chip('on'); everConnected = true; downSince = null; clearErr(); return; }
+    if (m.type === 'auth_ok')    { chip('on'); everConnected = true; exitOffline(); downSince = null; clearErr(); return; }
     if (m.type === 'ext_status') { setExtOnline(m.connected); return; }
     if (m.type === 'warn_dual_ext') { $('dual-banner').classList.add('show'); return; }
     if (m.type === 'screenshot') {
@@ -2028,6 +2230,8 @@ function connect() {
         img.classList.remove('shot-in'); void img.offsetWidth; img.classList.add('shot-in');
         $('card-preview').style.display = '';
         $('preview-ts').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        // Conservée pour la consultation hors-ligne (best effort — quota possible).
+        try { localStorage.setItem('wt_snapshot_shot', m.data); } catch {}
       }
       return;
     }
@@ -2052,9 +2256,9 @@ function connect() {
       // inutile d'attendre autant devant une app vide : ~3 s suffisent.
       const grace = everConnected ? 6000 : 2500;
       if (Date.now() - downSince >= grace) {
-        showErr('Serveur injoignable',
-                'Le PC remote ne répond pas. Vérifiez qu\'il est allumé, sur le même réseau, et que le serveur est lancé.',
-                true, 'Erreur 105 · connexion impossible');
+        // Bascule en consultation hors-ligne si une config est en cache ;
+        // sinon enterOffline() retombe sur la page d'erreur sèche.
+        enterOffline();
       }
       reconnectTimer = setTimeout(connect, 3000);
     }
@@ -2305,6 +2509,9 @@ function sync(s) {
     if (editOpen) renderEditList(urls, mode);
   }
   if (recentsOpen) renderRecents();
+  // On garde une copie de l'état pour la consultation hors-ligne (sauf quand on
+  // est justement en train de rejouer ce snapshot : on n'écrase pas son horodatage).
+  if (!offlineMode) persistSnapshot(s);
 }
 
 // ── Horaires d'affichage ──────────────────────────────────────────────────────
@@ -2353,6 +2560,10 @@ function closeRenameSheet() {
 
 // ── Bibliothèque de playlists ─────────────────────────────────────────────────
 function openLibSheet() {
+  // Hors ligne : impossible de photographier la rotation en cours (lib_save) ;
+  // on propose à la place la création d'un brouillon (lib_create différé).
+  $('b-lib-save').style.display  = offlineMode ? 'none' : '';
+  $('b-draft-new').style.display = offlineMode ? '' : 'none';
   renderLibrary();
   $('lib-sheet').classList.add('show');
 }
@@ -2367,17 +2578,20 @@ function closeLibNameSheet() { $('lib-name-sheet').classList.remove('show'); }
 
 function renderLibrary() {
   const list = $('lib-list');
+  const drafts = loadDrafts();
   list.className = '';
-  if (!libPlaylists.length) {
+  if (!libPlaylists.length && !drafts.length) {
     list.innerHTML = '<div class="lib-empty">Aucune playlist sauvegardée.<br>Touchez le bouton ci-dessus pour en créer une.</div>';
     return;
   }
   list.className = 'lib-grid';
   list.innerHTML = '';
+  // Brouillons hors-ligne en tête (badge « Brouillon », en attente de synchro).
+  drafts.forEach((d, di) => list.appendChild(makeDraftCard(d, di)));
   libPlaylists.forEach((pl, idx) => {
     const card = document.createElement('div');
     card.className = 'lib-card';
-    card.style.setProperty('--i', idx);
+    card.style.setProperty('--i', drafts.length + idx);
     card.setAttribute('role', 'button');
     card.tabIndex = 0;
     const d = new Date(pl.ts * 1000);
@@ -2435,6 +2649,43 @@ function renderLibrary() {
     });
     list.appendChild(card);
   });
+}
+
+// Carte d'un brouillon local (créé hors ligne) : non chargeable, juste en
+// attente de synchro. Seule action : suppression.
+function makeDraftCard(d, idx) {
+  const card = document.createElement('div');
+  card.className = 'lib-card draft';
+  card.style.setProperty('--i', idx);
+  const n = (d.urls || []).length;
+  card.innerHTML = `
+    <div class="lib-cover" style="background:${artBg(d.name)}">
+      <span class="lib-badge">${n} page${n > 1 ? 's' : ''}</span>
+      <span class="lib-draft-tag">Brouillon</span>
+    </div>
+    <button class="lib-card-del" aria-label="Supprimer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" width="13" height="13"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+    <div class="lib-card-name"></div>
+    <div class="lib-card-meta">À synchroniser</div>`;
+  card.querySelector('.lib-card-name').textContent = d.name || 'Playlist';
+  const cover = card.querySelector('.lib-cover');
+  const ini = document.createElement('span');
+  ini.className = 'lib-cover-i';
+  ini.textContent = initialOf(d.name);
+  cover.insertBefore(ini, cover.firstChild);
+  card.addEventListener('click', () => showToast('Brouillon — ajouté à la bibliothèque dès la reconnexion'));
+  card.querySelector('.lib-card-del').addEventListener('click', e => {
+    e.stopPropagation();
+    removeDraft(d.id);
+    card.style.transition = 'opacity .25s';
+    card.style.opacity = '0';
+    setTimeout(() => {
+      card.remove();
+      if (!$('lib-list').querySelector('.lib-card')) renderLibrary();
+    }, 260);
+  });
+  return card;
 }
 
 function setNow(name) {
@@ -2651,6 +2902,9 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function cmd(action, extra) {
+  // En consultation hors-ligne, aucune commande ne part : point d'étranglement
+  // unique qui protège tous les boutons d'action d'un coup.
+  if (offlineMode) { showToast('Indisponible hors ligne'); return false; }
   if (ws?.readyState === 1) {
     ws.send(JSON.stringify({ type: 'command', action, ...extra }));
     return true;
@@ -3239,6 +3493,14 @@ document.addEventListener('DOMContentLoaded', () => {
     closeLibNameSheet();
   });
   $('lib-name-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('b-lib-name-confirm').click(); });
+
+  // Brouillons hors-ligne + popup explicative
+  $('b-draft-new').addEventListener('click', openDraftSheet);
+  $('draft-create').addEventListener('click', createDraft);
+  $('draft-cancel').addEventListener('click', closeDraftSheet);
+  $('draft-sheet-bg').addEventListener('click', closeDraftSheet);
+  $('offline-ok').addEventListener('click', () => $('offline-sheet').classList.remove('show'));
+  $('offline-sheet-bg').addEventListener('click', () => $('offline-sheet').classList.remove('show'));
 
   // Renommage via feuille
   $('b-rename-confirm').addEventListener('click', () => {

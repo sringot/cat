@@ -348,6 +348,9 @@ h1 { font-size: 30px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05
 }
 #offline-bar svg { flex-shrink: 0; }
 body.offline #offline-bar { display: inline-flex; }
+/* Le bandeau flotte au-dessus du contenu : on dégage sa place sous lui pour
+   qu'il ne recouvre pas le titre de page. */
+body.offline .pg-head { padding-top: 52px; }
 /* Les commandes d'action sont grisées et neutralisées en consultation.
    Le vrai garde-fou est le gating de cmd() ; ceci n'est que le signal visuel. */
 body.offline #transport,
@@ -1475,7 +1478,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.19.1</div>
+          <div class="row-v">wee rotate 1.19.2</div>
         </div>
       </div>
     </div>

@@ -59,7 +59,7 @@
     --sink:       #B3C4B3;   /* creux, plus sombre */
     --txt:        #222723;   /* olive très foncé, net */
     --txt-2:      #4B524C;
-    --txt-3:      #5C675C;   /* assombri pour lisibilité (≈4:1) */
+    --txt-3:      #465046;   /* assombri pour lisibilité (≈4.6:1 sur la nav) */
     --line:       rgba(0,0,0,.09);
     --accent:     #222723;
     --accent-2:   #5C665E;
@@ -89,7 +89,7 @@
   --sink:       #B3C4B3;
   --txt:        #222723;
   --txt-2:      #4B524C;
-  --txt-3:      #5C675C;   /* assombri pour lisibilité (≈4:1) */
+  --txt-3:      #465046;   /* assombri pour lisibilité (≈4.6:1 sur la nav) */
   --line:       rgba(0,0,0,.09);
   --accent:     #222723;
   --accent-2:   #5C665E;
@@ -136,6 +136,19 @@ button:focus-visible, .nav-btn:focus-visible, .sheet-opt:focus-visible,
 .pl-item:focus-visible, .lib-card:focus-visible, .day:focus-visible,
 .theme-opt:focus-visible, input[type="range"]:focus-visible {
   outline: 2.5px solid var(--accent); outline-offset: 3px;
+}
+
+/* Supprime le délai de double-tap : le tap part immédiatement. */
+button, .pl-item, .lib-card, input[type="range"] { touch-action: manipulation; }
+
+/* Animations réduites : tout devient (quasi) instantané, y compris
+   l'équaliseur, le shimmer de l'aperçu et les glissements de feuilles. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 /* ── Écrans (boot / erreur / main) ────────────────────────── */
@@ -374,7 +387,7 @@ body.offline #launch-face {
   margin: 4px 0 2px; padding: 12px 14px;
   border-radius: 14px; border: none;
   background: rgba(127, 127, 127, .12); color: var(--txt);
-  font: inherit; font-size: 15px; line-height: 1.5;
+  font: inherit; font-size: 16px; line-height: 1.5;   /* < 16 px : zoom iOS au focus */
 }
 .draft-hint { font-size: 12px; color: var(--txt-2); margin: 6px 2px 12px; line-height: 1.4; }
 
@@ -537,6 +550,7 @@ body.offline #launch-face {
   display: flex; align-items: center; justify-content: center;
   color: rgba(255,255,255,.92);
 }
+.preview-refresh::before { content: ''; position: absolute; inset: -7px; } /* tap ~48 px */
 .preview-refresh svg { transition: transform .3s var(--ease); }
 #card-preview.loading .preview-refresh svg { animation: spin .7s linear infinite; }
 #card-preview.loading .preview-wrap img { filter: brightness(.82); transition: filter .2s; }
@@ -560,6 +574,12 @@ body.offline #launch-face {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(90deg, transparent 0%, var(--neu-l) 50%, transparent 100%);
   animation: previewShimmer 1.6s ease-in-out infinite;
+}
+/* Sans libellé, la dalle vide qui shimmer ressemble à une image cassée. */
+.preview-skel span {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; letter-spacing: .2px; color: var(--txt-3);
 }
 @keyframes previewShimmer {
   from { transform: translateX(-100%); }
@@ -646,7 +666,8 @@ body.offline #launch-face {
   background: var(--sink); box-shadow: var(--sh-in);
   border-radius: 100px;
 }
-.open-row input { flex: 1; min-width: 0; font-size: 15px; padding: 11px 0; }
+/* 16 px minimum : en dessous, iOS zoome automatiquement la page au focus. */
+.open-row input { flex: 1; min-width: 0; font-size: 16px; padding: 11px 0; }
 .open-row input::placeholder { color: var(--txt-3); }
 .send-btn {
   width: 44px; height: 44px; border-radius: 50%;
@@ -739,6 +760,8 @@ body.offline #launch-face {
   margin-top: -2px; padding: 8px 16px;
   font-size: 13.5px; font-weight: 600; color: var(--txt-2);
   border-radius: 100px;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
 }
 .err-help:active { color: var(--txt); transform: scale(.96); }
 
@@ -995,6 +1018,8 @@ body.offline #launch-face {
   background: rgba(0,0,0,.42); color: #fff;
   display: flex; align-items: center; justify-content: center;
 }
+/* Zone de tap étendue à ~44 px sans grossir le visuel */
+.lib-card-del::before { content: ''; position: absolute; inset: -9px; }
 .lib-card-del:active { background: var(--red); transform: scale(.9); }
 .lib-empty { grid-column: 1 / -1; padding: 18px 12px 10px; font-size: 14px; color: var(--txt-2); line-height: 1.5; text-align: center; }
 
@@ -1053,14 +1078,16 @@ nav {
 .nav-btn.active svg { transform: scale(1.18); }
 .nav-btn.active { color: var(--accent); }
 .nav-btn.active::before {
-  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 28px; height: 3px; border-radius: 0 0 3px 3px;
-  background: var(--accent); box-shadow: 0 0 10px var(--accent-gl);
+  /* Pilule à l'intérieur de la nav (top > 0) : à top 0, son halo débordait
+     au-dessus du bord et dessinait une « tache » coupée sur le contenu. */
+  content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 4px; border-radius: 999px;
+  background: var(--accent); box-shadow: 0 1px 6px var(--accent-gl);
   animation: navBarIn .35s var(--ease) both;
 }
 @keyframes navBarIn {
   from { width: 0; opacity: 0; }
-  to   { width: 28px; opacity: 1; }
+  to   { width: 26px; opacity: 1; }
 }
 .nav-btn svg { display: block; }
 
@@ -1266,7 +1293,7 @@ nav {
       <!-- Aperçu en direct -->
       <div class="card" id="card-preview" style="display:none">
         <div class="preview-wrap">
-          <div class="preview-skel" aria-hidden="true"></div>
+          <div class="preview-skel" aria-hidden="true"><span>En attente d'un aperçu…</span></div>
           <div class="preview-empty" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="30" height="30"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4M3 4l18 13"/></svg>
             <span>Aucune page affichée</span>
@@ -1478,7 +1505,7 @@ nav {
           <div class="row-v" id="set-ip">—</div>
         </div>
         <div class="row">Version
-          <div class="row-v">wee rotate 1.19.2</div>
+          <div class="row-v">wee rotate 1.19.3</div>
         </div>
       </div>
     </div>
@@ -2642,13 +2669,15 @@ function renderLibrary() {
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); load(); } });
     card.querySelector('.lib-card-del').addEventListener('click', e => {
       e.stopPropagation();
-      cmd('lib_delete', { id: pl.id });
-      card.style.transition = 'opacity .25s';
-      card.style.opacity = '0';
-      setTimeout(() => {
-        card.remove();
-        if (!list.querySelector('.lib-card')) renderLibrary();
-      }, 260);
+      openConfirm('« ' + pl.name + ' » sera supprimée de la bibliothèque.', () => {
+        cmd('lib_delete', { id: pl.id });
+        card.style.transition = 'opacity .25s';
+        card.style.opacity = '0';
+        setTimeout(() => {
+          card.remove();
+          if (!list.querySelector('.lib-card')) renderLibrary();
+        }, 260);
+      }, { title: 'Supprimer la playlist', yes: 'Supprimer' });
     });
     list.appendChild(card);
   });
@@ -2680,13 +2709,15 @@ function makeDraftCard(d, idx) {
   card.addEventListener('click', () => showToast('Brouillon — ajouté à la bibliothèque dès la reconnexion'));
   card.querySelector('.lib-card-del').addEventListener('click', e => {
     e.stopPropagation();
-    removeDraft(d.id);
-    card.style.transition = 'opacity .25s';
-    card.style.opacity = '0';
-    setTimeout(() => {
-      card.remove();
-      if (!$('lib-list').querySelector('.lib-card')) renderLibrary();
-    }, 260);
+    openConfirm('Le brouillon « ' + (d.name || 'Playlist') + ' » sera supprimé.', () => {
+      removeDraft(d.id);
+      card.style.transition = 'opacity .25s';
+      card.style.opacity = '0';
+      setTimeout(() => {
+        card.remove();
+        if (!$('lib-list').querySelector('.lib-card')) renderLibrary();
+      }, 260);
+    }, { title: 'Supprimer le brouillon', yes: 'Supprimer' });
   });
   return card;
 }
@@ -3197,7 +3228,7 @@ main{max-width:640px;margin:0 auto;padding:0 18px calc(40px + env(safe-area-inse
 .srch{position:relative;margin-top:20px;display:flex;align-items:center;gap:10px;
   background:var(--sink);box-shadow:var(--sh-in);border-radius:16px;padding:0 14px}
 .srch svg{flex-shrink:0;color:var(--txt-3)}
-.srch input{flex:1;border:0;outline:none;background:none;color:var(--txt);font-size:15px;padding:15px 0;min-width:0}
+.srch input{flex:1;border:0;outline:none;background:none;color:var(--txt);font-size:16px;padding:15px 0;min-width:0}
 .srch input::placeholder{color:var(--txt-3)}
 .scl{width:26px;height:26px;flex-shrink:0;display:none;align-items:center;justify-content:center;
   border-radius:50%;background:var(--raise);box-shadow:var(--sh-sm);color:var(--txt-2)}
